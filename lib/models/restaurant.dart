@@ -1,140 +1,118 @@
 class Restaurant {
   final int id;
+  final int ownerId;
   final String name;
-  final String description;
+  final String? description;
   final String? logoUrl;
   final String? coverPhotoUrl;
+  final double commissionRate;
   final String status;
+  final DateTime createdAt;
+  final DateTime updatedAt;
   final double? rating;
   final int? deliveryTime;
   final double? deliveryFee;
-  final String? currency;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
 
   Restaurant({
     required this.id,
+    required this.ownerId,
     required this.name,
-    required this.description,
+    this.description,
     this.logoUrl,
     this.coverPhotoUrl,
+    required this.commissionRate,
     required this.status,
+    required this.createdAt,
+    required this.updatedAt,
     this.rating,
     this.deliveryTime,
     this.deliveryFee,
-    this.currency = 'MXN',
-    this.createdAt,
-    this.updatedAt,
   });
 
   factory Restaurant.fromJson(Map<String, dynamic> json) {
     return Restaurant(
       id: json['id'] ?? 0,
+      ownerId: json['owner_id'] ?? 0,
       name: json['name'] ?? '',
-      description: json['description'] ?? '',
-      logoUrl: json['logoUrl'],
-      coverPhotoUrl: json['coverPhotoUrl'],
-      status: json['status'] ?? 'active',
+      description: json['description'],
+      logoUrl: json['logo_url'],
+      coverPhotoUrl: json['cover_photo_url'],
+      commissionRate: (json['commission_rate'] ?? 0.0).toDouble(),
+      status: json['status'] ?? 'pending_approval',
+      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(json['updated_at'] ?? DateTime.now().toIso8601String()),
       rating: json['rating']?.toDouble(),
-      deliveryTime: json['deliveryTime'],
-      deliveryFee: json['deliveryFee']?.toDouble(),
-      currency: json['currency'] ?? 'MXN',
-      createdAt: json['createdAt'] != null 
-          ? DateTime.parse(json['createdAt']) 
-          : null,
-      updatedAt: json['updatedAt'] != null 
-          ? DateTime.parse(json['updatedAt']) 
-          : null,
+      deliveryTime: json['delivery_time'],
+      deliveryFee: json['delivery_fee']?.toDouble(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'owner_id': ownerId,
       'name': name,
       'description': description,
-      'logoUrl': logoUrl,
-      'coverPhotoUrl': coverPhotoUrl,
+      'logo_url': logoUrl,
+      'cover_photo_url': coverPhotoUrl,
+      'commission_rate': commissionRate,
       'status': status,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
       'rating': rating,
-      'deliveryTime': deliveryTime,
-      'deliveryFee': deliveryFee,
-      'currency': currency,
-      'createdAt': createdAt?.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
+      'delivery_time': deliveryTime,
+      'delivery_fee': deliveryFee,
     };
   }
 
-  bool get isActive => status == 'active';
-  bool get isInactive => status == 'inactive';
-  
+  Restaurant copyWith({
+    int? id,
+    int? ownerId,
+    String? name,
+    String? description,
+    String? logoUrl,
+    String? coverPhotoUrl,
+    double? commissionRate,
+    String? status,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    double? rating,
+    int? deliveryTime,
+    double? deliveryFee,
+  }) {
+    return Restaurant(
+      id: id ?? this.id,
+      ownerId: ownerId ?? this.ownerId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      logoUrl: logoUrl ?? this.logoUrl,
+      coverPhotoUrl: coverPhotoUrl ?? this.coverPhotoUrl,
+      commissionRate: commissionRate ?? this.commissionRate,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rating: rating ?? this.rating,
+      deliveryTime: deliveryTime ?? this.deliveryTime,
+      deliveryFee: deliveryFee ?? this.deliveryFee,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'Restaurant(id: $id, name: $name, status: $status)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Restaurant && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
+
+  // Getters para el restaurant_card
   String get formattedRating => rating != null ? rating!.toStringAsFixed(1) : 'N/A';
-  String get formattedDeliveryTime => deliveryTime != null ? '${deliveryTime}-${deliveryTime! + 5} min' : 'N/A';
-  String get formattedDeliveryFee => deliveryFee != null ? '\$${deliveryFee!.toStringAsFixed(2)} $currency' : 'Gratis';
-}
-
-class RestaurantListResponse {
-  final List<Restaurant> restaurants;
-  final Pagination pagination;
-
-  RestaurantListResponse({
-    required this.restaurants,
-    required this.pagination,
-  });
-
-  factory RestaurantListResponse.fromJson(Map<String, dynamic> json) {
-    return RestaurantListResponse(
-      restaurants: (json['restaurants'] as List?)
-          ?.map((restaurant) => Restaurant.fromJson(restaurant))
-          .toList() ?? [],
-      pagination: Pagination.fromJson(json['pagination'] ?? {}),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'restaurants': restaurants.map((restaurant) => restaurant.toJson()).toList(),
-      'pagination': pagination.toJson(),
-    };
-  }
-}
-
-class Pagination {
-  final int totalRestaurants;
-  final int currentPage;
-  final int pageSize;
-  final int totalPages;
-  final bool hasNextPage;
-  final bool hasPrevPage;
-
-  Pagination({
-    required this.totalRestaurants,
-    required this.currentPage,
-    required this.pageSize,
-    required this.totalPages,
-    required this.hasNextPage,
-    required this.hasPrevPage,
-  });
-
-  factory Pagination.fromJson(Map<String, dynamic> json) {
-    return Pagination(
-      totalRestaurants: json['totalRestaurants'] ?? 0,
-      currentPage: json['currentPage'] ?? 1,
-      pageSize: json['pageSize'] ?? 10,
-      totalPages: json['totalPages'] ?? 1,
-      hasNextPage: json['hasNextPage'] ?? false,
-      hasPrevPage: json['hasPrevPage'] ?? false,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'totalRestaurants': totalRestaurants,
-      'currentPage': currentPage,
-      'pageSize': pageSize,
-      'totalPages': totalPages,
-      'hasNextPage': hasNextPage,
-      'hasPrevPage': hasPrevPage,
-    };
-  }
+  String get formattedDeliveryTime => deliveryTime != null ? '$deliveryTime min' : 'N/A';
+  String get formattedDeliveryFee => deliveryFee != null ? '\$${deliveryFee!.toStringAsFixed(2)}' : 'N/A';
 }

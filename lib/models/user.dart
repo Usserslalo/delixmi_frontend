@@ -56,7 +56,8 @@ class User {
   bool get isInactive => status == 'inactive';
   
   bool get isCustomer => roles.any((role) => role.roleName == 'customer');
-  bool get isRestaurantOwner => roles.any((role) => role.roleName == 'restaurant_owner');
+  bool get isRestaurantOwner => roles.any((role) => 
+      ['owner', 'branch_manager', 'order_manager', 'kitchen_staff'].contains(role.roleName));
   bool get isAdmin => roles.any((role) => role.roleName == 'admin');
 }
 

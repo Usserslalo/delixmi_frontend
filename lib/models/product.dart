@@ -1,7 +1,7 @@
 class Product {
   final int id;
   final String name;
-  final String description;
+  final String? description;
   final double price;
   final String? imageUrl;
   final bool isAvailable;
@@ -12,7 +12,7 @@ class Product {
   Product({
     required this.id,
     required this.name,
-    required this.description,
+    this.description,
     required this.price,
     this.imageUrl,
     required this.isAvailable,
@@ -22,8 +22,6 @@ class Product {
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
-    print('🔍 Parseando Product desde: $json');
-    
     return Product(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
@@ -88,8 +86,6 @@ class Subcategory {
   });
 
   factory Subcategory.fromJson(Map<String, dynamic> json) {
-    print('🔍 Parseando Subcategory desde: $json');
-    
     return Subcategory(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
@@ -138,8 +134,6 @@ class Category {
   });
 
   factory Category.fromJson(Map<String, dynamic> json) {
-    print('🔍 Parseando Category desde: $json');
-    
     return Category(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
@@ -192,12 +186,8 @@ class RestaurantDetail {
   });
 
   factory RestaurantDetail.fromJson(Map<String, dynamic> json) {
-    print('🔍 Parseando RestaurantDetail desde: $json');
-    
     // El backend envía los datos dentro de 'restaurant'
     final restaurantData = json['restaurant'] ?? json;
-    
-    print('🔍 Datos del restaurante: $restaurantData');
     
     return RestaurantDetail(
       id: restaurantData['id'] ?? 0,

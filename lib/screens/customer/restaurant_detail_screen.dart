@@ -621,7 +621,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    product.description,
+                    product.description ?? 'Sin descripción',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Colors.grey[600],
                     ),

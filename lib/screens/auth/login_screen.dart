@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
+import '../../models/user.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -33,26 +34,33 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
+      print('🔐 Intentando login con email: ${_emailController.text.trim()}');
+      
       final response = await AuthService.login(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
+      print('📡 Respuesta del login: ${response.status}');
+      print('📡 Mensaje: ${response.message}');
+      print('📡 Código: ${response.code}');
+      print('📡 Datos: ${response.data}');
+
       if (mounted) {
         if (response.isSuccess && response.data != null) {
-          final user = response.data!['user'];
+          print('✅ Login exitoso, parseando usuario...');
+          final userData = response.data!['user'];
+          print('👤 Datos del usuario: $userData');
+          final user = User.fromJson(userData);
+          print('👤 Usuario parseado: ${user.fullName}');
+          print('👤 Roles: ${user.roles.map((r) => r.roleName).toList()}');
+          print('👤 isRestaurantOwner: ${user.isRestaurantOwner}');
+          print('👤 isCustomer: ${user.isCustomer}');
           
-          // Navegar a la pantalla principal
-          Navigator.of(context).pushReplacementNamed('/home');
-          
-          // Mostrar mensaje de éxito
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('¡Bienvenido, ${user.fullName}!'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          // Navegar al home del cliente
+          Navigator.pushReplacementNamed(context, '/home');
         } else {
+          print('❌ Login fallido: ${response.message}');
           // Manejar errores específicos
           _handleLoginError(response);
         }
@@ -360,43 +368,64 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ],
                         ),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // Botón de debug temporal
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: () {
+                              Navigator.of(context).pushNamed('/debug-backend');
+                            },
+                            icon: const Icon(Icons.bug_report, size: 16),
+                            label: const Text('Debug Backend'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.grey[600],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
                   
-                  // Acción inferior - Enlace de registro anclado en la parte inferior
+                  // Acción inferior - Enlaces de registro y restaurante
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                    child: RichText(
-                      textAlign: TextAlign.center,
-                      text: TextSpan(
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        children: [
-                          const TextSpan(text: '¿No tienes cuenta? '),
-                        WidgetSpan(
-                          child: TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pushNamed('/register');
-                            },
-                            style: TextButton.styleFrom(
-                              foregroundColor: Theme.of(context).colorScheme.primary,
-                              padding: EdgeInsets.zero,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    child: Column(
+                      children: [
+                        // Enlace de registro
+                        RichText(
+                          textAlign: TextAlign.center,
+                          text: TextSpan(
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
-                            child: Text(
-                              'Regístrate aquí',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: Theme.of(context).colorScheme.primary,
+                            children: [
+                              const TextSpan(text: '¿No tienes cuenta? '),
+                              WidgetSpan(
+                                child: TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pushNamed('/register');
+                                  },
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Theme.of(context).colorScheme.primary,
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(
+                                    'Regístrate aquí',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
+                            ],
                           ),
                         ),
-                        ],
-                      ),
+                      ],
                     ),
                   ),
                 ],

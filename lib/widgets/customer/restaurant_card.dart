@@ -63,7 +63,7 @@ class RestaurantCard extends StatelessWidget {
                   
                   // Descripción
                   Text(
-                    restaurant.description,
+                    restaurant.description ?? 'Sin descripción',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Colors.grey[600],
                     ),

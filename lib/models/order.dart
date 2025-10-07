@@ -17,6 +17,8 @@ class Order {
   final OrderRestaurant restaurant;
   final OrderAddress deliveryAddress;
   final List<OrderItem> items;
+  final String? customerName;
+  final DateTime createdAt;
 
   Order({
     required this.id,
@@ -35,6 +37,8 @@ class Order {
     required this.restaurant,
     required this.deliveryAddress,
     required this.items,
+    this.customerName,
+    required this.createdAt,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -83,6 +87,10 @@ class Order {
         restaurant: OrderRestaurant.fromJson(restaurantData),
         deliveryAddress: OrderAddress.fromJson(addressData),
         items: itemsData.map((item) => OrderItem.fromJson(item)).toList(),
+        customerName: orderData['customerName'],
+        createdAt: orderData['createdAt'] != null 
+            ? DateTime.parse(orderData['createdAt']) 
+            : DateTime.now(),
       );
       
       debugPrint('✅ Order.fromJson: Order creado exitosamente - ID: ${order.id}');

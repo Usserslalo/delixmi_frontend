@@ -86,7 +86,7 @@ class DataValidationService {
       errors.add('El nombre del producto es requerido');
     }
 
-    if (product.description.trim().isEmpty) {
+    if (product.description?.trim().isEmpty ?? true) {
       errors.add('La descripción es requerida');
     }
 
@@ -112,7 +112,7 @@ class DataValidationService {
       errors.add('El nombre del restaurante es requerido');
     }
 
-    if (restaurant.description.trim().isEmpty) {
+    if (restaurant.description?.trim().isEmpty ?? true) {
       errors.add('La descripción es requerida');
     }
 

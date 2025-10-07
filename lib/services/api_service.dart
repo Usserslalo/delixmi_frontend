@@ -209,12 +209,12 @@ class ApiService {
       final responseData = jsonDecode(response.body);
 
       // Debug: Imprimir respuesta del servidor (solo en desarrollo)
-      // print('=== RESPUESTA DEL SERVIDOR ===');
-      // print('URL: $url');
-      // print('Method: $method');
-      // print('Status Code: ${response.statusCode}');
-      // print('Response Body: $responseData');
-      // print('==============================');
+      print('=== RESPUESTA DEL SERVIDOR ===');
+      print('URL: $url');
+      print('Method: $method');
+      print('Status Code: ${response.statusCode}');
+      print('Response Body: $responseData');
+      print('==============================');
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return ApiResponse.fromJson(responseData, fromJson);

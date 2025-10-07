@@ -221,7 +221,7 @@ class ShippingCalculation {
 
   String get formattedDistance => '${distance.toStringAsFixed(1)} km';
   String get formattedTotalFee => '\$${totalFee.toStringAsFixed(2)}';
-  String get formattedEstimatedTime => '${estimatedTime} min';
+  String get formattedEstimatedTime => '$estimatedTime min';
 }
 
 enum PaymentMethod {

@@ -37,6 +37,7 @@ dependencies:
   
   # HTTP requests
   http: ^1.2.1
+  http_parser: ^4.0.2
   
   # Secure storage for JWT tokens
   flutter_secure_storage: ^9.2.2
@@ -70,6 +71,9 @@ dependencies:
   
   # Animations
   animations: ^2.0.8
+  
+  # Image picker for selecting images
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:

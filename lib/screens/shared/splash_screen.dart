@@ -34,7 +34,7 @@ class _SplashScreenState extends State<SplashScreen> {
         await _checkForPendingDeepLink();
         
         if (isAuthenticated) {
-          // Usuario ya autenticado, ir a home
+          // Usuario ya autenticado, ir al home
           if (mounted) {
             Navigator.of(context).pushReplacementNamed('/home');
           }
@@ -57,6 +57,7 @@ class _SplashScreenState extends State<SplashScreen> {
     // Dar tiempo para que el DeepLinkService procese cualquier enlace inicial
     await Future.delayed(const Duration(milliseconds: 100));
   }
+
 
   @override
   Widget build(BuildContext context) {

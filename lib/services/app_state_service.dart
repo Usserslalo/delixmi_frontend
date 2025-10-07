@@ -75,20 +75,6 @@ class AppStateService {
     // Se puede agregar en el futuro con connectivity_plus
   }
 
-  /// Manejar restauración de conexión
-  void _onConnectionRestored() {
-    ErrorHandler.logInfo('AppStateService', 'Conexión restaurada');
-    NavigationService.showSuccessSnackBar('Conexión restaurada');
-    
-    // Verificar autenticación nuevamente
-    _checkAuthentication();
-  }
-
-  /// Manejar pérdida de conexión
-  void _onConnectionLost() {
-    ErrorHandler.logInfo('AppStateService', 'Conexión perdida');
-    NavigationService.showWarningSnackBar('Sin conexión a internet');
-  }
 
   /// Actualizar estado de autenticación
   Future<void> updateAuthenticationState() async {

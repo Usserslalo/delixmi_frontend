@@ -26,7 +26,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   bool _isLoading = false;
   bool _isGettingCurrentLocation = false;
   bool _hasMapError = false;
-  String? _mapError;
 
   // Ubicación por defecto (Ixmiquilpan, Hidalgo)
   static const LatLng _defaultLocation = LatLng(20.488765, -99.234567);
@@ -44,7 +43,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       if (mounted && _mapController == null) {
         setState(() {
           _hasMapError = true;
-          _mapError = 'No se pudo cargar el mapa. Verifica tu conexión a internet.';
         });
       }
     });

@@ -58,6 +58,9 @@ class AuthService {
     required String email,
     required String password,
   }) async {
+    print('🔐 AuthService.login - Email: $email');
+    print('🔐 AuthService.login - Password: ${password.replaceAll(RegExp(r'.'), '*')}');
+    
     final response = await ApiService.makeRequest<Map<String, dynamic>>(
       'POST',
       '/auth/login',
@@ -68,6 +71,11 @@ class AuthService {
       },
       null,
     );
+    
+    print('📡 AuthService.login - Status: ${response.status}');
+    print('📡 AuthService.login - Message: ${response.message}');
+    print('📡 AuthService.login - Code: ${response.code}');
+    print('📡 AuthService.login - Data: ${response.data}');
 
     if (response.isSuccess && response.data != null) {
       final data = response.data!;
@@ -84,7 +92,7 @@ class AuthService {
         message: response.message,
         data: {
           'token': token,
-          'user': user,
+          'user': data['user'], // Mantener los datos raw del JSON
           'expiresIn': expiresIn,
         },
       );
