@@ -8,6 +8,7 @@ import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
 import 'screens/customer/home_screen.dart';
 import 'screens/customer/restaurant_detail_screen.dart';
+import 'screens/customer/product_detail_screen.dart';
 import 'screens/customer/cart_screen.dart';
 import 'screens/customer/cart_detail_screen.dart';
 import 'screens/customer/addresses_screen.dart';
@@ -21,6 +22,7 @@ import 'screens/customer/profile_screen.dart';
 import 'screens/test/cart_badge_test_screen.dart';
 import 'screens/shared/splash_screen.dart';
 import 'models/address.dart';
+import 'models/product.dart';
 import 'models/restaurant_cart.dart';
 import 'providers/cart_provider.dart';
 import 'providers/restaurant_cart_provider.dart';
@@ -193,6 +195,15 @@ class _DelixmiAppState extends State<DelixmiApp> {
         '/restaurant-detail': (context) {
           final restaurantId = ModalRoute.of(context)?.settings.arguments as int? ?? 0;
           return RestaurantDetailScreen(restaurantId: restaurantId);
+        },
+        '/product-detail': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
+          final product = args['product'] as Product;
+          final restaurantId = args['restaurantId'] as int;
+          return ProductDetailScreen(
+            product: product,
+            restaurantId: restaurantId,
+          );
         },
         '/cart': (context) => const CartScreen(),
         '/cart-detail': (context) {

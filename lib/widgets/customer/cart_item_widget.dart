@@ -150,6 +150,40 @@ class _CartItemWidgetState extends State<CartItemWidget>
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 6),
+                          
+                          // Mostrar modificadores si existen
+                          if (widget.item.modifiers.isNotEmpty) ...[
+                            ...widget.item.modifiers.map((modifier) => Padding(
+                              padding: const EdgeInsets.only(bottom: 2),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 4,
+                                    height: 4,
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange[600],
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      '${modifier.name} (+\$${modifier.price.toStringAsFixed(2)})',
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: Colors.orange[700],
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 12,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )),
+                            const SizedBox(height: 8),
+                          ],
+                          
                           if (widget.item.productDescription.isNotEmpty) ...[
                             Text(
                               widget.item.productDescription,

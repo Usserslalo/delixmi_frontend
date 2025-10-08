@@ -48,20 +48,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         );
         
         if (response.isSuccess && response.data != null) {
-          final subtotal = (response.data!['subtotal'] ?? 0.0).toDouble();
+          // Calcular subtotal correctamente desde los items del carrito (incluye modificadores)
+          final calculatedSubtotal = widget.restaurant.items.fold(0.0, (sum, item) => sum + item.subtotal);
           final deliveryFee = (response.data!['delivery_fee'] ?? 0.0).toDouble();
           final serviceFee = (response.data!['service_fee'] ?? 0.0).toDouble();
-          final total = (response.data!['total'] ?? 0.0).toDouble();
           final estimatedDeliveryTime = response.data!['estimated_delivery_time']?['timeRange'] ?? '30-45 min';
+          
+          // Usar el subtotal calculado del frontend (que incluye modificadores) en lugar del backend
+          final correctedTotal = calculatedSubtotal + deliveryFee + serviceFee;
           
           setState(() {
             _checkoutSummary = CheckoutSummary(
               items: widget.restaurant.items,
               deliveryAddress: deliveryAddress,
-              subtotal: subtotal,
+              subtotal: calculatedSubtotal, // Usar subtotal calculado del frontend
               deliveryFee: deliveryFee,
               serviceFee: serviceFee,
-              total: total,
+              total: correctedTotal, // Recalcular total con subtotal correcto
               estimatedDeliveryTime: estimatedDeliveryTime,
               paymentMethod: _paymentMethod,
             );
@@ -325,7 +328,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Tiempo estimado: ${_checkoutSummary!.estimatedDeliveryTime}',
+                'Tiempo estimado: ${_formatEstimatedTime(_checkoutSummary!.estimatedDeliveryTime)}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Colors.green[700],
                   fontWeight: FontWeight.w600,
@@ -382,9 +385,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Text(
-                    '${item.productName} x${item.quantity}',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${item.productName} x${item.quantity}',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      // Mostrar modificadores si existen
+                      if (item.modifiers.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        ...item.modifiers.map((modifier) => Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Text(
+                            '• ${modifier.name} (+\$${modifier.price.toStringAsFixed(2)})',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.orange[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        )),
+                      ],
+                    ],
                   ),
                 ),
                 Text(
@@ -571,5 +593,32 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
       ),
     );
+  }
+
+  String _formatEstimatedTime(String timeString) {
+    // Si el tiempo viene con decimales extraños, formatearlo correctamente
+    if (timeString.contains('.')) {
+      try {
+        // Extraer números del string
+        final RegExp regex = RegExp(r'(\d+\.?\d*)-(\d+\.?\d*)');
+        final Match? match = regex.firstMatch(timeString);
+        
+        if (match != null) {
+          final double minMinutes = double.parse(match.group(1)!);
+          final double maxMinutes = double.parse(match.group(2)!);
+          
+          // Redondear a números enteros
+          final int roundedMin = minMinutes.round();
+          final int roundedMax = maxMinutes.round();
+          
+          return '${roundedMin}-${roundedMax} min';
+        }
+      } catch (e) {
+        debugPrint('Error al formatear tiempo: $e');
+      }
+    }
+    
+    // Si ya está bien formateado o hay error, devolver tal como está
+    return timeString;
   }
 }

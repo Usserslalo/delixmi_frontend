@@ -6,6 +6,7 @@ class Product {
   final String? imageUrl;
   final bool isAvailable;
   final int subcategoryId;
+  final List<ModifierGroup> modifierGroups;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -17,11 +18,20 @@ class Product {
     this.imageUrl,
     required this.isAvailable,
     required this.subcategoryId,
+    this.modifierGroups = const [],
     this.createdAt,
     this.updatedAt,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
+    // Parsear modificadores si existen
+    List<ModifierGroup> modifierGroups = [];
+    if (json['modifierGroups'] != null && json['modifierGroups'] is List) {
+      modifierGroups = (json['modifierGroups'] as List<dynamic>)
+          .map((group) => ModifierGroup.fromJson(group))
+          .toList();
+    }
+    
     return Product(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
@@ -30,6 +40,7 @@ class Product {
       imageUrl: json['imageUrl'],
       isAvailable: json['isAvailable'] ?? true,
       subcategoryId: json['subcategoryId'] ?? 0,
+      modifierGroups: modifierGroups,
       createdAt: json['createdAt'] != null 
           ? DateTime.parse(json['createdAt']) 
           : null,
@@ -58,6 +69,7 @@ class Product {
       'imageUrl': imageUrl,
       'isAvailable': isAvailable,
       'subcategoryId': subcategoryId,
+      'modifierGroups': modifierGroups.map((group) => group.toJson()).toList(),
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };
@@ -223,4 +235,98 @@ class RestaurantDetail {
   }
 
   bool get isActive => status == 'active';
+}
+
+class ModifierGroup {
+  final int id;
+  final String name;
+  final int minSelection;
+  final int maxSelection;
+  final List<ModifierOption> options;
+
+  ModifierGroup({
+    required this.id,
+    required this.name,
+    required this.minSelection,
+    required this.maxSelection,
+    required this.options,
+  });
+
+  factory ModifierGroup.fromJson(Map<String, dynamic> json) {
+    return ModifierGroup(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      minSelection: json['minSelection'] ?? 0,
+      maxSelection: json['maxSelection'] ?? 1,
+      options: (json['options'] as List<dynamic>?)
+          ?.map((option) => ModifierOption.fromJson(option))
+          .toList() ?? [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'minSelection': minSelection,
+      'maxSelection': maxSelection,
+      'options': options.map((option) => option.toJson()).toList(),
+    };
+  }
+
+  bool get isRequired => minSelection > 0;
+  bool get isSingleSelection => maxSelection == 1;
+  bool get isMultipleSelection => maxSelection > 1;
+}
+
+class ModifierOption {
+  final int id;
+  final String name;
+  final double price;
+
+  ModifierOption({
+    required this.id,
+    required this.name,
+    required this.price,
+  });
+
+  factory ModifierOption.fromJson(Map<String, dynamic> json) {
+    return ModifierOption(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      price: _parsePrice(json['price']),
+    );
+  }
+
+  static double _parsePrice(dynamic price) {
+    if (price == null) return 0.0;
+    if (price is double) return price;
+    if (price is int) return price.toDouble();
+    if (price is String) {
+      return double.tryParse(price) ?? 0.0;
+    }
+    return 0.0;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'price': price,
+    };
+  }
+
+  String get formattedPrice {
+    if (price == 0) return '';
+    return price > 0 ? '+\$${price.toStringAsFixed(2)}' : '\$${price.abs().toStringAsFixed(2)}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is ModifierOption && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }

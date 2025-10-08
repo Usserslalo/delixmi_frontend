@@ -116,32 +116,57 @@ class RestaurantCartWidget extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               ...restaurant.items.take(2).map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '• ',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 12,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        '${item.productName} x${item.quantity}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
+                    // Información principal del producto
+                    Row(
+                      children: [
+                        Text(
+                          '• ',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Text(
-                      '\$${item.subtotal.toStringAsFixed(2)}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[700],
-                      ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${item.productName} x${item.quantity}',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Colors.grey[600],
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              // Mostrar modificadores de forma compacta
+                              if (item.modifiers.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  item.modifiers.map((m) => m.name).join(', '),
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.orange[600],
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        Text(
+                          '\$${item.subtotal.toStringAsFixed(2)}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

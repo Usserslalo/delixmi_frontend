@@ -265,9 +265,28 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Text(
-                    '${item.productName} x${item.quantity}',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${item.productName} x${item.quantity}',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      // Mostrar modificadores si existen
+                      if (item.modifiers.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        ...item.modifiers.map((modifier) => Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Text(
+                            '• ${modifier.name} (+\$${modifier.price.toStringAsFixed(2)})',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.orange[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        )),
+                      ],
+                    ],
                   ),
                 ),
                 Text(

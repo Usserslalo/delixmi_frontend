@@ -65,15 +65,21 @@ class CartProvider extends ChangeNotifier {
   Future<bool> addToCart({
     required int productId,
     required int quantity,
+    List<int>? modifierOptionIds,
   }) async {
     _setLoading(true);
     _clearError();
 
     try {
       print('🛒 CartProvider: Agregando producto $productId (cantidad: $quantity)...');
+      if (modifierOptionIds != null && modifierOptionIds.isNotEmpty) {
+        print('🛒 CartProvider: Con modificadores: $modifierOptionIds');
+      }
+      
       final response = await CartService.addToCart(
         productId: productId,
         quantity: quantity,
+        modifierOptionIds: modifierOptionIds,
       );
 
       if (response.isSuccess) {

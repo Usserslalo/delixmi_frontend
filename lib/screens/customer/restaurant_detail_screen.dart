@@ -34,11 +34,11 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
       _errorMessage = null;
     });
 
-    try {
-      print('🔍 Cargando detalles del restaurante ID: ${widget.restaurantId}');
-      final response = await ApiService.getRestaurantDetail(
-        restaurantId: widget.restaurantId,
-      );
+        try {
+            print('🔍 Cargando detalles del restaurante ID: ${widget.restaurantId}');
+            final response = await ApiService.getRestaurantDetail(
+              restaurantId: widget.restaurantId,
+            );
 
       print('📡 Respuesta del servidor: ${response.status}');
       print('📡 Datos recibidos: ${response.data}');
@@ -51,6 +51,20 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             final restaurant = RestaurantDetail.fromJson(response.data!);
             print('✅ Restaurante parseado: ${restaurant.name}');
             print('✅ Categorías: ${restaurant.categories.length}');
+            
+            // Debug: Contar productos totales
+            int totalProducts = 0;
+            for (final category in restaurant.categories) {
+              for (final subcategory in category.subcategories) {
+                totalProducts += subcategory.products.length;
+                print('📦 Categoría "${category.name}" > "${subcategory.name}": ${subcategory.products.length} productos');
+                for (final product in subcategory.products) {
+                  print('  - ${product.name} (modificadores: ${product.modifierGroups.length})');
+                }
+              }
+            }
+            print('📊 Total de productos en el restaurante: $totalProducts');
+            
             setState(() {
               _restaurant = restaurant;
               _isLoading = false;
@@ -79,13 +93,21 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
 
   void _loadMockData() {
     // Datos de prueba para demostrar la funcionalidad
-    final mockRestaurant = RestaurantDetail(
-      id: widget.restaurantId,
-      name: 'Pizzería de Ana',
-      description: 'Las mejores pizzas artesanales de la región, con ingredientes frescos y recetas tradicionales',
-      logoUrl: null,
-      coverPhotoUrl: null,
-      status: 'active',
+    RestaurantDetail mockRestaurant;
+    
+    print('🔍 RestaurantDetailScreen: Cargando mock data para restaurantId: ${widget.restaurantId}');
+    
+    // Crear datos diferentes según el restaurantId
+    if (widget.restaurantId == 1) {
+      // Pizzería de Ana
+      print('🔍 RestaurantDetailScreen: Cargando Pizzería de Ana');
+      mockRestaurant = RestaurantDetail(
+        id: widget.restaurantId,
+        name: 'Pizzería de Ana',
+        description: 'Las mejores pizzas artesanales de la región, con ingredientes frescos y recetas tradicionales',
+        logoUrl: null,
+        coverPhotoUrl: null,
+        status: 'active',
       categories: [
         Category(
           id: 1,
@@ -106,6 +128,30 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                   imageUrl: null,
                   isAvailable: true,
                   subcategoryId: 1,
+                  modifierGroups: [
+                    ModifierGroup(
+                      id: 1,
+                      name: 'Tamaño',
+                      minSelection: 1,
+                      maxSelection: 1,
+                      options: [
+                        ModifierOption(id: 1, name: 'Pequeña', price: 0.0),
+                        ModifierOption(id: 2, name: 'Mediana', price: 20.0),
+                        ModifierOption(id: 3, name: 'Grande', price: 40.0),
+                      ],
+                    ),
+                    ModifierGroup(
+                      id: 2,
+                      name: 'Extras',
+                      minSelection: 0,
+                      maxSelection: 3,
+                      options: [
+                        ModifierOption(id: 5, name: 'Extra Queso', price: 15.0),
+                        ModifierOption(id: 27, name: 'Orilla Rellena de Queso', price: 25.0),
+                        ModifierOption(id: 8, name: 'Champiñones Extra', price: 10.0),
+                      ],
+                    ),
+                  ],
                 ),
                 Product(
                   id: 2,
@@ -190,6 +236,124 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
         ),
       ],
     );
+    } else if (widget.restaurantId == 2) {
+      // Sushi Master Kenji
+      print('🔍 RestaurantDetailScreen: Cargando Sushi Master Kenji');
+      mockRestaurant = RestaurantDetail(
+        id: widget.restaurantId,
+        name: 'Sushi Master Kenji',
+        description: 'Auténtico sushi japonés preparado por maestros sushiman con ingredientes frescos importados de Japón',
+        logoUrl: null,
+        coverPhotoUrl: null,
+        status: 'active',
+        categories: [
+          Category(
+            id: 1,
+            name: 'Sushi',
+            description: 'Sushi fresco y tradicional',
+            subcategories: [
+              Subcategory(
+                id: 1,
+                name: 'Rolls Tradicionales',
+                description: 'Nuestros rolls clásicos',
+                categoryId: 1,
+                products: [
+                  Product(
+                    id: 1,
+                    name: 'California Roll',
+                    description: 'Roll clásico con cangrejo, aguacate y pepino',
+                    price: 180.00,
+                    imageUrl: null,
+                    isAvailable: true,
+                    subcategoryId: 1,
+                    modifierGroups: [
+                      ModifierGroup(
+                        id: 1,
+                        name: 'Cantidad',
+                        minSelection: 1,
+                        maxSelection: 1,
+                        options: [
+                          ModifierOption(id: 1, name: '6 piezas', price: 0.0),
+                          ModifierOption(id: 2, name: '8 piezas', price: 30.0),
+                          ModifierOption(id: 3, name: '12 piezas', price: 60.0),
+                        ],
+                      ),
+                      ModifierGroup(
+                        id: 2,
+                        name: 'Extras',
+                        minSelection: 0,
+                        maxSelection: 2,
+                        options: [
+                          ModifierOption(id: 4, name: 'Salsa de Soja Premium', price: 15.0),
+                          ModifierOption(id: 5, name: 'Wasabi Extra', price: 10.0),
+                          ModifierOption(id: 6, name: 'Jengibre Extra', price: 8.0),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Product(
+                    id: 2,
+                    name: 'Dragon Roll',
+                    description: 'Roll con anguila, aguacate y salsa especial',
+                    price: 220.00,
+                    imageUrl: null,
+                    isAvailable: true,
+                    subcategoryId: 1,
+                    modifierGroups: [
+                      ModifierGroup(
+                        id: 1,
+                        name: 'Cantidad',
+                        minSelection: 1,
+                        maxSelection: 1,
+                        options: [
+                          ModifierOption(id: 1, name: '6 piezas', price: 0.0),
+                          ModifierOption(id: 2, name: '8 piezas', price: 35.0),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          Category(
+            id: 2,
+            name: 'Bebidas Japonesas',
+            description: 'Bebidas tradicionales japonesas',
+            subcategories: [
+              Subcategory(
+                id: 2,
+                name: 'Sake',
+                description: 'Sake tradicional japonés',
+                categoryId: 2,
+                products: [
+                  Product(
+                    id: 3,
+                    name: 'Sake Premium',
+                    description: 'Sake de alta calidad importado de Japón',
+                    price: 150.00,
+                    imageUrl: null,
+                    isAvailable: true,
+                    subcategoryId: 2,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
+    } else {
+      // Restaurante no encontrado
+      mockRestaurant = RestaurantDetail(
+        id: widget.restaurantId,
+        name: 'Restaurante No Encontrado',
+        description: 'Este restaurante no está disponible',
+        logoUrl: null,
+        coverPhotoUrl: null,
+        status: 'inactive',
+        categories: [],
+      );
+    }
 
     setState(() {
       _restaurant = mockRestaurant;
@@ -197,51 +361,88 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     });
   }
 
-  Future<void> _addToCart(Product product) async {
-    final cartProvider = context.read<CartProvider>();
-    
-    try {
-      final success = await cartProvider.addToCart(
-        productId: product.id,
-        quantity: 1,
-      );
-
-      if (mounted) {
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${product.name} agregado al carrito'),
-              duration: const Duration(seconds: 2),
-              action: SnackBarAction(
-                label: 'Ver carrito',
-                onPressed: () {
-                  Navigator.of(context).pushNamed('/cart');
-                },
-              ),
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${cartProvider.errorMessage ?? 'No se pudo agregar al carrito'}'),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al agregar al carrito: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
+  void _navigateToProductDetail(Product product) {
+    // Debug: Verificar producto antes de navegar
+    print('🔍 RestaurantDetailScreen: Navegando a detalles de: ${product.name}');
+    print('🔍 RestaurantDetailScreen: ModifierGroups count: ${product.modifierGroups.length}');
+    for (final group in product.modifierGroups) {
+      print('🔍 RestaurantDetailScreen: Grupo "${group.name}" con ${group.options.length} opciones');
     }
+    
+    Navigator.of(context).pushNamed(
+      '/product-detail',
+      arguments: {
+        'product': product,
+        'restaurantId': widget.restaurantId,
+      },
+    );
   }
+
+  // Método mantenido para uso futuro si se necesita agregar directamente al carrito
+  // void _addToCart(Product product) {
+  //   // Si el producto tiene modificadores, mostrar el modal de selección
+  //   if (product.modifierGroups.isNotEmpty) {
+  //     showModalBottomSheet(
+  //       context: context,
+  //       isScrollControlled: true,
+  //       backgroundColor: Colors.transparent,
+  //       builder: (context) => ModifierSelectionModal(
+  //         product: product,
+  //         restaurantId: widget.restaurantId,
+  //       ),
+  //     );
+  //   } else {
+  //     // Si no tiene modificadores, agregar directamente al carrito
+  //     _addProductDirectly(product);
+  //   }
+  // }
+
+  // Método mantenido para uso futuro si se necesita agregar directamente al carrito
+  // Future<void> _addProductDirectly(Product product) async {
+  //   final cartProvider = context.read<CartProvider>();
+  //   
+  //   try {
+  //     final success = await cartProvider.addToCart(
+  //       productId: product.id,
+  //       quantity: 1,
+  //     );
+  //
+  //     if (mounted) {
+  //       if (success) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(
+  //             content: Text('${product.name} agregado al carrito'),
+  //             duration: const Duration(seconds: 2),
+  //             action: SnackBarAction(
+  //               label: 'Ver carrito',
+  //               onPressed: () {
+  //                 Navigator.of(context).pushNamed('/cart');
+  //               },
+  //             ),
+  //           ),
+  //         );
+  //       } else {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(
+  //             content: Text('Error: ${cartProvider.errorMessage ?? 'No se pudo agregar al carrito'}'),
+  //             backgroundColor: Colors.red,
+  //             duration: const Duration(seconds: 3),
+  //           ),
+  //         );
+  //       }
+  //     }
+  //   } catch (e) {
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('Error al agregar al carrito: $e'),
+  //           backgroundColor: Colors.red,
+  //           duration: const Duration(seconds: 3),
+  //         ),
+  //       );
+  //     }
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -640,7 +841,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                         ),
                       ),
                       ElevatedButton(
-                        onPressed: () => _addToCart(product),
+                        onPressed: () => _navigateToProductDetail(product),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Theme.of(context).colorScheme.primary,
                           foregroundColor: Colors.white,
@@ -650,7 +851,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                           ),
                         ),
                         child: const Text(
-                          'Agregar',
+                          'Ver',
                           style: TextStyle(fontSize: 12),
                         ),
                       ),

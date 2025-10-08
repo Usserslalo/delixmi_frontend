@@ -1,3 +1,5 @@
+import 'cart_modifier.dart';
+
 class CartItem {
   final int id;
   final int productId;
@@ -8,6 +10,7 @@ class CartItem {
   final double price;
   final int quantity;
   final String? specialInstructions;
+  final List<CartModifier> modifiers;
 
   CartItem({
     required this.id,
@@ -19,12 +22,21 @@ class CartItem {
     required this.price,
     required this.quantity,
     this.specialInstructions,
+    this.modifiers = const [],
   });
 
   factory CartItem.fromJson(Map<String, dynamic> json) {
-    // El backend devuelve: {id, product: {id, name, description, imageUrl, price, restaurant}, quantity, priceAtAdd, subtotal}
+    // El backend devuelve: {id, product: {id, name, description, imageUrl, price, restaurant}, quantity, priceAtAdd, subtotal, modifiers}
     final product = json['product'] as Map<String, dynamic>? ?? {};
     final productRestaurant = product['restaurant'] as Map<String, dynamic>? ?? {};
+    
+    // Parsear modificadores si existen
+    List<CartModifier> modifiers = [];
+    if (json['modifiers'] != null && json['modifiers'] is List) {
+      modifiers = (json['modifiers'] as List<dynamic>)
+          .map((modifier) => CartModifier.fromJson(modifier))
+          .toList();
+    }
     
     return CartItem(
       id: json['id'] ?? 0,
@@ -33,9 +45,11 @@ class CartItem {
       productName: product['name'] ?? json['productName'] ?? json['product_name'] ?? '',
       productDescription: product['description'] ?? json['productDescription'] ?? json['product_description'] ?? '',
       productImage: product['imageUrl'] ?? product['image_url'] ?? json['productImage'] ?? json['product_image'] ?? '',
-      price: _parseToDouble(product['price'] ?? json['price'] ?? json['priceAtAdd'] ?? 0.0),
+      // Prioridad: priceAtAdd (precio con modificadores) > subtotal > price > product.price (precio base)
+      price: _parseToDouble(json['priceAtAdd'] ?? json['subtotal'] ?? json['price'] ?? product['price'] ?? 0.0),
       quantity: json['quantity'] ?? 0,
       specialInstructions: json['specialInstructions'] ?? json['special_instructions'],
+      modifiers: modifiers,
     );
   }
 
@@ -44,6 +58,7 @@ class CartItem {
       'productId': productId,
       'quantity': quantity,
       if (specialInstructions != null) 'specialInstructions': specialInstructions,
+      if (modifiers.isNotEmpty) 'modifiers': modifiers.map((m) => m.toJson()).toList(),
     };
   }
 
@@ -57,6 +72,7 @@ class CartItem {
     double? price,
     int? quantity,
     String? specialInstructions,
+    List<CartModifier>? modifiers,
   }) {
     return CartItem(
       id: id ?? this.id,
@@ -68,6 +84,7 @@ class CartItem {
       price: price ?? this.price,
       quantity: quantity ?? this.quantity,
       specialInstructions: specialInstructions ?? this.specialInstructions,
+      modifiers: modifiers ?? this.modifiers,
     );
   }
 

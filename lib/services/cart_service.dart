@@ -102,7 +102,10 @@ class CartService {
           }
           
           restaurantCarts = cartData.map((cart) => RestaurantCart.fromJson(cart)).toList();
-          LoggerService.cart('Carritos por restaurante cargados: ${restaurantCarts.length} restaurantes', tag: 'CartService');
+          
+          // Filtrar carritos vacíos (sin items)
+          restaurantCarts = restaurantCarts.where((cart) => cart.isNotEmpty).toList();
+          LoggerService.cart('Carritos por restaurante cargados: ${restaurantCarts.length} restaurantes (filtrados los vacíos)', tag: 'CartService');
         }
 
       return ApiResponse<List<RestaurantCart>>(
@@ -126,9 +129,13 @@ class CartService {
   static Future<ApiResponse<Map<String, dynamic>>> addToCart({
     required int productId,
     required int quantity,
+    List<int>? modifierOptionIds,
   }) async {
     try {
       LoggerService.cart('Agregando producto $productId al carrito (cantidad: $quantity)...', tag: 'CartService');
+      if (modifierOptionIds != null && modifierOptionIds.isNotEmpty) {
+        LoggerService.cart('Con modificadores: $modifierOptionIds', tag: 'CartService');
+      }
       
       final response = await ApiService.makeRequest<Map<String, dynamic>>(
         'POST',
@@ -137,6 +144,8 @@ class CartService {
         {
           'productId': productId,
           'quantity': quantity,
+          if (modifierOptionIds != null && modifierOptionIds.isNotEmpty)
+            'modifierOptionIds': modifierOptionIds,
         },
         (data) => data as Map<String, dynamic>,
       );
