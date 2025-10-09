@@ -242,6 +242,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
 
   Future<void> _addToCart() async {
     if (!_canAddToCart()) {
+      // Obtener grupos faltantes para mostrar mensaje específico
+      final missingGroups = <String>[];
+      for (final group in widget.product.modifierGroups) {
+        if (group.minSelection > 0) {
+          final selectedCount = _selectedModifiers[group.id]?.length ?? 0;
+          if (selectedCount < group.minSelection) {
+            missingGroups.add(group.name);
+          }
+        }
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -249,13 +260,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
               Icon(Icons.warning_amber_rounded, color: Colors.white),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Por favor selecciona todos los modificadores requeridos'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Modificadores requeridos faltantes:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(missingGroups.join(', ')),
+                  ],
+                ),
               ),
             ],
           ),
           backgroundColor: Colors.orange[600],
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 4),
         ),
       );
       return;
@@ -590,12 +612,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
                 size: 24,
               ),
               const SizedBox(width: 8),
-              Text(
-                'Agregar al carrito',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Agregar al carrito',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '\$${_totalPrice.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -779,34 +814,51 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        group.name,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[800],
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            group.name,
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[800],
+                            ),
+                          ),
+                          if (isRequired) ...[
+                            const SizedBox(width: 4),
+                            Text(
+                              '*',
+                              style: TextStyle(
+                                color: Colors.red[600],
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Text(
-                            'Selecciona ${group.minSelection}${group.maxSelection > group.minSelection ? ' - ${group.maxSelection}' : ''} opción${group.maxSelection > 1 ? 'es' : ''}',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[600],
+                          Expanded(
+                            child: Text(
+                              'Selecciona ${group.minSelection}${group.maxSelection > group.minSelection ? ' - ${group.maxSelection}' : ''} opción${group.maxSelection > 1 ? 'es' : ''}',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.grey[600],
+                              ),
                             ),
                           ),
                           if (isRequired) ...[
-                            const SizedBox(width: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: Colors.red[100],
-                                borderRadius: BorderRadius.circular(8),
+                                color: Colors.red[50],
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.red[200]!),
                               ),
                               child: Text(
                                 'REQUERIDO',
                                 style: TextStyle(
-                                  fontSize: 9,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.red[700],
                                 ),

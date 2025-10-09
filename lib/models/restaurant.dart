@@ -12,6 +12,8 @@ class Restaurant {
   final double? rating;
   final int? deliveryTime;
   final double? deliveryFee;
+  final bool? isOpen; // Indica si el restaurante está abierto según horarios
+  final String? category; // Categoría del restaurante (Pizzas, Sushi, Tacos, etc.)
 
   Restaurant({
     required this.id,
@@ -27,16 +29,28 @@ class Restaurant {
     this.rating,
     this.deliveryTime,
     this.deliveryFee,
+    this.isOpen,
+    this.category,
   });
 
   factory Restaurant.fromJson(Map<String, dynamic> json) {
+    final logoUrl = json['logoUrl'] ?? json['logo_url'];
+    final coverPhotoUrl = json['coverPhotoUrl'] ?? json['cover_photo_url'];
+    
+    // Debug logs para verificar URLs de imágenes y estado
+    final isOpenValue = json['isOpen'] ?? json['is_open'];
+    print('🖼️ Restaurant ${json['name']}:');
+    print('   Logo URL: $logoUrl');
+    print('   Cover URL: $coverPhotoUrl');
+    print('   isOpen: $isOpenValue (${isOpenValue.runtimeType})');
+    
     return Restaurant(
       id: json['id'] ?? 0,
       ownerId: json['owner_id'] ?? 0,
       name: json['name'] ?? '',
       description: json['description'],
-      logoUrl: json['logo_url'],
-      coverPhotoUrl: json['cover_photo_url'],
+      logoUrl: logoUrl,
+      coverPhotoUrl: coverPhotoUrl,
       commissionRate: (json['commission_rate'] ?? 0.0).toDouble(),
       status: json['status'] ?? 'pending_approval',
       createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
@@ -44,6 +58,9 @@ class Restaurant {
       rating: json['rating']?.toDouble(),
       deliveryTime: json['delivery_time'],
       deliveryFee: json['delivery_fee']?.toDouble(),
+      // Usar el campo isOpen real del backend
+      isOpen: isOpenValue,
+      category: json['category'],
     );
   }
 
@@ -62,6 +79,8 @@ class Restaurant {
       'rating': rating,
       'delivery_time': deliveryTime,
       'delivery_fee': deliveryFee,
+      'isOpen': isOpen,
+      'category': category,
     };
   }
 
@@ -79,6 +98,8 @@ class Restaurant {
     double? rating,
     int? deliveryTime,
     double? deliveryFee,
+    bool? isOpen,
+    String? category,
   }) {
     return Restaurant(
       id: id ?? this.id,
@@ -94,6 +115,8 @@ class Restaurant {
       rating: rating ?? this.rating,
       deliveryTime: deliveryTime ?? this.deliveryTime,
       deliveryFee: deliveryFee ?? this.deliveryFee,
+      isOpen: isOpen ?? this.isOpen,
+      category: category ?? this.category,
     );
   }
 
@@ -115,4 +138,8 @@ class Restaurant {
   String get formattedRating => rating != null ? rating!.toStringAsFixed(1) : 'N/A';
   String get formattedDeliveryTime => deliveryTime != null ? '$deliveryTime min' : 'N/A';
   String get formattedDeliveryFee => deliveryFee != null ? '\$${deliveryFee!.toStringAsFixed(2)}' : 'N/A';
+  
+  // Getter para verificar si el restaurante está abierto
+  // Usa el campo isOpen real del backend
+  bool get isCurrentlyOpen => isOpen ?? false;
 }

@@ -4,11 +4,13 @@ import '../../models/order.dart';
 class OrderCard extends StatelessWidget {
   final Order order;
   final VoidCallback? onTap;
+  final bool isHistory; // Indicador si es del historial
 
   const OrderCard({
     super.key,
     required this.order,
     this.onTap,
+    this.isHistory = false,
   });
 
   @override
@@ -228,6 +230,37 @@ class OrderCard extends StatelessWidget {
                   ),
                 ),
               ],
+              
+              // Fecha de entrega si es del historial
+              if (isHistory && order.orderDeliveredAt != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green[200]!),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline,
+                        size: 14,
+                        color: Colors.green[700],
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Entregado el ${_formatDeliveryDate(order.orderDeliveredAt!)}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.green[700],
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -271,5 +304,18 @@ class OrderCard extends StatelessWidget {
     } else {
       return '${date.day}/${date.month}/${date.year}';
     }
+  }
+
+  String _formatDeliveryDate(DateTime date) {
+    const months = [
+      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+    ];
+    
+    final hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
+    final period = date.hour >= 12 ? 'PM' : 'AM';
+    final minute = date.minute.toString().padLeft(2, '0');
+    
+    return '${date.day} ${months[date.month - 1]} a las $hour:$minute $period';
   }
 }

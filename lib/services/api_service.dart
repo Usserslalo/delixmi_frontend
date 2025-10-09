@@ -7,7 +7,7 @@ class ApiService {
   // Configuración de URLs
   static const String baseUrl = 'http://10.0.2.2:3000'; // Para emulador Android
   // static const String baseUrl = 'http://localhost:3000'; // Para web y iOS
-  // static const String baseUrl = 'https://16ac2fa9a758.ngrok-free.app'; // Para ngrok
+  // static const String baseUrl = 'https://783df38e9ffd.ngrok-free.app'; // Para ngrok - Backend con imágenes
   static const String apiVersion = '/api';
   
   static String get fullUrl => '$baseUrl$apiVersion';
@@ -16,6 +16,7 @@ class ApiService {
   static Map<String, String> get defaultHeaders => {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    // 'ngrok-skip-browser-warning': 'true', // Para evitar warnings de ngrok
   };
   
   // Headers con autenticación
@@ -25,12 +26,12 @@ class ApiService {
     'Authorization': 'Bearer $token',
   };
   
-  // Headers para ngrok (evita warning)
-  static Map<String, String> get ngrokHeaders => {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    'ngrok-skip-browser-warning': 'true',
-  };
+  // Headers para ngrok (evita warning) - NO USAR con localhost
+  // static Map<String, String> get ngrokHeaders => {
+  //   'Content-Type': 'application/json',
+  //   'Accept': 'application/json',
+  //   'ngrok-skip-browser-warning': 'true',
+  // };
 
   /// Maneja errores de red y conexión
   static ApiResponse<T> _handleNetworkError<T>() {
@@ -206,15 +207,27 @@ class ApiService {
           throw Exception('Método HTTP no soportado: $method');
       }
 
-      final responseData = jsonDecode(response.body);
-
       // Debug: Imprimir respuesta del servidor (solo en desarrollo)
       print('=== RESPUESTA DEL SERVIDOR ===');
       print('URL: $url');
       print('Method: $method');
       print('Status Code: ${response.statusCode}');
-      print('Response Body: $responseData');
+      print('Response Headers: ${response.headers}');
+      print('Response Body Raw: ${response.body}');
       print('==============================');
+
+      Map<String, dynamic> responseData;
+      try {
+        responseData = jsonDecode(response.body);
+        print('Response Body Parsed: $responseData');
+      } catch (e) {
+        print('❌ Error parsing JSON: $e');
+        print('❌ Raw response body: ${response.body}');
+        return ApiResponse<T>(
+          status: 'error',
+          message: 'Error en el formato de respuesta del servidor: ${e.toString()}',
+        );
+      }
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return ApiResponse.fromJson(responseData, fromJson);

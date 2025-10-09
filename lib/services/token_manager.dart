@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class TokenManager {
@@ -45,9 +46,13 @@ class TokenManager {
   /// Guarda los datos del usuario de forma segura
   static Future<void> saveUserData(Map<String, dynamic> userData) async {
     try {
-      final userJson = Uri(queryParameters: userData.map((key, value) => MapEntry(key, value.toString()))).query;
+      print('🔍 TokenManager.saveUserData: Guardando datos: $userData');
+      final userJson = jsonEncode(userData);
+      print('🔍 TokenManager.saveUserData: JSON generado: $userJson');
       await _storage.write(key: _userKey, value: userJson);
+      print('✅ TokenManager.saveUserData: Datos guardados exitosamente');
     } catch (e) {
+      print('❌ TokenManager.saveUserData: Error: $e');
       throw Exception('Error al guardar los datos del usuario: ${e.toString()}');
     }
   }
@@ -55,8 +60,11 @@ class TokenManager {
   /// Obtiene los datos del usuario guardados
   static Future<String?> getUserData() async {
     try {
-      return await _storage.read(key: _userKey);
+      final data = await _storage.read(key: _userKey);
+      print('🔍 TokenManager.getUserData: Datos recuperados: $data');
+      return data;
     } catch (e) {
+      print('❌ TokenManager.getUserData: Error: $e');
       return null;
     }
   }

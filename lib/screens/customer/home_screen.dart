@@ -7,7 +7,6 @@ import '../../models/restaurant.dart';
 import '../../models/category.dart';
 import '../../widgets/customer/restaurant_card.dart';
 import '../../widgets/shared/loading_widget.dart';
-import '../../widgets/shared/cart_badge.dart';
 import '../../providers/address_provider.dart';
 import '../../providers/restaurant_cart_provider.dart';
 
@@ -205,18 +204,36 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onSearchChanged(String query) {
+    // Capitalizar la primera letra para mejorar la compatibilidad con el backend
+    final formattedQuery = _formatSearchQuery(query);
+    
+    // Actualizar el controlador con el texto formateado si es diferente
+    if (formattedQuery != query) {
+      _searchController.value = TextEditingValue(
+        text: formattedQuery,
+        selection: TextSelection.collapsed(offset: formattedQuery.length),
+      );
+    }
+    
     setState(() {
-      _searchQuery = query;
+      _searchQuery = formattedQuery;
       _currentPage = 1;
       _hasMoreRestaurants = true;
     });
     
     // Debounce search
     Future.delayed(const Duration(milliseconds: 500), () {
-      if (_searchQuery == query && mounted) {
+      if (_searchQuery == formattedQuery && mounted) {
         _loadRestaurants();
       }
     });
+  }
+
+  String _formatSearchQuery(String query) {
+    if (query.isEmpty) return query;
+    
+    // Capitalizar la primera letra y el resto en minúsculas
+    return query[0].toUpperCase() + query.substring(1).toLowerCase();
   }
 
 
@@ -229,6 +246,37 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _navigateToAddresses() {
     Navigator.of(context).pushNamed('/addresses');
+  }
+
+  Widget _buildSimpleNotificationIcon(BuildContext context) {
+    return Stack(
+      children: [
+        IconButton(
+          icon: Icon(
+            Icons.notifications_outlined,
+            color: Colors.grey[600],
+            size: 20,
+          ),
+          onPressed: () {
+            // TODO: Implementar notificaciones
+          },
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+        Positioned(
+          right: 6,
+          top: 6,
+          child: Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -263,15 +311,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Dirección y notificaciones
+                          // Dirección y notificaciones (diseño limpio)
                           Row(
                             children: [
-                              Icon(
-                                Icons.location_on,
-                                color: Theme.of(context).colorScheme.primary,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
+                              // Sección de dirección simplificada
                               Expanded(
                                 child: Consumer<AddressProvider>(
                                   builder: (context, addressProvider, child) {
@@ -279,6 +322,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                       onTap: () => _navigateToAddresses(),
                                       child: Row(
                                         children: [
+                                          Icon(
+                                            Icons.location_on,
+                                            color: Theme.of(context).colorScheme.primary,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
                                           Expanded(
                                             child: Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -314,34 +363,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   },
                                 ),
                               ),
-                              Stack(
-                                children: [
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.notifications_outlined,
-                                      color: Colors.grey[600],
-                                      size: 20,
-                                    ),
-                                    onPressed: () {
-                                      // TODO: Implementar notificaciones
-                                    },
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                  ),
-                                  Positioned(
-                                    right: 6,
-                                    top: 6,
-                                    child: Container(
-                                      width: 6,
-                                      height: 6,
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context).colorScheme.primary,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              // Ícono de notificaciones simple
+                              _buildSimpleNotificationIcon(context),
                             ],
                           ),
                           const SizedBox(height: 8),
@@ -546,40 +569,26 @@ class _HomeScreenState extends State<HomeScreen> {
         color: Colors.white,
         border: Border(
           top: BorderSide(
-            color: Colors.grey[200]!,
+            color: Colors.grey[300]!,
             width: 0.5,
           ),
         ),
       ),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Container(
+          height: 60,
+          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildNavItem(
-                icon: Icons.home,
+              _buildSimpleNavItem(
+                icon: Icons.home_rounded,
                 label: 'Inicio',
                 isSelected: true,
                 onTap: () {},
               ),
-              _buildNavItem(
-                icon: Icons.favorite_border,
-                label: 'Favoritos',
-                isSelected: false,
-                onTap: () {
-                  // TODO: Implementar favoritos
-                },
-              ),
-              NavigationCartBadge(
-                icon: Icons.shopping_cart_outlined,
-                label: 'Carrito',
-                isSelected: false,
-                onTap: () {
-                  Navigator.of(context).pushNamed('/cart');
-                },
-              ),
-              _buildNavItem(
+              _buildSimpleCartItem(),
+              _buildSimpleNavItem(
                 icon: Icons.receipt_long_outlined,
                 label: 'Pedidos',
                 isSelected: false,
@@ -587,8 +596,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   Navigator.of(context).pushNamed('/orders');
                 },
               ),
-              _buildNavItem(
-                icon: Icons.person_outline,
+              _buildSimpleNavItem(
+                icon: Icons.person_outline_rounded,
                 label: 'Perfil',
                 isSelected: false,
                 onTap: () {
@@ -602,7 +611,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildNavItem({
+  Widget _buildSimpleNavItem({
     required IconData icon,
     required String label,
     required bool isSelected,
@@ -616,24 +625,92 @@ class _HomeScreenState extends State<HomeScreen> {
           Icon(
             icon,
             color: isSelected 
-                ? Theme.of(context).colorScheme.primary 
-                : Colors.grey[500],
-            size: 24,
+                ? Theme.of(context).colorScheme.primary
+                : Colors.grey[600],
+            size: 22,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              fontSize: 10,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               color: isSelected 
-                  ? Theme.of(context).colorScheme.primary 
-                  : Colors.grey[500],
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.grey[600],
             ),
           ),
         ],
       ),
     );
   }
+
+  Widget _buildSimpleCartItem() {
+    return Consumer<RestaurantCartProvider>(
+      builder: (context, cartProvider, child) {
+        final cartItemCount = cartProvider.totalItems;
+        final hasItems = cartItemCount > 0;
+        
+        return GestureDetector(
+          onTap: () {
+            Navigator.of(context).pushNamed('/cart');
+          },
+          child: Stack(
+            children: [
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.shopping_cart_outlined,
+                    color: hasItems 
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.grey[600],
+                    size: 22,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Carrito',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: hasItems ? FontWeight.w600 : FontWeight.w500,
+                      color: hasItems 
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+              if (hasItems)
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      cartItemCount > 99 ? '99+' : cartItemCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
 
 }

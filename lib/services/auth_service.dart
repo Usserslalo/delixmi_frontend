@@ -1,3 +1,4 @@
+import 'dart:convert';
 import '../models/api_response.dart';
 import '../models/user.dart';
 import 'api_service.dart';
@@ -79,13 +80,20 @@ class AuthService {
 
     if (response.isSuccess && response.data != null) {
       final data = response.data!;
+      print('🔍 AuthService.login: Data recibida: $data');
+      print('🔍 AuthService.login: User data: ${data['user']}');
+      
       final user = User.fromJson(data['user']);
+      print('🔍 AuthService.login: Usuario parseado - Phone: "${user.phone}"');
+      
       final token = data['token'];
       final expiresIn = data['expiresIn'];
 
       // Guardar token y datos del usuario
       await TokenManager.saveToken(token);
+      print('🔍 AuthService.login: Guardando datos del usuario...');
       await TokenManager.saveUserData(user.toJson());
+      print('🔍 AuthService.login: Datos del usuario guardados exitosamente');
 
       return ApiResponse<Map<String, dynamic>>(
         status: 'success',
@@ -143,6 +151,98 @@ class AuthService {
       return ApiResponse<User>(
         status: 'error',
         message: 'Error al obtener el perfil: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Actualiza el perfil del usuario autenticado
+  static Future<ApiResponse<User>> updateProfile({
+    String? name,
+    String? lastname,
+    String? phone,
+  }) async {
+    try {
+      final headers = await TokenManager.getAuthHeaders();
+      
+      // Construir body solo con campos no nulos
+      final body = <String, dynamic>{};
+      if (name != null) body['name'] = name;
+      if (lastname != null) body['lastname'] = lastname;
+      if (phone != null) body['phone'] = phone;
+      
+      final response = await ApiService.makeRequest<Map<String, dynamic>>(
+        'PUT',
+        '/auth/profile',
+        headers,
+        body,
+        null,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final userData = response.data!['user'];
+        final user = User.fromJson(userData);
+        
+        // Actualizar datos del usuario guardados
+        await TokenManager.saveUserData(user.toJson());
+        
+        return ApiResponse<User>(
+          status: 'success',
+          message: response.message,
+          data: user,
+        );
+      }
+
+      return ApiResponse<User>(
+        status: response.status,
+        message: response.message,
+        code: response.code,
+        errors: response.errors,
+      );
+    } catch (e) {
+      return ApiResponse<User>(
+        status: 'error',
+        message: 'Error al actualizar el perfil: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Cambia la contraseña del usuario autenticado
+  static Future<ApiResponse<Map<String, dynamic>>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final headers = await TokenManager.getAuthHeaders();
+      
+      final response = await ApiService.makeRequest<Map<String, dynamic>>(
+        'PUT',
+        '/auth/change-password',
+        headers,
+        {
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        },
+        null,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        return ApiResponse<Map<String, dynamic>>(
+          status: 'success',
+          message: response.message,
+          data: response.data!,
+        );
+      }
+
+      return ApiResponse<Map<String, dynamic>>(
+        status: response.status,
+        message: response.message,
+        code: response.code,
+        errors: response.errors,
+      );
+    } catch (e) {
+      return ApiResponse<Map<String, dynamic>>(
+        status: 'error',
+        message: 'Error al cambiar la contraseña: ${e.toString()}',
       );
     }
   }
@@ -244,14 +344,12 @@ class AuthService {
     try {
       final userData = await TokenManager.getUserData();
       if (userData != null) {
-        // Parsear el JSON string guardado correctamente
-        final userJson = Map<String, dynamic>.from(
-          Uri.splitQueryString(userData)
-        );
+        final userJson = jsonDecode(userData);
         return User.fromJson(userJson);
       }
       return null;
     } catch (e) {
+      print('Error al obtener datos del usuario: $e');
       return null;
     }
   }

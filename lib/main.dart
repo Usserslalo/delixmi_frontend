@@ -18,11 +18,16 @@ import 'screens/customer/checkout_screen.dart';
 import 'screens/customer/payment_screen.dart';
 import 'screens/customer/orders_screen.dart';
 import 'screens/customer/order_details_screen.dart';
+import 'screens/customer/order_history_screen.dart';
+import 'screens/customer/edit_profile_screen.dart';
+import 'screens/customer/change_password_screen.dart';
+import 'screens/customer/help_support_screen.dart';
 import 'screens/customer/profile_screen.dart';
 import 'screens/test/cart_badge_test_screen.dart';
 import 'screens/shared/splash_screen.dart';
 import 'models/address.dart';
 import 'models/product.dart';
+import 'models/user.dart';
 import 'models/restaurant_cart.dart';
 import 'providers/cart_provider.dart';
 import 'providers/restaurant_cart_provider.dart';
@@ -239,6 +244,13 @@ class _DelixmiAppState extends State<DelixmiApp> {
           final orderId = ModalRoute.of(context)?.settings.arguments as String;
           return OrderDetailsScreen(orderId: orderId);
         },
+        '/order-history': (context) => const OrderHistoryScreen(),
+        '/edit-profile': (context) {
+          final user = ModalRoute.of(context)?.settings.arguments as User?;
+          return EditProfileScreen(user: user!);
+        },
+        '/change-password': (context) => const ChangePasswordScreen(),
+        '/help-support': (context) => const HelpSupportScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/test-cart-badge': (context) => const CartBadgeTestScreen(),
         '/location-picker': (context) {
@@ -264,5 +276,3 @@ class _DelixmiAppState extends State<DelixmiApp> {
     );
   }
 }
-
-

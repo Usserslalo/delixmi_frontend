@@ -20,6 +20,7 @@ class CartProvider extends ChangeNotifier {
   int get totalItems => _totalItems;
   bool get isEmpty => _carts.isEmpty;
   bool get isNotEmpty => _carts.isNotEmpty;
+  bool get isModifiersRequiredError => _errorMessage == 'MODIFIERS_REQUIRED';
 
   /// Obtener carrito completo
   Future<void> loadCart() async {
@@ -88,8 +89,14 @@ class CartProvider extends ChangeNotifier {
         print('✅ CartProvider: Producto agregado exitosamente');
         return true;
       } else {
-        _setError(response.message);
-        print('❌ CartProvider: Error al agregar producto: ${response.message}');
+        // Manejar error específico de modificadores requeridos
+        if (response.code == 'MODIFIERS_REQUIRED') {
+          _setError('MODIFIERS_REQUIRED');
+          print('⚠️ CartProvider: Modificadores requeridos para el producto');
+        } else {
+          _setError(response.message);
+          print('❌ CartProvider: Error al agregar producto: ${response.message}');
+        }
         return false;
       }
     } catch (e) {

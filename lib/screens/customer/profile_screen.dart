@@ -21,19 +21,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadUserData() async {
     try {
+      print('🔍 ProfileScreen: Cargando datos del usuario...');
       final user = await AuthService.getCurrentUser();
+      print('🔍 ProfileScreen: Usuario obtenido: ${user?.fullName ?? "null"}');
+      print('🔍 ProfileScreen: Usuario phone: "${user?.phone ?? "null"}"');
+      
       if (mounted) {
         setState(() {
           _currentUser = user;
           _isLoading = false;
         });
       }
+      
+      // Si no hay usuario O si el teléfono está vacío, obtener desde backend
+      if (user == null || (user.phone.isEmpty)) {
+        print('🔍 ProfileScreen: Usuario sin datos completos, obteniendo desde backend...');
+        await _loadProfileFromBackend();
+      }
     } catch (e) {
+      print('❌ ProfileScreen: Error al cargar usuario: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _loadProfileFromBackend() async {
+    try {
+      print('🔍 ProfileScreen: Obteniendo perfil desde backend...');
+      final response = await AuthService.getProfile();
+      if (response.isSuccess && response.data != null) {
+        print('✅ ProfileScreen: Perfil obtenido desde backend: ${response.data!.fullName}');
+        print('✅ ProfileScreen: Phone desde backend: "${response.data!.phone}"');
+        if (mounted) {
+          setState(() {
+            _currentUser = response.data;
+          });
+        }
+      } else {
+        print('❌ ProfileScreen: Error al obtener perfil del backend: ${response.message}');
+      }
+    } catch (e) {
+      print('❌ ProfileScreen: Error al obtener perfil del backend: $e');
     }
   }
 
@@ -155,16 +186,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar
+          // Avatar y información principal
           Row(
             children: [
               CircleAvatar(
                 radius: 30,
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 child: Text(
-                  _currentUser?.name != null && _currentUser!.name.isNotEmpty
-                      ? _currentUser!.name.substring(0, 1).toUpperCase()
-                      : 'U',
+                  _currentUser?.initials ?? 'U',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 24,
@@ -178,31 +207,135 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${_currentUser?.name ?? ''} ${_currentUser?.lastname ?? ''}',
+                      _currentUser?.fullName ?? 'Usuario',
                       style: Theme.of(context).textTheme.titleLarge!.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      _currentUser?.email ?? 'Sin email',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    if (_currentUser?.phone != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        _currentUser!.phone,
-                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.email_outlined,
+                          size: 16,
                           color: Colors.grey[600],
                         ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            _currentUser?.email ?? 'Sin email',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                        // Indicador de verificación de email
+                        if (_currentUser?.isEmailVerified == true)
+                          Container(
+                            margin: const EdgeInsets.only(left: 8),
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.green,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              size: 12,
+                              color: Colors.white,
+                            ),
+                          ),
+                      ],
+                    ),
+                    // Teléfono (siempre mostrar, pero indicar si está vacío)
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.phone_outlined,
+                          size: 16,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            _currentUser?.phone?.isNotEmpty == true 
+                                ? _currentUser!.phone
+                                : 'No registrado',
+                            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              color: _currentUser?.phone?.isNotEmpty == true 
+                                  ? Colors.grey[600] 
+                                  : Colors.grey[400],
+                              fontStyle: _currentUser?.phone?.isNotEmpty == true 
+                                  ? FontStyle.normal 
+                                  : FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                        // Indicador de verificación de teléfono (solo si hay teléfono)
+                        if (_currentUser?.phone?.isNotEmpty == true && _currentUser?.isPhoneVerified == true)
+                          Container(
+                            margin: const EdgeInsets.only(left: 8),
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.green,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              size: 12,
+                              color: Colors.white,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Antigüedad del cliente
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                    ],
+                      child: Text(
+                        _currentUser?.memberSince ?? 'Cliente',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
             ],
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Botón de editar perfil
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _navigateToEditProfile(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              icon: const Icon(Icons.edit_outlined, size: 20),
+              label: const Text(
+                'Editar Perfil',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -237,6 +370,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
           title: 'Historial de Pedidos',
           subtitle: 'Ve tus pedidos anteriores',
           onTap: () => _navigateToOrderHistory(),
+        ),
+        
+        const SizedBox(height: 12),
+        
+        // Cambiar Contraseña
+        _buildOptionTile(
+          icon: Icons.lock_outline,
+          title: 'Cambiar Contraseña',
+          subtitle: 'Actualiza tu contraseña de seguridad',
+          onTap: () => _navigateToChangePassword(),
+        ),
+        
+        const SizedBox(height: 12),
+        
+        // Ayuda y Soporte
+        _buildOptionTile(
+          icon: Icons.help_outline,
+          title: 'Ayuda y Soporte',
+          subtitle: 'Centro de ayuda y contacto',
+          onTap: () => _navigateToHelpSupport(),
         ),
       ],
     );
@@ -327,12 +480,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _navigateToOrderHistory() {
-    // TODO: Implementar pantalla de historial de pedidos
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Historial de pedidos próximamente'),
-        backgroundColor: Colors.orange,
-      ),
-    );
+    Navigator.of(context).pushNamed('/order-history');
+  }
+
+  Future<void> _navigateToEditProfile() async {
+    print('🔍 ProfileScreen: Intentando navegar a editar perfil...');
+    print('🔍 ProfileScreen: Usuario actual: ${_currentUser?.fullName ?? "null"}');
+    
+    if (_currentUser == null) {
+      print('❌ ProfileScreen: No hay usuario, no se puede editar perfil');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: No se pudo cargar la información del usuario'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    
+    try {
+      print('🔍 ProfileScreen: Navegando a /edit-profile...');
+      final updatedUser = await Navigator.of(context).pushNamed(
+        '/edit-profile',
+        arguments: _currentUser,
+      ) as User?;
+      
+      if (updatedUser != null) {
+        print('✅ ProfileScreen: Usuario actualizado: ${updatedUser.fullName}');
+        setState(() {
+          _currentUser = updatedUser;
+        });
+      } else {
+        print('🔍 ProfileScreen: No se actualizó el usuario');
+      }
+    } catch (e) {
+      print('❌ ProfileScreen: Error al navegar a editar perfil: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al abrir la pantalla de edición: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  void _navigateToChangePassword() {
+    Navigator.of(context).pushNamed('/change-password');
+  }
+
+  void _navigateToHelpSupport() {
+    Navigator.of(context).pushNamed('/help-support');
   }
 }

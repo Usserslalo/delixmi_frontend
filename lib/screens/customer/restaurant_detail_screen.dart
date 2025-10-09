@@ -378,6 +378,180 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     );
   }
 
+  /// Construye el botón + para agregar al carrito
+  Widget _buildAddToCartButton(Product product) {
+    return Consumer<CartProvider>(
+      builder: (context, cartProvider, child) {
+        final isInCart = cartProvider.isProductInCart(product.id, widget.restaurantId);
+        final quantity = cartProvider.getProductQuantity(product.id, widget.restaurantId);
+        
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: isInCart 
+                ? Colors.green[600] 
+                : Theme.of(context).colorScheme.primary,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: (isInCart 
+                    ? Colors.green[600]! 
+                    : Theme.of(context).colorScheme.primary).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => _handleAddToCart(product),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(
+                        isInCart ? Icons.check : Icons.add,
+                        key: ValueKey(isInCart),
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                    if (isInCart) ...[
+                      const SizedBox(width: 4),
+                      AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 200),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        child: Text('$quantity'),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Maneja la lógica de agregar al carrito
+  Future<void> _handleAddToCart(Product product) async {
+    try {
+      print('🛒 RestaurantDetailScreen: Intentando agregar ${product.name} al carrito');
+      
+      // Verificar si el producto tiene modificadores requeridos
+      final hasRequiredModifiers = product.modifierGroups.any((group) => group.minSelection > 0);
+      
+      if (hasRequiredModifiers) {
+        print('🛒 RestaurantDetailScreen: Producto tiene modificadores requeridos, navegando a detalles');
+        // Si tiene modificadores requeridos, navegar a la pantalla de detalles
+        _navigateToProductDetail(product);
+        return;
+      }
+      
+      // Si no tiene modificadores requeridos, agregar directamente al carrito
+      print('🛒 RestaurantDetailScreen: Producto sin modificadores requeridos, agregando directamente');
+      final cartProvider = context.read<CartProvider>();
+      
+      final success = await cartProvider.addToCart(
+        productId: product.id,
+        quantity: 1,
+        modifierOptionIds: null,
+      );
+      
+      if (mounted) {
+        if (success) {
+          // Mostrar feedback visual de éxito con animación
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  TweenAnimationBuilder<double>(
+                    duration: const Duration(milliseconds: 600),
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    builder: (context, value, child) {
+                      return Transform.scale(
+                        scale: value,
+                        child: Icon(
+                          Icons.check_circle,
+                          color: Colors.white,
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text('${product.name} agregado al carrito'),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green[600],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        } else {
+          // Verificar si es error de modificadores requeridos
+          if (cartProvider.isModifiersRequiredError) {
+            // Navegar a detalles del producto para seleccionar modificadores
+            print('🛒 RestaurantDetailScreen: Modificadores requeridos, navegando a detalles');
+            _navigateToProductDetail(product);
+          } else {
+            // Mostrar error genérico
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.error, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text('Error al agregar ${product.name} al carrito'),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.red[600],
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      print('❌ RestaurantDetailScreen: Error al agregar al carrito: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Error inesperado: ${e.toString()}'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
   // Método mantenido para uso futuro si se necesita agregar directamente al carrito
   // void _addToCart(Product product) {
   //   // Si el producto tiene modificadores, mostrar el modal de selección
@@ -568,6 +742,9 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                   // Información adicional
                   Row(
                     children: [
+                      // Estado del restaurante
+                      _buildStatusChip(context),
+                      const SizedBox(width: 8),
                       _buildInfoChip(
                         icon: Icons.delivery_dining,
                         label: '25-30 min',
@@ -734,6 +911,41 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     );
   }
 
+  Widget _buildStatusChip(BuildContext context) {
+    final isOpen = _restaurant?.status == 'active';
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: isOpen ? Colors.green[50] : Colors.orange[50],
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isOpen ? Colors.green[200]! : Colors.orange[200]!,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isOpen ? Icons.check_circle : Icons.schedule,
+            size: 16,
+            color: isOpen ? Colors.green[700] : Colors.orange[700],
+          ),
+          const SizedBox(width: 4),
+          Text(
+            isOpen ? 'Abierto' : 'Cerrado',
+            style: TextStyle(
+              fontSize: 12,
+              color: isOpen ? Colors.green[700] : Colors.orange[700],
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildInfoChip({
     required IconData icon,
     required String label,
@@ -840,20 +1052,29 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                           color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
-                      ElevatedButton(
-                        onPressed: () => _navigateToProductDetail(product),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(80, 32),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Botón + directo para agregar al carrito
+                          _buildAddToCartButton(product),
+                          const SizedBox(width: 8),
+                          // Botón Ver para ir a detalles
+                          ElevatedButton(
+                            onPressed: () => _navigateToProductDetail(product),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey[600],
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(60, 32),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Text(
+                              'Ver',
+                              style: TextStyle(fontSize: 12),
+                            ),
                           ),
-                        ),
-                        child: const Text(
-                          'Ver',
-                          style: TextStyle(fontSize: 12),
-                        ),
+                        ],
                       ),
                     ],
                   ),

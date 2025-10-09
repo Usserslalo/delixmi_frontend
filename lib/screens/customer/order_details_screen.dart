@@ -96,17 +96,18 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           },
         ),
         actions: [
-          if (_order?.canBeCancelled == true)
-            TextButton(
-              onPressed: _showCancelDialog,
-              child: Text(
-                'Cancelar',
-                style: TextStyle(
-                  color: Colors.red[600],
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+          // ❌ REMOVIDO: Los usuarios no pueden cancelar pedidos
+          // if (_order?.canBeCancelled == true)
+          //   TextButton(
+          //     onPressed: _showCancelDialog,
+          //     child: Text(
+          //       'Cancelar',
+          //       style: TextStyle(
+          //         color: Colors.red[600],
+          //         fontWeight: FontWeight.w600,
+          //       ),
+          //     ),
+          //   ),
         ],
       ),
       body: _buildBody(),
@@ -300,40 +301,85 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   Widget _buildSimpleTimeline() {
+    // Definir los pasos del pedido en orden
+    final orderSteps = [
+      {
+        'status': 'pending',
+        'title': 'Pedido Realizado',
+        'description': 'Tu pedido ha sido recibido',
+        'icon': Icons.schedule,
+      },
+      {
+        'status': 'confirmed',
+        'title': 'Pedido Confirmado',
+        'description': 'El restaurante ha confirmado tu pedido',
+        'icon': Icons.check_circle,
+      },
+      {
+        'status': 'preparing',
+        'title': 'En Preparación',
+        'description': 'Tu pedido está siendo preparado',
+        'icon': Icons.restaurant,
+      },
+      {
+        'status': 'out_for_delivery',
+        'title': 'En Camino',
+        'description': 'Tu pedido está en camino',
+        'icon': Icons.delivery_dining,
+      },
+      {
+        'status': 'delivered',
+        'title': 'Entregado',
+        'description': 'Tu pedido ha sido entregado',
+        'icon': Icons.check_circle_outline,
+      },
+    ];
+
     return Column(
-      children: [
-        _buildTimelineItem(
-          'Pedido Realizado',
-          'Tu pedido ha sido recibido',
-          true,
-          Icons.schedule,
-        ),
-        _buildTimelineItem(
-          'Pedido Confirmado',
-          'El restaurante ha confirmado tu pedido',
-          false,
-          Icons.check_circle,
-        ),
-        _buildTimelineItem(
-          'En Preparación',
-          'Tu pedido está siendo preparado',
-          false,
-          Icons.restaurant,
-        ),
-        _buildTimelineItem(
-          'En Camino',
-          'Tu pedido está en camino',
-          false,
-          Icons.delivery_dining,
-        ),
-        _buildTimelineItem(
-          'Entregado',
-          'Tu pedido ha sido entregado',
-          false,
-          Icons.check_circle_outline,
-        ),
-      ],
+      children: orderSteps.map((step) {
+        // Determinar si este paso está activo basado en el estado del pedido
+        final isActive = _isStepActive(step['status'] as String);
+        
+        return _buildTimelineItem(
+          step['title'] as String,
+          step['description'] as String,
+          isActive,
+          step['icon'] as IconData,
+        );
+      }).toList(),
     );
+  }
+
+  /// Determina si un paso específico está activo basado en el estado del pedido
+  bool _isStepActive(String stepStatus) {
+    if (_order == null) return false;
+    
+    final currentStatus = _order!.status;
+    
+    // Debug: Imprimir el estado actual del pedido
+    print('🔍 OrderDetailsScreen: Estado actual del pedido: $currentStatus');
+    print('🔍 OrderDetailsScreen: Verificando paso: $stepStatus');
+    
+    // Mapeo de estados para determinar qué paso está activo
+    switch (currentStatus) {
+      case 'pending':
+        return stepStatus == 'pending';
+      case 'confirmed':
+        return stepStatus == 'confirmed';
+      case 'preparing':
+        return stepStatus == 'preparing';
+      case 'ready_for_pickup':
+        return stepStatus == 'preparing'; // Listo para recoger sigue siendo "En preparación"
+      case 'out_for_delivery':
+        return stepStatus == 'out_for_delivery';
+      case 'delivered':
+        return stepStatus == 'delivered';
+      case 'cancelled':
+      case 'refunded':
+        return stepStatus == 'pending'; // Pedidos cancelados vuelven al primer paso
+      default:
+        return stepStatus == 'pending';
+    }
   }
 
   Widget _buildTimelineItem(String title, String description, bool isActive, IconData icon) {
@@ -807,68 +853,69 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     }
   }
 
-  void _showCancelDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cancelar Pedido'),
-        content: const Text('¿Estás seguro de que quieres cancelar este pedido?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('No'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _cancelOrder();
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('Sí, cancelar'),
-          ),
-        ],
-      ),
-    );
-  }
+  // ❌ REMOVIDO: Funcionalidad de cancelación no disponible para usuarios
+  // void _showCancelDialog() {
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) => AlertDialog(
+  //       title: const Text('Cancelar Pedido'),
+  //       content: const Text('¿Estás seguro de que quieres cancelar este pedido?'),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.of(context).pop(),
+  //           child: const Text('No'),
+  //         ),
+  //         TextButton(
+  //           onPressed: () {
+  //             Navigator.of(context).pop();
+  //             _cancelOrder();
+  //           },
+  //           style: TextButton.styleFrom(
+  //             foregroundColor: Colors.red,
+  //           ),
+  //           child: const Text('Sí, cancelar'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
-  Future<void> _cancelOrder() async {
-    try {
-      final response = await OrderService.cancelOrder(
-        orderId: widget.orderId,
-        reason: 'Cancelado por el usuario',
-      );
+  // Future<void> _cancelOrder() async {
+  //   try {
+  //     final response = await OrderService.cancelOrder(
+  //       orderId: widget.orderId,
+  //       reason: 'Cancelado por el usuario',
+  //     );
 
-      if (response.isSuccess) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Pedido cancelado exitosamente'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          _loadOrderDetails(); // Recargar detalles
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error al cancelar pedido: ${response.message}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al cancelar pedido: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
+  //     if (response.isSuccess) {
+  //       if (mounted) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           const SnackBar(
+  //             content: Text('Pedido cancelado exitosamente'),
+  //             backgroundColor: Colors.green,
+  //           ),
+  //         );
+  //         _loadOrderDetails(); // Recargar detalles
+  //       }
+  //     } else {
+  //       if (mounted) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(
+  //             content: Text('Error al cancelar pedido: ${response.message}'),
+  //             backgroundColor: Colors.red,
+  //           ),
+  //         );
+  //       }
+  //     }
+  //   } catch (e) {
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('Error al cancelar pedido: $e'),
+  //           backgroundColor: Colors.red,
+  //         ),
+  //       );
+  //     }
+  //   }
+  // }
 }

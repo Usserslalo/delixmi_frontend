@@ -4,21 +4,20 @@ import '../../services/order_service.dart';
 import '../../widgets/customer/order_card.dart';
 import 'order_details_screen.dart';
 
-class OrdersScreen extends StatefulWidget {
-  const OrdersScreen({super.key});
+class OrderHistoryScreen extends StatefulWidget {
+  const OrderHistoryScreen({super.key});
 
   @override
-  State<OrdersScreen> createState() => _OrdersScreenState();
+  State<OrderHistoryScreen> createState() => _OrderHistoryScreenState();
 }
 
-class _OrdersScreenState extends State<OrdersScreen> {
+class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   List<Order> _orders = [];
-  List<Order> _activeOrders = []; // Solo pedidos activos
+  List<Order> _deliveredOrders = []; // Solo pedidos entregados
   bool _isLoading = false;
   String? _errorMessage;
   int _currentPage = 1;
   bool _hasMore = true;
-  String? _selectedStatus;
 
   @override
   void initState() {
@@ -35,15 +34,17 @@ class _OrdersScreenState extends State<OrdersScreen> {
       if (refresh) {
         _currentPage = 1;
         _orders.clear();
+        _deliveredOrders.clear();
         _hasMore = true;
       }
     });
 
     try {
+      // Obtener solo pedidos entregados usando el filtro del backend
       final response = await OrderService.getOrdersHistory(
         page: _currentPage,
         pageSize: 20,
-        status: _selectedStatus,
+        status: 'delivered', // Filtrar solo pedidos entregados
       );
 
       if (response.isSuccess && response.data != null) {
@@ -52,18 +53,16 @@ class _OrdersScreenState extends State<OrdersScreen> {
         
         final newOrders = ordersData.map((orderJson) => Order.fromJson(orderJson)).toList();
         
-        // Filtrar solo pedidos activos (no entregados)
-        final activeOrders = newOrders.where((order) => 
-          ['pending', 'confirmed', 'preparing', 'ready_for_pickup', 'out_for_delivery', 'cancelled', 'refunded'].contains(order.status)
-        ).toList();
+        // Asegurarnos de que solo tengamos pedidos entregados
+        final deliveredOrders = newOrders.where((order) => order.status == 'delivered').toList();
         
         setState(() {
           if (refresh) {
             _orders = newOrders;
-            _activeOrders = activeOrders;
+            _deliveredOrders = deliveredOrders;
           } else {
             _orders.addAll(newOrders);
-            _activeOrders.addAll(activeOrders);
+            _deliveredOrders.addAll(deliveredOrders);
           }
           _hasMore = pagination['hasNextPage'] == true;
           _currentPage++;
@@ -75,7 +74,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error al cargar pedidos: $e';
+        _errorMessage = 'Error al cargar historial de pedidos: $e';
       });
     } finally {
       setState(() {
@@ -88,64 +87,27 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mis Pedidos'),
+        title: const Text('Historial de Pedidos'),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black,
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.filter_list),
-            onSelected: (status) {
-              setState(() {
-                _selectedStatus = status == 'all' ? null : status;
-              });
-              _loadOrders(refresh: true);
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'all',
-                child: Text('Todos'),
-              ),
-              const PopupMenuItem(
-                value: 'pending',
-                child: Text('Pendientes'),
-              ),
-              const PopupMenuItem(
-                value: 'confirmed',
-                child: Text('Confirmados'),
-              ),
-              const PopupMenuItem(
-                value: 'preparing',
-                child: Text('En preparación'),
-              ),
-              const PopupMenuItem(
-                value: 'out_for_delivery',
-                child: Text('En camino'),
-              ),
-              const PopupMenuItem(
-                value: 'delivered',
-                child: Text('Entregados'),
-              ),
-            ],
-          ),
-        ],
       ),
       body: _buildBody(),
     );
   }
 
   Widget _buildBody() {
-    if (_isLoading && _activeOrders.isEmpty) {
+    if (_isLoading && _deliveredOrders.isEmpty) {
       return const Center(
         child: CircularProgressIndicator(),
       );
     }
 
-    if (_errorMessage != null && _activeOrders.isEmpty) {
+    if (_errorMessage != null && _deliveredOrders.isEmpty) {
       return _buildErrorView();
     }
 
-    if (_activeOrders.isEmpty) {
+    if (_deliveredOrders.isEmpty) {
       return _buildEmptyView();
     }
 
@@ -162,12 +124,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
         },
         child: ListView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: _activeOrders.length + (_hasMore ? 1 : 0),
+          itemCount: _deliveredOrders.length + (_hasMore ? 1 : 0),
           itemBuilder: (context, index) {
-            if (index < _activeOrders.length) {
+            if (index < _deliveredOrders.length) {
               return OrderCard(
-                order: _activeOrders[index],
-                onTap: () => _navigateToOrderDetails(_activeOrders[index]),
+                order: _deliveredOrders[index],
+                onTap: () => _navigateToOrderDetails(_deliveredOrders[index]),
+                isHistory: true, // Indicar que es del historial
               );
             } else {
               return const Padding(
@@ -195,7 +158,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Error al cargar pedidos',
+            'Error al cargar historial',
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 8),
@@ -222,18 +185,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.receipt_long_outlined,
+            Icons.history,
             size: 64,
             color: Colors.grey[400],
           ),
           const SizedBox(height: 16),
           Text(
-            'No tienes pedidos activos',
+            'No hay pedidos completados',
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 8),
           Text(
-            'Cuando hagas un pedido, aparecerá aquí hasta que sea entregado',
+            'Tus pedidos entregados aparecerán aquí',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Colors.grey[600],
             ),
@@ -259,3 +222,4 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 }
+

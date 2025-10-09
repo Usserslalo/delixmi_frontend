@@ -12,13 +12,16 @@ class Order {
   final double total;
   final String? specialInstructions;
   final DateTime orderPlacedAt;
+  final DateTime? orderDeliveredAt;
   final DateTime? estimatedDeliveryAt;
   final String? estimatedDeliveryTime;
   final OrderRestaurant restaurant;
   final OrderAddress deliveryAddress;
+  final OrderDriver? deliveryDriver;
   final List<OrderItem> items;
   final String? customerName;
   final DateTime createdAt;
+  final DateTime? updatedAt;
 
   Order({
     required this.id,
@@ -32,13 +35,16 @@ class Order {
     required this.total,
     this.specialInstructions,
     required this.orderPlacedAt,
+    this.orderDeliveredAt,
     this.estimatedDeliveryAt,
     this.estimatedDeliveryTime,
     required this.restaurant,
     required this.deliveryAddress,
+    this.deliveryDriver,
     required this.items,
     this.customerName,
     required this.createdAt,
+    this.updatedAt,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -62,6 +68,9 @@ class Order {
       final itemsData = orderData['items'] as List<dynamic>? ?? [];
       debugPrint('🔍 Order.fromJson: Items data: $itemsData');
       
+      // Parsear deliveryDriver si existe
+      final driverData = orderData['deliveryDriver'] as Map<String, dynamic>?;
+      
       final order = Order(
         id: orderData['id']?.toString() ?? '',
         orderNumber: orderData['orderNumber'] ?? '',
@@ -76,6 +85,9 @@ class Order {
         orderPlacedAt: orderData['orderPlacedAt'] != null 
             ? DateTime.parse(orderData['orderPlacedAt']) 
             : DateTime.now(),
+        orderDeliveredAt: orderData['orderDeliveredAt'] != null
+            ? DateTime.parse(orderData['orderDeliveredAt'])
+            : null,
         estimatedDeliveryAt: orderData['estimatedDeliveryTime'] != null && orderData['estimatedDeliveryTime']['estimatedDeliveryAt'] != null
             ? DateTime.parse(orderData['estimatedDeliveryTime']['estimatedDeliveryAt'])
             : null,
@@ -86,11 +98,15 @@ class Order {
             : null,
         restaurant: OrderRestaurant.fromJson(restaurantData),
         deliveryAddress: OrderAddress.fromJson(addressData),
+        deliveryDriver: driverData != null ? OrderDriver.fromJson(driverData) : null,
         items: itemsData.map((item) => OrderItem.fromJson(item)).toList(),
         customerName: orderData['customerName'],
         createdAt: orderData['createdAt'] != null 
             ? DateTime.parse(orderData['createdAt']) 
             : DateTime.now(),
+        updatedAt: orderData['updatedAt'] != null
+            ? DateTime.parse(orderData['updatedAt'])
+            : null,
       );
       
       debugPrint('✅ Order.fromJson: Order creado exitosamente - ID: ${order.id}');
@@ -115,11 +131,15 @@ class Order {
       'total': total,
       'specialInstructions': specialInstructions,
       'orderPlacedAt': orderPlacedAt.toIso8601String(),
+      'orderDeliveredAt': orderDeliveredAt?.toIso8601String(),
       'estimatedDeliveryAt': estimatedDeliveryAt?.toIso8601String(),
       'estimatedDeliveryTime': estimatedDeliveryTime,
       'restaurant': restaurant.toJson(),
       'deliveryAddress': deliveryAddress.toJson(),
+      'deliveryDriver': deliveryDriver?.toJson(),
       'items': items.map((item) => item.toJson()).toList(),
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
     };
   }
 
@@ -423,6 +443,40 @@ class OrderProduct {
       'imageUrl': imageUrl,
     };
   }
+}
+
+class OrderDriver {
+  final int id;
+  final String name;
+  final String lastname;
+  final String phone;
+
+  OrderDriver({
+    required this.id,
+    required this.name,
+    required this.lastname,
+    required this.phone,
+  });
+
+  factory OrderDriver.fromJson(Map<String, dynamic> json) {
+    return OrderDriver(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      lastname: json['lastname'] ?? '',
+      phone: json['phone'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'lastname': lastname,
+      'phone': phone,
+    };
+  }
+
+  String get fullName => '$name $lastname';
 }
 
 /// Estados de pedidos disponibles
