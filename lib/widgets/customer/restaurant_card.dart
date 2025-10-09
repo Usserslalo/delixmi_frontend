@@ -282,6 +282,17 @@ class RestaurantCard extends StatelessWidget {
   Widget _buildKeyInfo(BuildContext context) {
     return Row(
       children: [
+        // Distancia (si está disponible)
+        if (restaurant.minDistance != null) ...[
+          _buildInfoChip(
+            icon: Icons.location_on_rounded,
+            text: '${restaurant.minDistance!.toStringAsFixed(1)} km',
+            color: Colors.purple,
+            context: context,
+          ),
+          const SizedBox(width: 8),
+        ],
+        
         // Rating
         if (restaurant.rating != null && restaurant.rating! > 0) ...[
           _buildInfoChip(

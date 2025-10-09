@@ -12,6 +12,7 @@ class Branch {
   final String status;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final double? distance; // Distancia en km desde la ubicación del usuario
 
   Branch({
     required this.id,
@@ -27,6 +28,7 @@ class Branch {
     required this.status,
     required this.createdAt,
     required this.updatedAt,
+    this.distance,
   });
 
   factory Branch.fromJson(Map<String, dynamic> json) {
@@ -44,6 +46,7 @@ class Branch {
       status: json['status'] ?? 'active',
       createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
       updatedAt: DateTime.parse(json['updated_at'] ?? DateTime.now().toIso8601String()),
+      distance: json['distance'] != null ? (json['distance'] as num).toDouble() : null,
     );
   }
 
@@ -62,6 +65,7 @@ class Branch {
       'status': status,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      'distance': distance,
     };
   }
 
@@ -79,6 +83,7 @@ class Branch {
     String? status,
     DateTime? createdAt,
     DateTime? updatedAt,
+    double? distance,
   }) {
     return Branch(
       id: id ?? this.id,
@@ -94,6 +99,7 @@ class Branch {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      distance: distance ?? this.distance,
     );
   }
 

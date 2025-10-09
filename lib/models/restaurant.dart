@@ -14,6 +14,7 @@ class Restaurant {
   final double? deliveryFee;
   final bool? isOpen; // Indica si el restaurante está abierto según horarios
   final String? category; // Categoría del restaurante (Pizzas, Sushi, Tacos, etc.)
+  final double? minDistance; // Distancia mínima a la sucursal más cercana (solo con coordenadas)
 
   Restaurant({
     required this.id,
@@ -31,6 +32,7 @@ class Restaurant {
     this.deliveryFee,
     this.isOpen,
     this.category,
+    this.minDistance,
   });
 
   factory Restaurant.fromJson(Map<String, dynamic> json) {
@@ -61,6 +63,7 @@ class Restaurant {
       // Usar el campo isOpen real del backend
       isOpen: isOpenValue,
       category: json['category'],
+      minDistance: json['minDistance'] != null ? (json['minDistance'] as num).toDouble() : null,
     );
   }
 

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/api_service.dart';
 import '../../services/error_handler.dart';
+import '../../services/coverage_service.dart';
 import '../../models/restaurant.dart';
 import '../../models/category.dart';
 import '../../widgets/customer/restaurant_card.dart';
@@ -29,6 +30,14 @@ class _HomeScreenState extends State<HomeScreen> {
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  
+  // Variables de cobertura
+  bool _hasCoverage = true;
+  bool _checkingCoverage = false;
+  String? _coverageErrorMessage;
+  
+  // Referencia al provider para evitar acceso al context en dispose
+  AddressProvider? _addressProvider;
 
   @override
   void initState() {
@@ -39,7 +48,41 @@ class _HomeScreenState extends State<HomeScreen> {
     // Cargar datos después de que el widget esté completamente construido
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialData();
+      _setupAddressListener();
     });
+  }
+
+  void _setupAddressListener() {
+    // Escuchar cambios en la dirección seleccionada
+    _addressProvider = context.read<AddressProvider>();
+    _addressProvider!.addListener(_onAddressChanged);
+  }
+
+  void _onAddressChanged() {
+    // Re-verificar cobertura cuando cambia la dirección
+    debugPrint('📍 Dirección cambió, re-verificando cobertura...');
+    
+    // Resetear estado de cobertura para forzar nueva verificación
+    setState(() {
+      _hasCoverage = true; // Resetear para que se ejecute la verificación
+      _coverageErrorMessage = null;
+      _restaurants = []; // Limpiar lista actual
+      _currentPage = 1;
+      _hasMoreRestaurants = true;
+    });
+    
+    // Ejecutar verificación completa de cobertura y carga de restaurantes
+    _loadRestaurants();
+  }
+
+  @override
+  void dispose() {
+    // Remover listener usando la referencia guardada
+    _addressProvider?.removeListener(_onAddressChanged);
+    
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -51,13 +94,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _loadCartSummary();
       }
     });
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _scrollController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadUserToken() async {
@@ -131,17 +167,92 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadRestaurants({bool loadMore = false}) async {
     if (_loadingRestaurants || (!loadMore && !_hasMoreRestaurants)) return;
 
+    // Obtener la dirección actual del usuario
+    final addressProvider = context.read<AddressProvider>();
+    final currentAddress = addressProvider.currentDeliveryAddress;
+
+    // Si no hay dirección seleccionada, no cargar restaurantes
+    if (currentAddress == null) {
+      setState(() {
+        _hasCoverage = false;
+        _coverageErrorMessage = 'Selecciona una dirección de entrega';
+        _loadingRestaurants = false;
+      });
+      return;
+    }
+
+    // PASO 1: Verificar cobertura ANTES de cargar restaurantes (solo en carga inicial)
+    if (!loadMore) {
+      setState(() {
+        _checkingCoverage = true;
+        _coverageErrorMessage = null;
+      });
+
+      try {
+        debugPrint('🔍 Verificando cobertura para dirección: ${currentAddress.id}');
+        final coverageResponse = await CoverageService.checkCoverageForAddress(currentAddress.id);
+        
+        if (mounted) {
+          if (coverageResponse.isSuccess && coverageResponse.data.hasCoverage) {
+            // ✅ HAY COBERTURA: Proceder a cargar restaurantes
+            debugPrint('✅ Cobertura confirmada: ${coverageResponse.data.coveredBranches} sucursales disponibles');
+            setState(() {
+              _hasCoverage = true;
+              _checkingCoverage = false;
+              _coverageErrorMessage = null;
+            });
+          } else {
+            // ❌ NO HAY COBERTURA: No cargar restaurantes
+            debugPrint('❌ Sin cobertura en esta dirección');
+            setState(() {
+              _hasCoverage = false;
+              _checkingCoverage = false;
+              _coverageErrorMessage = null;
+              _loadingRestaurants = false;
+            });
+            return; // Salir sin cargar restaurantes
+          }
+        }
+      } catch (e) {
+        // Error al verificar cobertura
+        ErrorHandler.logError('HomeScreen._checkCoverage', e);
+        debugPrint('⚠️ Error al verificar cobertura: $e');
+        
+        if (mounted) {
+          setState(() {
+            _hasCoverage = false;
+            _checkingCoverage = false;
+            _coverageErrorMessage = e.toString().replaceAll('Exception: ', '');
+            _loadingRestaurants = false;
+          });
+        }
+        return; // Salir sin cargar restaurantes
+      }
+    }
+
+    // PASO 2: Cargar restaurantes (solo si hay cobertura)
+    if (!_hasCoverage) return;
+
     setState(() {
       _loadingRestaurants = true;
       _errorMessage = null;
     });
 
     try {
+      // Obtener coordenadas de la dirección actual del usuario
+      final currentAddress = addressProvider.currentDeliveryAddress;
+      double? latitude = currentAddress?.latitude;
+      double? longitude = currentAddress?.longitude;
+      
+      debugPrint('📍 Enviando coordenadas para ordenamiento por proximidad: lat=$latitude, lng=$longitude');
+      
       final response = await ApiService.getRestaurants(
         page: loadMore ? _currentPage + 1 : 1,
         pageSize: 10,
         category: _selectedCategory?.name,
         search: _searchQuery.isNotEmpty ? _searchQuery : null,
+        latitude: latitude,
+        longitude: longitude,
       );
 
       if (mounted) {
@@ -463,6 +574,70 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRestaurantsList() {
+    // Mostrar loading mientras verifica cobertura
+    if (_checkingCoverage) {
+      return const SliverFillRemaining(
+        child: LoadingWidget(
+          message: 'Verificando cobertura...',
+        ),
+      );
+    }
+
+    // Mostrar mensaje si NO hay cobertura
+    if (!_hasCoverage) {
+      return SliverFillRemaining(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.location_off,
+                  size: 80,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Sin cobertura en tu zona',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _coverageErrorMessage ?? 'Lo sentimos, parece que aún no tenemos cobertura en tu dirección.',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => _navigateToAddresses(),
+                  icon: const Icon(Icons.add_location_alt),
+                  label: const Text('Cambiar Dirección'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () => _loadRestaurants(),
+                  child: const Text('Verificar nuevamente'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Mostrar loading mientras carga restaurantes
     if (_loadingRestaurants && _restaurants.isEmpty) {
       return const SliverFillRemaining(
         child: LoadingWidget(
@@ -471,6 +646,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
+    // Mostrar error si hay alguno
     if (_errorMessage != null && _restaurants.isEmpty) {
       return SliverFillRemaining(
         child: Center(
@@ -499,6 +675,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
+    // Mostrar mensaje si no hay restaurantes pero HAY cobertura
     if (_restaurants.isEmpty) {
       return const SliverFillRemaining(
         child: Center(

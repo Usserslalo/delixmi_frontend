@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/api_response.dart';
 
@@ -94,11 +95,19 @@ class ApiService {
     int pageSize = 10,
     String? category,
     String? search,
+    double? latitude,
+    double? longitude,
   }) async {
     try {
       String endpoint = '/restaurants?page=$page&pageSize=$pageSize';
       if (category != null) endpoint += '&category=$category';
       if (search != null && search.isNotEmpty) endpoint += '&search=$search';
+      
+      // Agregar coordenadas si están disponibles (para ordenamiento por proximidad)
+      if (latitude != null && longitude != null) {
+        endpoint += '&lat=$latitude&lng=$longitude';
+        debugPrint('🗺️ Enviando coordenadas para ordenamiento por proximidad: lat=$latitude, lng=$longitude');
+      }
       
       final response = await makeRequest<Map<String, dynamic>>(
         'GET',
