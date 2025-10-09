@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
-import '../../models/user.dart';
+import '../../models/auth/user.dart' as AuthUser;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,92 +24,135 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  /// Maneja la lógica de login y redirección
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-
-    setState(() {
-      _isLoading = true;
-    });
-
+    
+    setState(() => _isLoading = true);
+    
     try {
-      print('🔐 Intentando login con email: ${_emailController.text.trim()}');
-      
-      final response = await AuthService.login(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
+      // Realizar login
+      final loginResponse = await AuthService.login(
+        _emailController.text.trim(),
+        _passwordController.text,
       );
-
-      print('📡 Respuesta del login: ${response.status}');
-      print('📡 Mensaje: ${response.message}');
-      print('📡 Código: ${response.code}');
-      print('📡 Datos: ${response.data}');
-
-      if (mounted) {
-        if (response.isSuccess && response.data != null) {
-          print('✅ Login exitoso, parseando usuario...');
-          final userData = response.data!['user'];
-          print('👤 Datos del usuario: $userData');
-          final user = User.fromJson(userData);
-          print('👤 Usuario parseado: ${user.fullName}');
-          print('👤 Roles: ${user.roles.map((r) => r.roleName).toList()}');
-          print('👤 isRestaurantOwner: ${user.isRestaurantOwner}');
-          print('👤 isCustomer: ${user.isCustomer}');
-          
-          // Navegar al home del cliente
-          Navigator.pushReplacementNamed(context, '/home');
-        } else {
-          print('❌ Login fallido: ${response.message}');
-          // Manejar errores específicos
-          _handleLoginError(response);
-        }
-      }
-    } catch (e) {
-      if (mounted) {
+      
+      // Obtener el rol principal del usuario
+      final user = loginResponse.data.user;
+      
+      if (user.roles.isEmpty) {
+        // Caso raro: usuario sin roles
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error inesperado: ${e.toString()}'),
+          const SnackBar(
+            content: Text('Error: Usuario sin roles asignados'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
           ),
         );
+        return;
       }
+      
+      final primaryRole = user.roles.first.roleName;
+      
+      // Redirigir según el rol
+      _redirectByRole(primaryRole, user);
+      
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
+    }
+  }
+  
+  /// Redirige al usuario a la pantalla correcta según su rol
+  void _redirectByRole(String roleName, AuthUser.User user) {
+    // Logging para debugging
+    print('🔑 Redirigiendo usuario con rol: $roleName');
+    
+    switch (roleName) {
+      // ===== ROLES DE PLATAFORMA =====
+      case 'super_admin':
+        Navigator.pushReplacementNamed(context, '/admin_dashboard');
+        break;
+        
+      case 'platform_manager':
+        Navigator.pushReplacementNamed(context, '/platform_dashboard');
+        break;
+        
+      case 'support_agent':
+        Navigator.pushReplacementNamed(context, '/support_dashboard');
+        break;
+      
+      // ===== ROLES DE RESTAURANTE =====
+      case 'owner':
+        Navigator.pushReplacementNamed(
+          context,
+          '/owner_dashboard',
+          arguments: {
+            'restaurantId': user.roles.first.restaurantId,
+          },
+        );
+        break;
+        
+      case 'branch_manager':
+        Navigator.pushReplacementNamed(
+          context,
+          '/branch_dashboard',
+          arguments: {
+            'restaurantId': user.roles.first.restaurantId,
+            'branchId': user.roles.first.branchId,
+          },
+        );
+        break;
+        
+      case 'order_manager':
+        Navigator.pushReplacementNamed(
+          context,
+          '/orders_dashboard',
+          arguments: {
+            'restaurantId': user.roles.first.restaurantId,
+            'branchId': user.roles.first.branchId,
+          },
+        );
+        break;
+        
+      case 'kitchen_staff':
+        Navigator.pushReplacementNamed(
+          context,
+          '/kitchen_dashboard',
+          arguments: {
+            'branchId': user.roles.first.branchId,
+          },
+        );
+        break;
+      
+      // ===== ROLES DE REPARTIDORES =====
+      case 'driver_platform':
+      case 'driver_restaurant':
+        Navigator.pushReplacementNamed(context, '/driver_dashboard');
+        break;
+      
+      // ===== ROL DE CLIENTE =====
+      case 'customer':
+        Navigator.pushReplacementNamed(context, '/customer_home');
+        break;
+      
+      // ===== ROL NO RECONOCIDO =====
+      default:
+        print('⚠️ Rol no reconocido: $roleName');
+        Navigator.pushReplacementNamed(context, '/unsupported_role');
+        break;
     }
   }
 
-  void _handleLoginError(dynamic response) {
-    String message = response.message;
-    
-    switch (response.code) {
-      case 'ACCOUNT_NOT_VERIFIED':
-        message = 'Tu cuenta no está verificada. Por favor, revisa tu email y activa tu cuenta.';
-        break;
-      case 'INVALID_CREDENTIALS':
-        message = 'Credenciales incorrectas. Verifica tu email y contraseña.';
-        break;
-      case 'USER_NOT_FOUND':
-        message = 'No existe una cuenta con este email.';
-        break;
-      case 'RATE_LIMIT_EXCEEDED':
-        message = 'Demasiados intentos fallidos. Intenta más tarde.';
-        break;
-    }
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 4),
-      ),
-    );
-  }
 
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) {

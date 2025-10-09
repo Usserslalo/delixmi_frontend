@@ -6,6 +6,10 @@ import 'screens/auth/register_screen.dart';
 import 'screens/auth/email_verification_screen.dart';
 import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
+import 'screens/auth/unsupported_role_screen.dart';
+import 'screens/owner/owner_dashboard_screen.dart';
+import 'screens/owner/edit_profile_screen.dart' as OwnerScreens;
+import 'screens/driver/driver_dashboard_screen.dart';
 import 'screens/customer/home_screen.dart';
 import 'screens/customer/restaurant_detail_screen.dart';
 import 'screens/customer/product_detail_screen.dart';
@@ -253,6 +257,41 @@ class _DelixmiAppState extends State<DelixmiApp> {
         '/help-support': (context) => const HelpSupportScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/test-cart-badge': (context) => const CartBadgeTestScreen(),
+        
+        // ===== RUTAS DE AUTENTICACIÓN =====
+        '/unsupported_role': (context) => const UnsupportedRoleScreen(),
+        
+        // ===== RUTAS DE CLIENTE =====
+        '/customer_home': (context) => const HomeScreen(),
+        
+        // ===== RUTAS DE OWNER =====
+        '/owner_dashboard': (context) => const OwnerDashboardScreen(),
+        '/owner_profile_edit': (context) => const OwnerScreens.EditProfileScreen(),
+        
+        // ===== RUTAS DE REPARTIDOR =====
+        '/driver_dashboard': (context) => const DriverDashboardScreen(),
+        
+        // ===== RUTAS DE ADMIN (Placeholder) =====
+        '/admin_dashboard': (context) => const Scaffold(
+          body: Center(child: Text('Admin Dashboard - Próximamente')),
+        ),
+        
+        // ===== OTROS ROLES (Placeholders) =====
+        '/platform_dashboard': (context) => const Scaffold(
+          body: Center(child: Text('Platform Manager - Próximamente')),
+        ),
+        '/support_dashboard': (context) => const Scaffold(
+          body: Center(child: Text('Support Agent - Próximamente')),
+        ),
+        '/branch_dashboard': (context) => const Scaffold(
+          body: Center(child: Text('Branch Manager - Próximamente')),
+        ),
+        '/orders_dashboard': (context) => const Scaffold(
+          body: Center(child: Text('Order Manager - Próximamente')),
+        ),
+        '/kitchen_dashboard': (context) => const Scaffold(
+          body: Center(child: Text('Kitchen Staff - Próximamente')),
+        ),
         '/location-picker': (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
           return LocationPickerScreen(

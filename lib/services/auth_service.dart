@@ -1,6 +1,7 @@
 import 'dart:convert';
 import '../models/api_response.dart';
 import '../models/user.dart';
+import '../models/auth/login_response.dart';
 import 'api_service.dart';
 import 'token_manager.dart';
 
@@ -55,63 +56,67 @@ class AuthService {
   }
 
   /// Realiza el login del usuario
-  static Future<ApiResponse<Map<String, dynamic>>> login({
-    required String email,
-    required String password,
-  }) async {
-    print('🔐 AuthService.login - Email: $email');
-    print('🔐 AuthService.login - Password: ${password.replaceAll(RegExp(r'.'), '*')}');
-    
-    final response = await ApiService.makeRequest<Map<String, dynamic>>(
-      'POST',
-      '/auth/login',
-      ApiService.defaultHeaders,
-      {
-        'email': email,
-        'password': password,
-      },
-      null,
-    );
-    
-    print('📡 AuthService.login - Status: ${response.status}');
-    print('📡 AuthService.login - Message: ${response.message}');
-    print('📡 AuthService.login - Code: ${response.code}');
-    print('📡 AuthService.login - Data: ${response.data}');
-
-    if (response.isSuccess && response.data != null) {
-      final data = response.data!;
-      print('🔍 AuthService.login: Data recibida: $data');
-      print('🔍 AuthService.login: User data: ${data['user']}');
-      
-      final user = User.fromJson(data['user']);
-      print('🔍 AuthService.login: Usuario parseado - Phone: "${user.phone}"');
-      
-      final token = data['token'];
-      final expiresIn = data['expiresIn'];
-
-      // Guardar token y datos del usuario
-      await TokenManager.saveToken(token);
-      print('🔍 AuthService.login: Guardando datos del usuario...');
-      await TokenManager.saveUserData(user.toJson());
-      print('🔍 AuthService.login: Datos del usuario guardados exitosamente');
-
-      return ApiResponse<Map<String, dynamic>>(
-        status: 'success',
-        message: response.message,
-        data: {
-          'token': token,
-          'user': data['user'], // Mantener los datos raw del JSON
-          'expiresIn': expiresIn,
+  /// Inicia sesión y devuelve la respuesta completa
+  static Future<LoginResponse> login(String email, String password) async {
+    try {
+      final response = await ApiService.makeRequest<Map<String, dynamic>>(
+        'POST',
+        '/auth/login',
+        ApiService.defaultHeaders,
+        {
+          'email': email,
+          'password': password,
         },
+        null,
       );
+      
+      if (response.isSuccess && response.data != null) {
+        final loginResponse = LoginResponse.fromJson({
+          'status': response.status,
+          'message': response.message,
+          'data': response.data!,
+        });
+        
+        // Guardar token en almacenamiento seguro
+        await TokenManager.saveToken(loginResponse.data.token);
+        
+        // Guardar información del usuario
+        await TokenManager.saveUserData(loginResponse.data.user.toJson());
+        
+        return loginResponse;
+      } else {
+        throw Exception(response.message);
+      }
+    } catch (e) {
+      if (e.toString().contains('404')) {
+        throw Exception('Usuario no encontrado');
+      } else if (e.toString().contains('401')) {
+        throw Exception('Credenciales inválidas');
+      } else if (e.toString().contains('403')) {
+        throw Exception('Cuenta no verificada. Por favor, verifica tu correo electrónico.');
+      }
+      rethrow;
     }
-
-    return ApiResponse<Map<String, dynamic>>(
-      status: response.status,
-      message: response.message,
-      code: response.code,
-      errors: response.errors,
-    );
+  }
+  
+  /// Cierra sesión
+  static Future<void> logout() async {
+    try {
+      // Llamar al endpoint de logout (opcional)
+      await ApiService.makeRequest<Map<String, dynamic>>(
+        'POST',
+        '/auth/logout',
+        ApiService.defaultHeaders,
+        null,
+        null,
+      );
+    } catch (e) {
+      print('Error en logout del servidor: $e');
+    } finally {
+      // Limpiar almacenamiento local
+      await TokenManager.clearToken();
+      await TokenManager.clearUserData();
+    }
   }
 
   /// Obtiene el perfil del usuario autenticado
@@ -355,9 +360,6 @@ class AuthService {
   }
 
   /// Cierra la sesión del usuario
-  static Future<void> logout() async {
-    await TokenManager.clearAll();
-  }
 
   /// Limpia todos los datos de autenticación
   static Future<void> clearAll() async {

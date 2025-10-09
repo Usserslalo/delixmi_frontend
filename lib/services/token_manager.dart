@@ -33,6 +33,11 @@ class TokenManager {
     }
   }
 
+  /// Alias para deleteToken (compatibilidad con AuthService)
+  static Future<void> clearToken() async {
+    await deleteToken();
+  }
+
   /// Verifica si hay un token válido guardado
   static Future<bool> hasValidToken() async {
     try {
@@ -76,6 +81,11 @@ class TokenManager {
     } catch (e) {
       // Ignorar errores al eliminar datos
     }
+  }
+
+  /// Alias para deleteUserData (compatibilidad con AuthService)
+  static Future<void> clearUserData() async {
+    await deleteUserData();
   }
 
   /// Limpia todos los datos de autenticación
