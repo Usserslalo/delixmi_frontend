@@ -1,8 +1,31 @@
 # 🍕 Owner Flow - Gestión Completa del Menú
 
-## 🎯 VEREDICTO DE VIABILIDAD: ✅ VIABLE
+## 🎯 VEREDICTO DE VIABILIDAD: ✅ VIABLE Y COMPLETO
 
-**Conclusión:** El backend de Delixmi **SÍ soporta completamente** el flujo de trabajo descrito para la Gestión de Menú del owner. Todos los endpoints necesarios están implementados y funcionan correctamente.
+**Conclusión:** El backend de Delixmi **SÍ soporta completamente** el flujo de trabajo descrito para la Gestión de Menú del owner. **Todos los 18 endpoints CRUD** necesarios están implementados y funcionan correctamente.
+
+---
+
+## ⚠️ ACTUALIZACIÓN IMPORTANTE
+
+**Fecha:** 9 de Enero, 2025
+
+Este documento ha sido **completamente auditado y actualizado** para incluir **TODOS los endpoints del sistema de gestión de menú**. Se agregaron **7 endpoints críticos** que faltaban en la versión anterior:
+
+**Endpoints Agregados:**
+- ✅ `PATCH /api/restaurant/subcategories/:id` (Actualizar subcategoría)
+- ✅ `DELETE /api/restaurant/subcategories/:id` (Eliminar subcategoría)
+- ✅ `PATCH /api/restaurant/modifier-groups/:id` (Actualizar grupo)
+- ✅ `DELETE /api/restaurant/modifier-groups/:id` (Eliminar grupo)
+- ✅ `PATCH /api/restaurant/modifier-options/:id` (Actualizar opción)
+- ✅ `DELETE /api/restaurant/modifier-options/:id` (Eliminar opción)
+- ✅ `DELETE /api/restaurant/products/:id` (Eliminar producto)
+
+**Incluye ahora:**
+- ✅ Reglas de eliminación con validaciones de integridad referencial
+- ✅ Documentación completa de errores 409 (Conflict)
+- ✅ Tabla de códigos de error expandida
+- ✅ Todas las validaciones de pertenencia al restaurante
 
 ---
 
@@ -10,11 +33,18 @@
 1. [Resumen de la Funcionalidad](#resumen-de-la-funcionalidad)
 2. [Arquitectura del Menú](#arquitectura-del-menú)
 3. [Flujo de Trabajo Completo](#flujo-de-trabajo-completo)
-4. [Endpoints Disponibles](#endpoints-disponibles)
+4. [Endpoints Disponibles (18 Total)](#endpoints-disponibles)
+   - 4.1. [Categorías Globales](#categorías-globales)
+   - 4.2. [Subcategorías (GET, POST, PATCH, DELETE)](#subcategorías)
+   - 4.3. [Grupos de Modificadores (GET, POST, PATCH, DELETE)](#grupos-de-modificadores)
+   - 4.4. [Opciones de Modificadores (POST, PATCH, DELETE)](#opciones-de-modificadores)
+   - 4.5. [Productos (GET, POST, PATCH, DELETE)](#productos)
 5. [Modelos de Datos](#modelos-de-datos)
 6. [Proceso de Construcción del Menú](#proceso-de-construcción-del-menú)
 7. [Códigos de Error](#códigos-de-error)
 8. [Casos de Uso Prácticos](#casos-de-uso-prácticos)
+9. [Resumen de Capacidades](#resumen-de-capacidades-del-backend)
+10. [Conclusión de Viabilidad](#conclusión-de-viabilidad)
 
 ---
 
@@ -31,21 +61,30 @@ Permitir a los usuarios con rol de **owner** construir un menú personalizable c
 ✅ Asociar grupos de modificadores a productos  
 ✅ Gestionar el menú de forma jerárquica
 
-### **Endpoints Involucrados (11 endpoints)**
+### **Endpoints Involucrados (18 endpoints completos)**
 
 | Método | Endpoint | Función |
 |--------|----------|---------|
 | `GET` | `/api/categories` | Obtener categorías globales |
+| **SUBCATEGORÍAS (4)** |||
 | `GET` | `/api/restaurant/subcategories` | Listar subcategorías del restaurante |
 | `POST` | `/api/restaurant/subcategories` | Crear subcategoría |
 | `PATCH` | `/api/restaurant/subcategories/:id` | Actualizar subcategoría |
 | `DELETE` | `/api/restaurant/subcategories/:id` | Eliminar subcategoría |
-| `POST` | `/api/restaurant/modifier-groups` | Crear grupo de modificadores |
+| **GRUPOS DE MODIFICADORES (4)** |||
 | `GET` | `/api/restaurant/modifier-groups` | Listar grupos de modificadores |
+| `POST` | `/api/restaurant/modifier-groups` | Crear grupo de modificadores |
+| `PATCH` | `/api/restaurant/modifier-groups/:id` | Actualizar grupo de modificadores |
+| `DELETE` | `/api/restaurant/modifier-groups/:id` | Eliminar grupo de modificadores |
+| **OPCIONES DE MODIFICADORES (3)** |||
 | `POST` | `/api/restaurant/modifier-groups/:groupId/options` | Añadir opción a grupo |
+| `PATCH` | `/api/restaurant/modifier-options/:id` | Actualizar opción de modificador |
+| `DELETE` | `/api/restaurant/modifier-options/:id` | Eliminar opción de modificador |
+| **PRODUCTOS (4)** |||
 | `GET` | `/api/restaurant/products` | Listar productos |
 | `POST` | `/api/restaurant/products` | Crear producto con modificadores |
 | `PATCH` | `/api/restaurant/products/:productId` | Actualizar producto y modificadores |
+| `DELETE` | `/api/restaurant/products/:productId` | Eliminar producto |
 
 ---
 
@@ -1048,6 +1087,617 @@ Cuando se envía este campo, el backend:
 
 ---
 
+#### **10. Actualizar Subcategoría**
+
+**Endpoint:** `PATCH /api/restaurant/subcategories/:subcategoryId`
+
+**Método:** `PATCH`
+
+**Autenticación:** Requerida (Token JWT)
+
+**Roles Permitidos:** `owner`, `branch_manager`
+
+**Descripción:** Actualiza una subcategoría existente del restaurante. Todos los campos son opcionales.
+
+**Headers:**
+```http
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**Path Parameters:**
+
+| Parámetro | Tipo | Requerido | Descripción |
+|-----------|------|-----------|-------------|
+| `subcategoryId` | Integer | Sí | ID de la subcategoría a actualizar |
+
+**Request Body:**
+```json
+{
+  "categoryId": 2,
+  "name": "Pizzas Gourmet Premium",
+  "displayOrder": 5
+}
+```
+
+**Campos:**
+
+| Campo | Tipo | Requerido | Validación | Descripción |
+|-------|------|-----------|------------|-------------|
+| `categoryId` | Integer | No | Min: 1 | Cambiar a otra categoría global |
+| `name` | String | No | 1-100 caracteres | Nuevo nombre |
+| `displayOrder` | Integer | No | Min: 0 | Nuevo orden de visualización |
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Subcategoría actualizada exitosamente",
+  "data": {
+    "subcategory": {
+      "id": 10,
+      "name": "Pizzas Gourmet Premium",
+      "displayOrder": 5,
+      "category": {
+        "id": 2,
+        "name": "Bebidas"
+      },
+      "restaurant": {
+        "id": 1,
+        "name": "Pizzería de Ana"
+      },
+      "createdAt": "2025-01-09T15:30:00.000Z",
+      "updatedAt": "2025-01-09T16:20:00.000Z"
+    },
+    "updatedFields": ["categoryId", "name", "displayOrder"]
+  }
+}
+```
+
+**Errores Posibles:**
+
+**400 Bad Request - Sin campos:**
+```json
+{
+  "status": "error",
+  "message": "No se proporcionaron campos para actualizar",
+  "code": "NO_FIELDS_TO_UPDATE"
+}
+```
+
+**403 Forbidden:**
+```json
+{
+  "status": "error",
+  "message": "No tienes permiso para editar esta subcategoría",
+  "code": "FORBIDDEN"
+}
+```
+
+**404 Not Found - Categoría no existe:**
+```json
+{
+  "status": "error",
+  "message": "Categoría no encontrada",
+  "code": "CATEGORY_NOT_FOUND"
+}
+```
+
+**404 Not Found - Subcategoría no existe:**
+```json
+{
+  "status": "error",
+  "message": "Subcategoría no encontrada",
+  "code": "SUBCATEGORY_NOT_FOUND"
+}
+```
+
+---
+
+#### **11. Eliminar Subcategoría**
+
+**Endpoint:** `DELETE /api/restaurant/subcategories/:subcategoryId`
+
+**Método:** `DELETE`
+
+**Autenticación:** Requerida (Token JWT)
+
+**Roles Permitidos:** `owner`, `branch_manager`
+
+**Descripción:** Elimina una subcategoría del restaurante. **Solo se puede eliminar si no tiene productos asociados.**
+
+**Headers:**
+```http
+Authorization: Bearer {token}
+```
+
+**Path Parameters:**
+
+| Parámetro | Tipo | Requerido | Descripción |
+|-----------|------|-----------|-------------|
+| `subcategoryId` | Integer | Sí | ID de la subcategoría a eliminar |
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Subcategoría eliminada exitosamente",
+  "data": {
+    "deletedSubcategory": {
+      "id": 10,
+      "name": "Pizzas Tradicionales",
+      "category": "Pizzas",
+      "deletedAt": "2025-01-09T16:30:00.000Z"
+    }
+  }
+}
+```
+
+**Errores Posibles:**
+
+**403 Forbidden:**
+```json
+{
+  "status": "error",
+  "message": "No tienes permiso para eliminar esta subcategoría",
+  "code": "FORBIDDEN"
+}
+```
+
+**404 Not Found:**
+```json
+{
+  "status": "error",
+  "message": "Subcategoría no encontrada",
+  "code": "SUBCATEGORY_NOT_FOUND"
+}
+```
+
+**409 Conflict - Tiene productos asociados:**
+```json
+{
+  "status": "error",
+  "message": "No se puede eliminar la subcategoría porque todavía contiene productos",
+  "code": "SUBCATEGORY_HAS_PRODUCTS",
+  "details": {
+    "productsCount": 5,
+    "subcategoryId": 10,
+    "subcategoryName": "Pizzas Tradicionales",
+    "suggestion": "Elimina primero todos los productos de esta subcategoría o muévelos a otra"
+  }
+}
+```
+
+---
+
+#### **12. Actualizar Grupo de Modificadores**
+
+**Endpoint:** `PATCH /api/restaurant/modifier-groups/:groupId`
+
+**Método:** `PATCH`
+
+**Autenticación:** Requerida (Token JWT)
+
+**Roles Permitidos:** `owner`, `branch_manager`
+
+**Descripción:** Actualiza un grupo de modificadores existente. Todos los campos son opcionales.
+
+**Headers:**
+```http
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**Path Parameters:**
+
+| Parámetro | Tipo | Requerido | Descripción |
+|-----------|------|-----------|-------------|
+| `groupId` | Integer | Sí | ID del grupo a actualizar |
+
+**Request Body:**
+```json
+{
+  "name": "Tamaño de Pizza",
+  "minSelection": 1,
+  "maxSelection": 1
+}
+```
+
+**Campos:**
+
+| Campo | Tipo | Requerido | Validación | Descripción |
+|-------|------|-----------|------------|-------------|
+| `name` | String | No | 1-100 caracteres | Nuevo nombre del grupo |
+| `minSelection` | Integer | No | 0-10 | Nueva selección mínima |
+| `maxSelection` | Integer | No | 1-10 | Nueva selección máxima |
+
+**⚠️ Validación Especial:** Si se actualizan ambos campos, se valida que `minSelection <= maxSelection`.
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Grupo de modificadores actualizado exitosamente",
+  "data": {
+    "modifierGroup": {
+      "id": 5,
+      "name": "Tamaño de Pizza",
+      "minSelection": 1,
+      "maxSelection": 1,
+      "restaurantId": 1,
+      "options": [
+        {
+          "id": 1,
+          "name": "Personal",
+          "price": 0.00,
+          "createdAt": "2025-01-09T15:45:00.000Z",
+          "updatedAt": "2025-01-09T15:45:00.000Z"
+        }
+      ],
+      "createdAt": "2025-01-09T15:45:00.000Z",
+      "updatedAt": "2025-01-09T16:40:00.000Z"
+    },
+    "updatedFields": ["name"]
+  }
+}
+```
+
+**Errores Posibles:**
+
+**400 Bad Request - Rango inválido:**
+```json
+{
+  "status": "error",
+  "message": "La selección mínima no puede ser mayor que la selección máxima",
+  "code": "INVALID_SELECTION_RANGE"
+}
+```
+
+**400 Bad Request - Sin campos:**
+```json
+{
+  "status": "error",
+  "message": "No se proporcionaron campos para actualizar",
+  "code": "NO_FIELDS_TO_UPDATE"
+}
+```
+
+**404 Not Found:**
+```json
+{
+  "status": "error",
+  "message": "Grupo de modificadores no encontrado",
+  "code": "MODIFIER_GROUP_NOT_FOUND"
+}
+```
+
+---
+
+#### **13. Eliminar Grupo de Modificadores**
+
+**Endpoint:** `DELETE /api/restaurant/modifier-groups/:groupId`
+
+**Método:** `DELETE`
+
+**Autenticación:** Requerida (Token JWT)
+
+**Roles Permitidos:** `owner`, `branch_manager`
+
+**Descripción:** Elimina un grupo de modificadores. **Solo se puede eliminar si no tiene opciones ni está asociado a productos.**
+
+**Headers:**
+```http
+Authorization: Bearer {token}
+```
+
+**Path Parameters:**
+
+| Parámetro | Tipo | Requerido | Descripción |
+|-----------|------|-----------|-------------|
+| `groupId` | Integer | Sí | ID del grupo a eliminar |
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Grupo de modificadores eliminado exitosamente",
+  "data": {
+    "deletedGroup": {
+      "id": 5,
+      "name": "Tamaño",
+      "deletedAt": "2025-01-09T16:50:00.000Z"
+    }
+  }
+}
+```
+
+**Errores Posibles:**
+
+**404 Not Found:**
+```json
+{
+  "status": "error",
+  "message": "Grupo de modificadores no encontrado",
+  "code": "MODIFIER_GROUP_NOT_FOUND"
+}
+```
+
+**409 Conflict - Tiene opciones:**
+```json
+{
+  "status": "error",
+  "message": "No se puede eliminar el grupo porque tiene opciones asociadas. Elimina primero las opciones.",
+  "code": "GROUP_HAS_OPTIONS",
+  "details": {
+    "optionsCount": 4,
+    "options": [
+      {
+        "id": 1,
+        "name": "Personal"
+      },
+      {
+        "id": 2,
+        "name": "Mediana"
+      }
+    ]
+  }
+}
+```
+
+**409 Conflict - Asociado a productos:**
+```json
+{
+  "status": "error",
+  "message": "No se puede eliminar el grupo porque está asociado a productos. Desasocia primero los productos.",
+  "code": "GROUP_ASSOCIATED_TO_PRODUCTS",
+  "details": {
+    "productsCount": 3,
+    "products": [
+      {
+        "id": 1,
+        "name": "Pizza Hawaiana"
+      },
+      {
+        "id": 2,
+        "name": "Pizza Pepperoni"
+      }
+    ]
+  }
+}
+```
+
+---
+
+#### **14. Actualizar Opción de Modificador**
+
+**Endpoint:** `PATCH /api/restaurant/modifier-options/:optionId`
+
+**Método:** `PATCH`
+
+**Autenticación:** Requerida (Token JWT)
+
+**Roles Permitidos:** `owner`, `branch_manager`
+
+**Descripción:** Actualiza una opción de modificador existente (nombre y/o precio).
+
+**Headers:**
+```http
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**Path Parameters:**
+
+| Parámetro | Tipo | Requerido | Descripción |
+|-----------|------|-----------|-------------|
+| `optionId` | Integer | Sí | ID de la opción a actualizar |
+
+**Request Body:**
+```json
+{
+  "name": "Grande (14 pulgadas)",
+  "price": 50.00
+}
+```
+
+**Campos:**
+
+| Campo | Tipo | Requerido | Validación | Descripción |
+|-------|------|-----------|------------|-------------|
+| `name` | String | No | 1-100 caracteres | Nuevo nombre de la opción |
+| `price` | Float | No | Min: 0 | Nuevo precio |
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Opción de modificador actualizada exitosamente",
+  "data": {
+    "modifierOption": {
+      "id": 3,
+      "name": "Grande (14 pulgadas)",
+      "price": 50.00,
+      "modifierGroupId": 5,
+      "modifierGroup": {
+        "id": 5,
+        "name": "Tamaño",
+        "restaurantId": 1
+      },
+      "createdAt": "2025-01-09T15:50:00.000Z",
+      "updatedAt": "2025-01-09T17:00:00.000Z"
+    },
+    "updatedFields": ["name", "price"]
+  }
+}
+```
+
+**Errores Posibles:**
+
+**400 Bad Request - Sin campos:**
+```json
+{
+  "status": "error",
+  "message": "No se proporcionaron campos para actualizar",
+  "code": "NO_FIELDS_TO_UPDATE"
+}
+```
+
+**404 Not Found:**
+```json
+{
+  "status": "error",
+  "message": "Opción de modificador no encontrada",
+  "code": "MODIFIER_OPTION_NOT_FOUND"
+}
+```
+
+---
+
+#### **15. Eliminar Opción de Modificador**
+
+**Endpoint:** `DELETE /api/restaurant/modifier-options/:optionId`
+
+**Método:** `DELETE`
+
+**Autenticación:** Requerida (Token JWT)
+
+**Roles Permitidos:** `owner`, `branch_manager`
+
+**Descripción:** Elimina una opción de modificador. Puede eliminarse libremente, incluso si el grupo está asociado a productos.
+
+**Headers:**
+```http
+Authorization: Bearer {token}
+```
+
+**Path Parameters:**
+
+| Parámetro | Tipo | Requerido | Descripción |
+|-----------|------|-----------|-------------|
+| `optionId` | Integer | Sí | ID de la opción a eliminar |
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Opción de modificador eliminada exitosamente",
+  "data": {
+    "deletedOption": {
+      "id": 3,
+      "name": "Grande (12 pulgadas)",
+      "price": 45.00,
+      "modifierGroupId": 5,
+      "deletedAt": "2025-01-09T17:10:00.000Z"
+    }
+  }
+}
+```
+
+**Errores Posibles:**
+
+**404 Not Found:**
+```json
+{
+  "status": "error",
+  "message": "Opción de modificador no encontrada",
+  "code": "MODIFIER_OPTION_NOT_FOUND"
+}
+```
+
+---
+
+#### **16. Eliminar Producto**
+
+**Endpoint:** `DELETE /api/restaurant/products/:productId`
+
+**Método:** `DELETE`
+
+**Autenticación:** Requerida (Token JWT)
+
+**Roles Permitidos:** `owner`, `branch_manager`
+
+**Descripción:** Elimina un producto del menú del restaurante. **IMPORTANTE:** Las asociaciones con grupos de modificadores se eliminan automáticamente, pero **no se puede eliminar si el producto tiene pedidos asociados**.
+
+**Headers:**
+```http
+Authorization: Bearer {token}
+```
+
+**Path Parameters:**
+
+| Parámetro | Tipo | Requerido | Descripción |
+|-----------|------|-----------|-------------|
+| `productId` | Integer | Sí | ID del producto a eliminar |
+
+**⚠️ REGLA CRÍTICA DE NEGOCIO:**
+
+El producto **NO se puede eliminar** si:
+- ✅ Tiene pedidos (`OrderItem`) asociados
+
+El producto **SÍ se puede eliminar** si:
+- ✅ NO tiene pedidos
+- ✅ Las asociaciones con modificadores (`ProductModifier`) se eliminan automáticamente
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Producto eliminado exitosamente",
+  "data": {
+    "deletedProduct": {
+      "id": 11,
+      "name": "Pizza Hawaiana",
+      "restaurantId": 1,
+      "restaurantName": "Pizzería de Ana",
+      "subcategoryName": "Pizzas Tradicionales",
+      "deletedAt": "2025-01-09T17:20:00.000Z"
+    }
+  }
+}
+```
+
+**Errores Posibles:**
+
+**403 Forbidden:**
+```json
+{
+  "status": "error",
+  "message": "No tienes permiso para eliminar este producto",
+  "code": "FORBIDDEN",
+  "details": {
+    "productId": 11,
+    "restaurantId": 2,
+    "restaurantName": "Sushi Master Kenji"
+  }
+}
+```
+
+**404 Not Found:**
+```json
+{
+  "status": "error",
+  "message": "Producto no encontrado",
+  "code": "PRODUCT_NOT_FOUND"
+}
+```
+
+**409 Conflict - Producto en uso:**
+```json
+{
+  "status": "error",
+  "message": "No se puede eliminar el producto porque está asociado a pedidos existentes",
+  "code": "PRODUCT_IN_USE",
+  "details": {
+    "ordersCount": 12,
+    "productId": 11,
+    "productName": "Pizza Hawaiana"
+  },
+  "suggestion": "Considera marcar el producto como no disponible en lugar de eliminarlo. Usa: PATCH /api/restaurant/products/11 con { \"isAvailable\": false }"
+}
+```
+
+---
+
 ## 📊 Modelos de Datos
 
 ### **Category (Categoría Global)**
@@ -1422,21 +2072,33 @@ POST /api/restaurant/products
 
 ## ⚠️ Códigos de Error
 
-### **Tabla Completa de Errores**
+### **Tabla Completa de Errores (Todos los Endpoints)**
 
 | Código | Code | Endpoint | Descripción |
 |--------|------|----------|-------------|
+| **VALIDACIÓN (400)** ||||
 | `400` | `VALIDATION_ERROR` | Todos | Datos de entrada inválidos |
 | `400` | `INVALID_MODIFIER_GROUPS` | POST/PATCH products | Grupos no pertenecen al restaurante |
-| `400` | `NO_FIELDS_TO_UPDATE` | PATCH products | Body vacío |
+| `400` | `NO_FIELDS_TO_UPDATE` | PATCH subcategories<br>PATCH products<br>PATCH modifier-groups<br>PATCH modifier-options | Body vacío (ningún campo para actualizar) |
+| `400` | `INVALID_SELECTION_RANGE` | POST/PATCH modifier-groups | minSelection > maxSelection |
+| **AUTENTICACIÓN/AUTORIZACIÓN (401/403)** ||||
 | `401` | `INVALID_TOKEN` | Todos (privados) | Token inválido o expirado |
 | `403` | `INSUFFICIENT_PERMISSIONS` | Todos (privados) | Usuario sin rol necesario |
-| `403` | `FORBIDDEN` | POST/PATCH products | Producto/subcategoría de otro restaurante |
-| `404` | `CATEGORY_NOT_FOUND` | POST subcategories | Categoría global no existe |
-| `404` | `SUBCATEGORY_NOT_FOUND` | POST products | Subcategoría no existe |
-| `404` | `PRODUCT_NOT_FOUND` | PATCH products | Producto no existe |
-| `404` | `MODIFIER_GROUP_NOT_FOUND` | POST options | Grupo no existe |
-| `409` | `SUBCATEGORY_EXISTS` | POST subcategories | Subcategoría duplicada |
+| `403` | `NO_RESTAURANT_ASSIGNED` | Todos (privados) | Owner sin restaurante asignado |
+| `403` | `FORBIDDEN` | POST/PATCH/DELETE<br>subcategories<br>products<br>modifier-groups<br>modifier-options | Recurso de otro restaurante |
+| **NO ENCONTRADO (404)** ||||
+| `404` | `CATEGORY_NOT_FOUND` | POST/PATCH subcategories | Categoría global no existe |
+| `404` | `SUBCATEGORY_NOT_FOUND` | PATCH/DELETE subcategories<br>POST products | Subcategoría no existe |
+| `404` | `PRODUCT_NOT_FOUND` | PATCH/DELETE products | Producto no existe |
+| `404` | `MODIFIER_GROUP_NOT_FOUND` | PATCH/DELETE modifier-groups<br>POST options | Grupo no existe |
+| `404` | `MODIFIER_OPTION_NOT_FOUND` | PATCH/DELETE modifier-options | Opción no existe |
+| **CONFLICTOS (409)** ||||
+| `409` | `SUBCATEGORY_EXISTS` | POST subcategories | Subcategoría duplicada en categoría |
+| `409` | `SUBCATEGORY_HAS_PRODUCTS` | DELETE subcategories | No se puede eliminar: tiene productos |
+| `409` | `GROUP_HAS_OPTIONS` | DELETE modifier-groups | No se puede eliminar: tiene opciones |
+| `409` | `GROUP_ASSOCIATED_TO_PRODUCTS` | DELETE modifier-groups | No se puede eliminar: asociado a productos |
+| `409` | `PRODUCT_IN_USE` | DELETE products | No se puede eliminar: tiene pedidos asociados |
+| **SERVIDOR (500)** ||||
 | `500` | `INTERNAL_ERROR` | Todos | Error del servidor |
 
 ---
@@ -1469,49 +2131,125 @@ const restaurantId = ownerAssignment.restaurantId;
 
 ### **Pantalla 1: Gestión de Subcategorías**
 
+**Listar (GET):**
 - [ ] Listar subcategorías existentes (GET /subcategories)
+- [ ] Mostrar agrupadas por categoría global
+- [ ] Mostrar badge con número de productos
+
+**Crear (POST):**
 - [ ] Botón "Crear Subcategoría"
-  - [ ] Dropdown para seleccionar categoría global
-  - [ ] Input para nombre de subcategoría
-  - [ ] Enviar POST /subcategories
-- [ ] Opción de editar subcategoría
-- [ ] Opción de eliminar subcategoría
+- [ ] Dropdown para seleccionar categoría global
+- [ ] Input para nombre de subcategoría
+- [ ] Input numérico para displayOrder
+- [ ] Enviar POST /subcategories
+
+**Editar (PATCH):**
+- [ ] Botón "Editar" en cada subcategoría
+- [ ] Modal/formulario precargado con datos actuales
+- [ ] Permitir cambiar nombre, categoría, displayOrder
+- [ ] Enviar PATCH /subcategories/:id
+
+**Eliminar (DELETE):**
+- [ ] Botón "Eliminar" en cada subcategoría
+- [ ] Confirmar acción con diálogo
+- [ ] Enviar DELETE /subcategories/:id
+- [ ] Manejar error 409 si tiene productos (mostrar mensaje claro)
 
 ---
 
 ### **Pantalla 2: Gestión de Grupos de Modificadores**
 
+**Listar (GET):**
 - [ ] Listar grupos existentes (GET /modifier-groups)
-- [ ] Botón "Crear Grupo"
-  - [ ] Input para nombre del grupo
-  - [ ] Slider para minSelection (0-10)
-  - [ ] Slider para maxSelection (1-10)
-  - [ ] Enviar POST /modifier-groups
+- [ ] Mostrar badge "Obligatorio" si minSelection > 0
+- [ ] Mostrar badge "Opcional" si minSelection = 0
 - [ ] Expandir grupo para ver opciones
+
+**Crear (POST):**
+- [ ] Botón "Crear Grupo"
+- [ ] Input para nombre del grupo
+- [ ] Slider para minSelection (0-10)
+- [ ] Slider para maxSelection (1-10)
+- [ ] Helper text explicando minSelection vs maxSelection
+- [ ] Validar que minSelection <= maxSelection
+- [ ] Enviar POST /modifier-groups
+
+**Editar (PATCH):**
+- [ ] Botón "Editar Grupo" en cada grupo
+- [ ] Modal/formulario precargado con datos actuales
+- [ ] Permitir cambiar nombre, minSelection, maxSelection
+- [ ] Validar que minSelection <= maxSelection
+- [ ] Enviar PATCH /modifier-groups/:id
+
+**Eliminar (DELETE):**
+- [ ] Botón "Eliminar Grupo"
+- [ ] Confirmar acción con diálogo
+- [ ] Enviar DELETE /modifier-groups/:id
+- [ ] Manejar error 409 si tiene opciones (mostrar lista de opciones)
+- [ ] Manejar error 409 si está asociado a productos (mostrar lista de productos)
+
+**Opciones del Grupo:**
+
+**Crear Opción (POST):**
 - [ ] Botón "Añadir Opción" en cada grupo
-  - [ ] Input para nombre de opción
-  - [ ] Input numérico para precio
-  - [ ] Enviar POST /modifier-groups/:groupId/options
+- [ ] Input para nombre de opción
+- [ ] Input numérico para precio (puede ser 0)
+- [ ] Enviar POST /modifier-groups/:groupId/options
+
+**Editar Opción (PATCH):**
+- [ ] Botón "Editar" en cada opción
+- [ ] Modal/formulario con nombre y precio
+- [ ] Enviar PATCH /modifier-options/:id
+
+**Eliminar Opción (DELETE):**
+- [ ] Botón "Eliminar" en cada opción
+- [ ] Confirmar acción
+- [ ] Enviar DELETE /modifier-options/:id
 
 ---
 
 ### **Pantalla 3: Gestión de Productos**
 
+**Listar (GET):**
 - [ ] Listar productos existentes (GET /products)
+- [ ] Filtrar por subcategoría (query param)
+- [ ] Filtrar por disponibilidad (query param)
+- [ ] Mostrar badge de disponibilidad
+- [ ] Mostrar número de grupos asociados
+
+**Crear (POST):**
 - [ ] Botón "Crear Producto"
-  - [ ] Dropdown para seleccionar subcategoría
-  - [ ] Input para nombre del producto
-  - [ ] TextArea para descripción
-  - [ ] Input numérico para precio
-  - [ ] Botón "Subir Imagen" (opcional)
-  - [ ] **Checklist de grupos de modificadores**
-    - [ ] Mostrar lista de grupos disponibles
-    - [ ] Permitir seleccionar múltiples grupos
-    - [ ] Enviar POST /products con modifierGroupIds
-- [ ] Opción de editar producto
-  - [ ] Permitir cambiar grupos asociados
-  - [ ] Enviar PATCH /products/:id
-- [ ] Opción de activar/desactivar (isAvailable)
+- [ ] Dropdown para seleccionar subcategoría
+- [ ] Input para nombre del producto
+- [ ] TextArea para descripción (opcional)
+- [ ] Input numérico para precio
+- [ ] Botón "Subir Imagen" (opcional)
+- [ ] **Checklist de grupos de modificadores:**
+  - [ ] Mostrar lista de grupos disponibles
+  - [ ] Permitir seleccionar múltiples grupos (checkboxes)
+  - [ ] Preview de grupos seleccionados
+- [ ] Enviar POST /products con modifierGroupIds
+
+**Editar (PATCH):**
+- [ ] Botón "Editar" en cada producto
+- [ ] Formulario precargado con datos actuales
+- [ ] Permitir cambiar nombre, descripción, precio, subcategoría
+- [ ] Permitir cambiar imagen
+- [ ] **Checklist de grupos de modificadores:**
+  - [ ] Mostrar grupos actualmente asociados (pre-seleccionados)
+  - [ ] Permitir agregar/quitar grupos
+  - [ ] Advertir que enviará TODOS los grupos (reemplazo completo)
+- [ ] Enviar PATCH /products/:id con modifierGroupIds
+
+**Eliminar (DELETE):**
+- [ ] Botón "Eliminar" en cada producto
+- [ ] Confirmar acción con diálogo
+- [ ] Mostrar advertencia: "Se eliminarán las asociaciones con modificadores"
+- [ ] Enviar DELETE /products/:id
+
+**Activar/Desactivar:**
+- [ ] Toggle switch para isAvailable
+- [ ] Enviar PATCH /products/:id con solo `{ "isAvailable": true/false }`
 
 ---
 
@@ -1914,56 +2652,110 @@ POST /api/restaurant/products/deactivate-by-tag
 
 ## 📊 Resumen de Capacidades del Backend
 
-### **✅ Capacidades Confirmadas:**
+### **✅ Capacidades CRUD Completas:**
 
-1. ✅ **Crear jerarquía completa:** Categoría → Subcategoría → Producto
-2. ✅ **Modificadores flexibles:** Grupos reutilizables con opciones
-3. ✅ **Asociación en creación:** Producto se puede crear con modificadores
-4. ✅ **Actualización de asociaciones:** Agregar/quitar grupos a producto existente
-5. ✅ **Validación de pertenencia:** Backend verifica que grupos pertenezcan al restaurante
-6. ✅ **Contexto automático:** No se necesita enviar restaurantId
-7. ✅ **Paginación:** Soporte para catálogos grandes
-8. ✅ **Filtros:** Por subcategoría, disponibilidad, etc.
+1. ✅ **Subcategorías:** GET, POST, PATCH, DELETE (con validación de productos)
+2. ✅ **Grupos de Modificadores:** GET, POST, PATCH, DELETE (con validación de opciones y asociaciones)
+3. ✅ **Opciones de Modificadores:** POST, PATCH, DELETE (sin restricciones)
+4. ✅ **Productos:** GET, POST, PATCH, DELETE (con cascada en asociaciones)
+5. ✅ **Categorías Globales:** GET (públicas)
 
 ---
 
-### **✅ Características Avanzadas:**
+### **✅ Características Avanzadas de Gestión:**
 
-1. ✅ **Actualización selectiva:** Solo se actualizan campos enviados
-2. ✅ **Reemplazo completo de asociaciones:** modifierGroupIds reemplaza todo
+1. ✅ **Actualización selectiva:** Solo se actualizan campos enviados (PATCH endpoints)
+2. ✅ **Reemplazo completo de asociaciones:** `modifierGroupIds` reemplaza todas las asociaciones
 3. ✅ **Validación cruzada:** Verifica que subcategorías/grupos sean del mismo restaurante
-4. ✅ **Respuesta completa:** Include de relaciones en respuestas
-5. ✅ **Gestión por tags:** Desactivación masiva de productos
+4. ✅ **Contexto automático:** No se necesita enviar `restaurantId` (extraído del token)
+5. ✅ **Respuesta completa:** Include de relaciones en todas las respuestas
+6. ✅ **Paginación:** Soporte para catálogos grandes (subcategorías, productos)
+7. ✅ **Filtros avanzados:** Por subcategoría, disponibilidad, tags
+8. ✅ **Gestión por tags:** Desactivación masiva de productos
+
+---
+
+### **✅ Validaciones de Integridad Referencial:**
+
+1. ✅ **Subcategorías:** No se puede eliminar si tiene productos asociados
+2. ✅ **Grupos de Modificadores:** No se puede eliminar si tiene opciones o está asociado a productos
+3. ✅ **Opciones de Modificadores:** Se puede eliminar libremente (sin restricciones)
+4. ✅ **Productos:** 
+   - ❌ No se puede eliminar si tiene pedidos (OrderItems) asociados
+   - ✅ Se eliminan en cascada las asociaciones con modificadores (ProductModifier)
+   - ✅ Si tiene pedidos, sugerir usar `isAvailable: false` en su lugar
+5. ✅ **Selección de modificadores:** Valida que `minSelection <= maxSelection`
 
 ---
 
 ## 🎉 Conclusión de Viabilidad
 
-### **VEREDICTO FINAL: ✅ COMPLETAMENTE VIABLE**
+### **VEREDICTO FINAL: ✅ COMPLETAMENTE VIABLE Y COMPLETO**
 
-El backend de Delixmi tiene **todos los endpoints necesarios** y la **lógica completa** para soportar la construcción de un menú personalizable por parte del owner.
+El backend de Delixmi tiene **TODOS los endpoints CRUD necesarios** y la **lógica completa** para soportar la construcción y gestión de un menú personalizable por parte del owner.
 
-**Endpoints verificados:**
-- ✅ Categorías globales (GET /categories)
-- ✅ CRUD de subcategorías (GET, POST, PATCH, DELETE)
-- ✅ CRUD de grupos de modificadores (GET, POST, PATCH, DELETE)
-- ✅ CRUD de opciones (POST, PATCH, DELETE)
-- ✅ CRUD de productos CON asociación a modificadores (GET, POST, PATCH, DELETE)
+**✅ 18 Endpoints Verificados y Documentados:**
 
-**Funcionalidad clave confirmada:**
-- ✅ Campo `modifierGroupIds` en POST /products (línea 1715)
-- ✅ Campo `modifierGroupIds` en PATCH /products (línea 1963)
-- ✅ Creación de asociaciones en ProductModifier (líneas 1857-1862)
-- ✅ Actualización de asociaciones en PATCH (líneas 2174-2190)
-- ✅ Validación de grupos del mismo restaurante (líneas 1796-1818, 2084-2108)
+**Categorías Globales (1):**
+- ✅ `GET /api/categories`
 
-**No se requieren cambios en el backend.**
+**Subcategorías (4):**
+- ✅ `GET /api/restaurant/subcategories`
+- ✅ `POST /api/restaurant/subcategories`
+- ✅ `PATCH /api/restaurant/subcategories/:id`
+- ✅ `DELETE /api/restaurant/subcategories/:id` (valida productos asociados)
 
-El equipo de frontend puede proceder con la implementación siguiendo esta especificación técnica.
+**Grupos de Modificadores (4):**
+- ✅ `GET /api/restaurant/modifier-groups`
+- ✅ `POST /api/restaurant/modifier-groups`
+- ✅ `PATCH /api/restaurant/modifier-groups/:id`
+- ✅ `DELETE /api/restaurant/modifier-groups/:id` (valida opciones y productos)
+
+**Opciones de Modificadores (3):**
+- ✅ `POST /api/restaurant/modifier-groups/:groupId/options`
+- ✅ `PATCH /api/restaurant/modifier-options/:id`
+- ✅ `DELETE /api/restaurant/modifier-options/:id`
+
+**Productos (4):**
+- ✅ `GET /api/restaurant/products`
+- ✅ `POST /api/restaurant/products` (con `modifierGroupIds`)
+- ✅ `PATCH /api/restaurant/products/:id` (actualiza asociaciones)
+- ✅ `DELETE /api/restaurant/products/:id` (cascada en asociaciones)
 
 ---
 
-**Fecha de Verificación:** 9 de Enero, 2025  
+### **✅ Funcionalidades Críticas Confirmadas:**
+
+1. ✅ **Asociación de modificadores en creación:** Campo `modifierGroupIds` en POST /products
+2. ✅ **Actualización de asociaciones:** Campo `modifierGroupIds` en PATCH /products (reemplazo completo)
+3. ✅ **Validación de pertenencia:** Backend verifica que grupos pertenezcan al restaurante
+4. ✅ **Actualización selectiva:** Todos los PATCH solo actualizan campos enviados
+5. ✅ **Integridad referencial:** Validaciones de eliminación en cascada
+6. ✅ **Contexto automático:** `restaurantId` extraído del token JWT
+7. ✅ **Respuestas completas:** Include de relaciones en todas las respuestas
+
+---
+
+### **✅ Reglas de Eliminación Implementadas:**
+
+| Recurso | Regla de Eliminación |
+|---------|---------------------|
+| **Subcategoría** | ⚠️ Solo si **no tiene productos** |
+| **Grupo Modificador** | ⚠️ Solo si **no tiene opciones** y **no está asociado a productos** |
+| **Opción Modificador** | ✅ Sin restricciones |
+| **Producto** | ⚠️ Solo si **no tiene pedidos** (OrderItems). Cascada automática de asociaciones con modificadores |
+
+---
+
+### **📋 No se requieren cambios en el backend.**
+
+El equipo de frontend puede proceder con la implementación siguiendo esta especificación técnica completa.
+
+---
+
+**Fecha de Auditoría:** 9 de Enero, 2025  
 **Auditor:** Arquitecto de Software Backend Delixmi  
-**Estado:** ✅ Aprobado para Implementación Frontend
+**Estado:** ✅ Aprobado para Implementación Frontend  
+**Endpoints Documentados:** 18 de 18 (100%)  
+**Coverage:** Completo
 

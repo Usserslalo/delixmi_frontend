@@ -30,10 +30,12 @@ class OwnerDashboardScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
+      body: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const SizedBox(height: 24),
             const Icon(
               Icons.business_center,
               size: 80,
@@ -41,11 +43,14 @@ class OwnerDashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             const Text(
-              'Este será el panel de administración del owner',
-              style: TextStyle(fontSize: 18),
+              'Panel de Administración del Owner',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             if (restaurantId != null)
               Text(
                 'Restaurante ID: $restaurantId',
@@ -53,8 +58,92 @@ class OwnerDashboardScreen extends StatelessWidget {
                   fontSize: 14,
                   color: Colors.grey,
                 ),
+                textAlign: TextAlign.center,
               ),
             const SizedBox(height: 32),
+            
+            // Card para gestionar menú
+            Card(
+              elevation: 4,
+              child: InkWell(
+                onTap: () {
+                  Navigator.pushNamed(context, '/owner_menu');
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      const Icon(
+                        Icons.restaurant_menu,
+                        size: 48,
+                        color: Colors.orange,
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Gestionar Mi Menú',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Administra categorías, productos y modificadores',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Card para Gestión de Grupos de Modificadores
+            Card(
+              elevation: 4,
+              child: InkWell(
+                onTap: () {
+                  Navigator.pushNamed(context, '/owner_modifier_groups');
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      const Icon(
+                        Icons.tune,
+                        size: 48,
+                        color: Colors.blue,
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Grupos de Modificadores',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Crea opciones de personalización para tus productos',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            const Spacer(),
+            
             ElevatedButton.icon(
               onPressed: () async {
                 await _handleLogout(context);
@@ -64,6 +153,7 @@ class OwnerDashboardScreen extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ),
           ],

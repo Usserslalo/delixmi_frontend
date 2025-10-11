@@ -4,6 +4,8 @@ class ApiResponse<T> {
   final T? data;
   final List<dynamic>? errors;
   final String? code;
+  final Map<String, dynamic>? details;
+  final String? suggestion;
 
   ApiResponse({
     required this.status,
@@ -11,6 +13,8 @@ class ApiResponse<T> {
     this.data,
     this.errors,
     this.code,
+    this.details,
+    this.suggestion,
   });
 
   bool get isSuccess => status == 'success';
@@ -28,6 +32,8 @@ class ApiResponse<T> {
           : json['data'],
       errors: json['errors'],
       code: json['code'],
+      details: json['details'] as Map<String, dynamic>?,
+      suggestion: json['suggestion'] as String?,
     );
   }
 
@@ -38,11 +44,13 @@ class ApiResponse<T> {
       'data': data,
       'errors': errors,
       'code': code,
+      'details': details,
+      'suggestion': suggestion,
     };
   }
 
   @override
   String toString() {
-    return 'ApiResponse(status: $status, message: $message, data: $data, errors: $errors, code: $code)';
+    return 'ApiResponse(status: $status, message: $message, data: $data, errors: $errors, code: $code, details: $details, suggestion: $suggestion)';
   }
 }

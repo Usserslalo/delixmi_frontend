@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../services/deep_link_service.dart';
+import '../../models/user.dart';
 
 // GlobalKey para el NavigatorState
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -34,10 +35,8 @@ class _SplashScreenState extends State<SplashScreen> {
         await _checkForPendingDeepLink();
         
         if (isAuthenticated) {
-          // Usuario ya autenticado, ir al home
-          if (mounted) {
-            Navigator.of(context).pushReplacementNamed('/home');
-          }
+          // Usuario ya autenticado, redirigir según su rol
+          await _redirectByUserRole();
         } else {
           // No hay token, ir a login
           if (mounted) {
@@ -56,6 +55,101 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _checkForPendingDeepLink() async {
     // Dar tiempo para que el DeepLinkService procese cualquier enlace inicial
     await Future.delayed(const Duration(milliseconds: 100));
+  }
+
+  /// Redirige al usuario según su rol (misma lógica que LoginScreen)
+  Future<void> _redirectByUserRole() async {
+    try {
+      // Obtener datos del usuario desde el token almacenado
+      final user = await AuthService.getCurrentUser();
+      
+      if (user != null && user.roles.isNotEmpty) {
+        final primaryRole = user.roles.first.roleName;
+        
+        // Logging para debugging
+        print('🔑 SplashScreen: Redirigiendo usuario con rol: $primaryRole');
+        
+        if (mounted) {
+          _redirectByRole(primaryRole, user);
+        }
+      } else {
+        // Si no se puede obtener el usuario, ir a login
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
+      }
+    } catch (e) {
+      print('❌ SplashScreen: Error al obtener datos del usuario: $e');
+      // En caso de error, ir a login
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
+    }
+  }
+
+  /// Redirige al usuario a la pantalla correcta según su rol
+  void _redirectByRole(String roleName, User user) {
+    switch (roleName) {
+      // ===== ROLES DE PLATAFORMA =====
+      case 'super_admin':
+        Navigator.pushReplacementNamed(context, '/admin_dashboard');
+        break;
+        
+      case 'platform_manager':
+        Navigator.pushReplacementNamed(context, '/platform_dashboard');
+        break;
+        
+      case 'support_agent':
+        Navigator.pushReplacementNamed(context, '/support_dashboard');
+        break;
+      
+      // ===== ROLES DE RESTAURANTE =====
+      case 'owner':
+        Navigator.pushReplacementNamed(
+          context,
+          '/owner_dashboard',
+          arguments: {
+            'restaurantId': user.roles.first.restaurantId,
+          },
+        );
+        break;
+        
+      case 'branch_manager':
+        Navigator.pushReplacementNamed(
+          context,
+          '/branch_manager_dashboard',
+          arguments: {
+            'restaurantId': user.roles.first.restaurantId,
+          },
+        );
+        break;
+      
+      // ===== ROLES DE REPARTIDOR =====
+      case 'driver':
+        Navigator.pushReplacementNamed(
+          context,
+          '/driver_dashboard',
+          arguments: {
+            'driverId': user.id,
+          },
+        );
+        break;
+      
+      // ===== ROLES DE CLIENTE =====
+      case 'customer':
+        Navigator.pushReplacementNamed(context, '/customer_home');
+        break;
+      
+      // ===== ROL NO SOPORTADO =====
+      default:
+        print('⚠️ SplashScreen: Rol no soportado: $roleName');
+        Navigator.pushReplacementNamed(
+          context,
+          '/unsupported_role',
+          arguments: {'role': roleName},
+        );
+        break;
+    }
   }
 
 
