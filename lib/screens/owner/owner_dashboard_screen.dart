@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 
 class OwnerDashboardScreen extends StatelessWidget {
-  const OwnerDashboardScreen({Key? key}) : super(key: key);
+  const OwnerDashboardScreen({super.key});
   
   @override
   Widget build(BuildContext context) {

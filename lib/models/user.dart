@@ -26,8 +26,6 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
-    print('🔍 User.fromJson: Parsing user data...');
-    print('🔍 User.fromJson: Raw JSON: $json');
     
     final user = User(
       id: json['id']?.toString() ?? '',
@@ -53,8 +51,6 @@ class User {
           : null,
     );
     
-    print('🔍 User.fromJson: Parsed user - Name: ${user.name}, Phone: "${user.phone}", Email: ${user.email}');
-    print('🔍 User.fromJson: Phone field present in JSON: ${json.containsKey('phone')}');
     
     return user;
   }

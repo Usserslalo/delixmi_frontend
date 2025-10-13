@@ -49,7 +49,7 @@ class CartBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withOpacity(0.4),
+            color: Colors.red.withValues(alpha: 0.4),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),
@@ -158,7 +158,7 @@ class NavigationCartBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withOpacity(0.4),
+            color: Colors.red.withValues(alpha: 0.4),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),

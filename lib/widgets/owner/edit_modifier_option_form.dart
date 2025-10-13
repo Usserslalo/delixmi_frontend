@@ -7,9 +7,9 @@ class EditModifierOptionForm extends StatefulWidget {
   final ModifierOption option;
   
   const EditModifierOptionForm({
-    Key? key,
+    super.key,
     required this.option,
-  }) : super(key: key);
+  });
 
   @override
   State<EditModifierOptionForm> createState() => _EditModifierOptionFormState();

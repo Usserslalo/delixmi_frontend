@@ -14,9 +14,9 @@ class ErrorHandler {
     
     // Log del error para debugging
     if (kDebugMode) {
-      print('❌ API Error: ${response.status} - $message');
+      // debugPrint('❌ API Error: ${response.status} - $message');
       if (response.errors != null) {
-        print('❌ Validation Errors: ${response.errors}');
+        // debugPrint('❌ Validation Errors: ${response.errors}');
       }
     }
 
@@ -48,7 +48,7 @@ class ErrorHandler {
     
     // Log del error para debugging
     if (kDebugMode) {
-      print('❌ Exception: $exception');
+      // debugPrint('❌ Exception: $exception');
     }
 
     // Mostrar SnackBar con el error
@@ -250,9 +250,9 @@ class ErrorHandler {
   /// Log de errores para debugging
   static void logError(String context, dynamic error, {StackTrace? stackTrace}) {
     if (kDebugMode) {
-      print('❌ Error in $context: $error');
+      // debugPrint('❌ Error in $context: $error');
       if (stackTrace != null) {
-        print('❌ Stack trace: $stackTrace');
+        // debugPrint('❌ Stack trace: $stackTrace');
       }
     }
   }
@@ -260,14 +260,14 @@ class ErrorHandler {
   /// Log de información para debugging
   static void logInfo(String context, String message) {
     if (kDebugMode) {
-      print('ℹ️ Info in $context: $message');
+      // debugPrint('ℹ️ Info in $context: $message');
     }
   }
 
   /// Log de éxito para debugging
   static void logSuccess(String context, String message) {
     if (kDebugMode) {
-      print('✅ Success in $context: $message');
+      // debugPrint('✅ Success in $context: $message');
     }
   }
 }

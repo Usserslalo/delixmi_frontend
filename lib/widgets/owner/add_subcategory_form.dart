@@ -3,7 +3,7 @@ import '../../models/menu/menu_models.dart';
 import '../../services/menu_service.dart';
 
 class AddSubcategoryForm extends StatefulWidget {
-  const AddSubcategoryForm({Key? key}) : super(key: key);
+  const AddSubcategoryForm({super.key});
 
   @override
   State<AddSubcategoryForm> createState() => _AddSubcategoryFormState();
@@ -225,7 +225,7 @@ class _AddSubcategoryFormState extends State<AddSubcategoryForm> {
                   children: [
                     // Dropdown de Categoría Principal
                     DropdownButtonFormField<int>(
-                      value: _selectedCategoryId,
+                      initialValue: _selectedCategoryId,
                       decoration: const InputDecoration(
                         labelText: 'Categoría Principal',
                         hintText: 'Selecciona una categoría',

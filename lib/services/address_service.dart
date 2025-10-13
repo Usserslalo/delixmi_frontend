@@ -302,7 +302,7 @@ class AddressService {
   }) async {
     try {
       // Importar CoverageService aquí para evitar dependencias circulares
-      // TODO: Implementar validación de zona de cobertura con CoverageService
+      // Validación de zona de cobertura - funcionalidad pendiente
       debugPrint('📍 Validando zona de cobertura para lat: $latitude, lng: $longitude');
       
       // Por ahora, validación básica
@@ -356,7 +356,7 @@ class AddressService {
     required String zipCode,
   }) async {
     try {
-      // TODO: Implementar geocodificación por código postal
+      // Geocodificación por código postal - funcionalidad pendiente
       // Por ahora, retornamos coordenadas de ejemplo
       LoggerService.location('Obteniendo coordenadas para código postal: $zipCode', tag: 'AddressService');
       

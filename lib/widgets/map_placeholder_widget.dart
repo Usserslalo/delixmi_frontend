@@ -90,7 +90,7 @@ class _MapPlaceholderWidgetState extends State<MapPlaceholderWidget> {
                     borderRadius: BorderRadius.circular(50),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -133,7 +133,7 @@ class _MapPlaceholderWidgetState extends State<MapPlaceholderWidget> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -144,7 +144,7 @@ class _MapPlaceholderWidgetState extends State<MapPlaceholderWidget> {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
                   onTap: _isGettingLocation ? null : _getCurrentLocation,
-                  child: Container(
+                  child: SizedBox(
                     width: 48,
                     height: 48,
                     child: _isGettingLocation
@@ -182,7 +182,7 @@ class _MapPlaceholderWidgetState extends State<MapPlaceholderWidget> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -257,7 +257,9 @@ class _MapPlaceholderWidgetState extends State<MapPlaceholderWidget> {
 
       // Obtener ubicación actual
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
 
       // Obtener dirección a partir de las coordenadas

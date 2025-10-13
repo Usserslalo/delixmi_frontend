@@ -66,7 +66,7 @@ class _CartItemWidgetState extends State<CartItemWidget>
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
               side: BorderSide(
-                color: Colors.grey.withOpacity(0.1),
+                color: Colors.grey.withValues(alpha: 0.1),
                 width: 1,
               ),
             ),
@@ -94,7 +94,7 @@ class _CartItemWidgetState extends State<CartItemWidget>
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: colorScheme.primary.withOpacity(0.1),
+                            color: colorScheme.primary.withValues(alpha: 0.1),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
@@ -109,7 +109,7 @@ class _CartItemWidgetState extends State<CartItemWidget>
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(
                                     decoration: BoxDecoration(
-                                      color: colorScheme.primary.withOpacity(0.1),
+                                      color: colorScheme.primary.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Icon(
@@ -122,7 +122,7 @@ class _CartItemWidgetState extends State<CartItemWidget>
                               )
                             : Container(
                                 decoration: BoxDecoration(
-                                  color: colorScheme.primary.withOpacity(0.1),
+                                  color: colorScheme.primary.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Icon(
@@ -301,7 +301,7 @@ class _CartItemWidgetState extends State<CartItemWidget>
             borderRadius: BorderRadius.circular(10),
             boxShadow: isEnabled ? [
               BoxShadow(
-                color: color.withOpacity(0.3),
+                color: color.withValues(alpha: 0.3),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),

@@ -8,9 +8,9 @@ class EditProductForm extends StatefulWidget {
   final MenuProduct product;
   
   const EditProductForm({
-    Key? key,
+    super.key,
     required this.product,
-  }) : super(key: key);
+  });
 
   @override
   State<EditProductForm> createState() => _EditProductFormState();
@@ -357,7 +357,7 @@ class _EditProductFormState extends State<EditProductForm> {
                   children: [
                     // Dropdown de Subcategoría
                     DropdownButtonFormField<int>(
-                      value: _selectedSubcategoryId,
+                      initialValue: _selectedSubcategoryId,
                       decoration: const InputDecoration(
                         labelText: 'Subcategoría',
                         hintText: 'Selecciona una subcategoría',

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/menu_service.dart';
 
 class CreateModifierGroupForm extends StatefulWidget {
-  const CreateModifierGroupForm({Key? key}) : super(key: key);
+  const CreateModifierGroupForm({super.key});
 
   @override
   State<CreateModifierGroupForm> createState() => _CreateModifierGroupFormState();
@@ -384,7 +384,7 @@ class _CreateModifierGroupFormState extends State<CreateModifierGroupForm> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Los clientes ${_minSelection == 0 ? 'podrán' : 'deberán'} seleccionar entre ${_minSelection} y $_maxSelection opciones de este grupo.',
+                          'Los clientes ${_minSelection == 0 ? 'podrán' : 'deberán'} seleccionar entre $_minSelection y $_maxSelection opciones de este grupo.',
                           style: TextStyle(
                             color: Colors.blue[700],
                             fontSize: 14,

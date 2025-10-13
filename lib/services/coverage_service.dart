@@ -40,18 +40,18 @@ class CoverageService {
       );
 
       // Debug: Imprimir respuesta del servidor (solo en desarrollo)
-      print('=== COVERAGE SERVICE ===');
-      print('URL: $url');
-      print('Status Code: ${response.statusCode}');
-      print('Response Body: ${response.body}');
-      print('========================');
+      // debugPrint('=== COVERAGE SERVICE ===');
+      // debugPrint('URL: $url');
+      // debugPrint('Status Code: ${response.statusCode}');
+      // debugPrint('Response Body: ${response.body}');
+      // debugPrint('========================');
 
       // Parsear respuesta JSON
       Map<String, dynamic> responseData;
       try {
         responseData = jsonDecode(response.body);
     } catch (e) {
-        print('❌ Error parsing coverage JSON: $e');
+        // debugPrint('❌ Error parsing coverage JSON: $e');
         throw Exception('Error en el formato de respuesta del servidor');
       }
 
@@ -59,7 +59,7 @@ class CoverageService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         // Respuesta exitosa
         final coverageResponse = CoverageResponse.fromJson(responseData);
-        print('✅ Cobertura verificada: ${coverageResponse.data.hasCoverage}');
+        // debugPrint('✅ Cobertura verificada: ${coverageResponse.data.hasCoverage}');
         return coverageResponse;
       } else if (response.statusCode == 404) {
         // Dirección no encontrada
@@ -89,7 +89,7 @@ class CoverageService {
         rethrow;
       }
       // Error inesperado
-      print('❌ Error inesperado en CoverageService: $e');
+      // debugPrint('❌ Error inesperado en CoverageService: $e');
       throw Exception('Error al verificar cobertura: ${e.toString()}');
     }
   }

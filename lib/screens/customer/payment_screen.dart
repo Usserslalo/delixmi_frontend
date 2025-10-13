@@ -4,6 +4,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../../models/restaurant_cart.dart';
 import '../../providers/address_provider.dart';
 import '../../providers/restaurant_cart_provider.dart';
+import '../../providers/checkout_provider.dart';
 import '../../services/checkout_service.dart';
 import '../../services/payment_service.dart';
 import '../../services/logger_service.dart';
@@ -11,11 +12,13 @@ import '../../services/logger_service.dart';
 class PaymentScreen extends StatefulWidget {
   final RestaurantCart restaurant;
   final String? specialInstructions;
+  final CheckoutProvider? checkoutProvider;
 
   const PaymentScreen({
     super.key,
     required this.restaurant,
     this.specialInstructions,
+    this.checkoutProvider,
   });
 
   @override
@@ -23,11 +26,29 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
-  bool _isProcessing = false;
   String? _errorMessage;
   bool _showWebView = false;
   String? _initPoint;
   WebViewController? _webViewController;
+  bool _hasStartedPayment = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Iniciar automáticamente el proceso de pago cuando se navega a esta pantalla
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_hasStartedPayment && mounted) {
+        _hasStartedPayment = true;
+        _startPayment();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    // Cancelar cualquier trabajo pendiente cuando el widget se desmonte
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,9 +57,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
         title: Text(_showWebView ? 'Pago con Mercado Pago' : 'Procesando Pago'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: _isProcessing ? null : () => Navigator.of(context).pop(),
+        leading: Consumer<CheckoutProvider>(
+          builder: (context, checkoutProvider, child) {
+            return IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: checkoutProvider.isProcessing ? null : () => Navigator.of(context).pop(),
+            );
+          },
         ),
       ),
       body: _showWebView ? _buildWebView() : _buildBody(),
@@ -46,15 +71,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Widget _buildBody() {
-    if (_isProcessing) {
-      return _buildProcessingView();
-    }
+    return Consumer<CheckoutProvider>(
+      builder: (context, checkoutProvider, child) {
+        if (checkoutProvider.isProcessing) {
+          return _buildProcessingView();
+        }
 
-    if (_errorMessage != null) {
-      return _buildErrorView();
-    }
+        if (_errorMessage != null) {
+          return _buildErrorView();
+        }
 
-    return _buildInitialView();
+        return _buildInitialView();
+      },
+    );
   }
 
   Widget _buildInitialView() {
@@ -194,10 +223,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> _startPayment() async {
-    setState(() {
-      _isProcessing = true;
-      _errorMessage = null;
-    });
+    if (mounted) {
+      setState(() {
+        _errorMessage = null;
+      });
+    }
 
     try {
       final addressProvider = context.read<AddressProvider>();
@@ -211,12 +241,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
       LoggerService.location('Restaurante: ${widget.restaurant.restaurantName}', tag: 'PaymentScreen');
       LoggerService.location('Dirección: ${deliveryAddress.alias}', tag: 'PaymentScreen');
 
-      // Crear preferencia de Mercado Pago
-      LoggerService.location('Creando preferencia de Mercado Pago...', tag: 'PaymentScreen');
-      final response = await CheckoutService.createMercadoPagoPreference(
+      // 🔒 BLOQUEO ESTRICTO: Crear preferencia de Mercado Pago usando carrito
+      LoggerService.location('Creando preferencia de Mercado Pago desde carrito...', tag: 'PaymentScreen');
+      final response = await CheckoutService.createMercadoPagoPreferenceFromCart(
         addressId: deliveryAddress.id,
         restaurantId: widget.restaurant.restaurantId,
-        useCart: true,
         specialInstructions: widget.specialInstructions,
       );
 
@@ -232,29 +261,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
         LoggerService.location('External reference: $externalReference', tag: 'PaymentScreen');
         LoggerService.location('Total recibido: \$${total.toStringAsFixed(2)}', tag: 'PaymentScreen');
         
-        // Validar que el total sea correcto usando los datos del backend
-        final subtotal = (response.data!['subtotal'] ?? 0.0).toDouble();
-        final deliveryFee = (response.data!['delivery_fee'] ?? 0.0).toDouble();
-        final serviceFee = (response.data!['service_fee'] ?? 0.0).toDouble();
-        final expectedTotal = subtotal + deliveryFee + serviceFee;
-        
-        if ((total - expectedTotal).abs() > 0.01) {
-          LoggerService.error('⚠️ ADVERTENCIA: Total incorrecto en Mercado Pago', tag: 'PaymentScreen');
-          LoggerService.error('Subtotal: \$${subtotal.toStringAsFixed(2)}', tag: 'PaymentScreen');
-          LoggerService.error('Envío: \$${deliveryFee.toStringAsFixed(2)}', tag: 'PaymentScreen');
-          LoggerService.error('Servicio: \$${serviceFee.toStringAsFixed(2)}', tag: 'PaymentScreen');
-          LoggerService.error('Total esperado: \$${expectedTotal.toStringAsFixed(2)}', tag: 'PaymentScreen');
-          LoggerService.error('Total recibido: \$${total.toStringAsFixed(2)}', tag: 'PaymentScreen');
-          LoggerService.error('Diferencia: \$${(total - expectedTotal).abs().toStringAsFixed(2)}', tag: 'PaymentScreen');
-        } else {
-          LoggerService.location('✅ Total correcto en Mercado Pago', tag: 'PaymentScreen');
-          LoggerService.location('Subtotal: \$${subtotal.toStringAsFixed(2)}', tag: 'PaymentScreen');
-          LoggerService.location('Envío: \$${deliveryFee.toStringAsFixed(2)}', tag: 'PaymentScreen');
-          LoggerService.location('Servicio: \$${serviceFee.toStringAsFixed(2)}', tag: 'PaymentScreen');
-          LoggerService.location('Total: \$${total.toStringAsFixed(2)}', tag: 'PaymentScreen');
-        }
-        
         if (initPoint != null && initPoint.isNotEmpty) {
+          // Verificar si el widget sigue montado antes de continuar
+          if (!mounted) {
+            LoggerService.location('Widget desmontado, cancelando proceso de pago', tag: 'PaymentScreen');
+            return;
+          }
           LoggerService.location('Preferencia creada exitosamente', tag: 'PaymentScreen');
           LoggerService.location('Abriendo Mercado Pago...', tag: 'PaymentScreen');
           
@@ -266,6 +278,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
           LoggerService.location('Resultado de abrir Mercado Pago: $success', tag: 'PaymentScreen');
 
+          // Verificar si el widget sigue montado después de la operación asíncrona
+          if (!mounted) {
+            LoggerService.location('Widget desmontado después de abrir Mercado Pago', tag: 'PaymentScreen');
+            return;
+          }
+
           if (success) {
             LoggerService.location('Mercado Pago abierto exitosamente', tag: 'PaymentScreen');
             // El usuario será redirigido de vuelta a la app via deep link
@@ -273,11 +291,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
           } else {
             LoggerService.location('URL Launcher falló, usando WebView como fallback', tag: 'PaymentScreen');
             // Usar WebView como fallback
-            setState(() {
-              _initPoint = initPoint;
-              _showWebView = true;
-              _isProcessing = false;
-            });
+            if (mounted) {
+              setState(() {
+                _initPoint = initPoint;
+                _showWebView = true;
+              });
+            }
           }
         } else {
           LoggerService.error('Init point es null o vacío', tag: 'PaymentScreen');
@@ -289,31 +308,34 @@ class _PaymentScreenState extends State<PaymentScreen> {
       }
     } catch (e) {
       LoggerService.error('Error en el proceso de pago: $e', tag: 'PaymentScreen');
-      setState(() {
-        _errorMessage = e.toString();
-        _isProcessing = false;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+        });
+      }
     }
   }
 
   void _retryPayment() {
-    setState(() {
-      _errorMessage = null;
-    });
+    if (mounted) {
+      setState(() {
+        _errorMessage = null;
+      });
+    }
     _startPayment();
   }
 
   void _cancelPayment() {
+    // Cancelar checkout en CheckoutProvider
+    final checkoutProvider = context.read<CheckoutProvider>();
+    checkoutProvider.cancelCheckout();
+    
     Navigator.of(context).pop();
   }
 
   /// Método para manejar el resultado del pago (llamado desde main.dart)
   void handlePaymentResult(PaymentResult result) {
     LoggerService.location('Manejando resultado del pago: $result', tag: 'PaymentScreen');
-    
-    setState(() {
-      _isProcessing = false;
-    });
 
     if (result.isSuccess) {
       _showSuccessMessage();
@@ -338,9 +360,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   void _showFailureMessage() {
-    setState(() {
-      _errorMessage = 'El pago fue rechazado. Por favor intenta nuevamente.';
-    });
+    if (mounted) {
+      setState(() {
+        _errorMessage = 'El pago fue rechazado. Por favor intenta nuevamente.';
+      });
+    }
   }
 
   void _showPendingMessage() {
@@ -360,6 +384,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
     try {
       final cartProvider = context.read<RestaurantCartProvider>();
       await cartProvider.loadCart(); // Recargar para sincronizar con backend
+      
+      // Completar checkout en CheckoutProvider
+      if (mounted) {
+        final checkoutProvider = context.read<CheckoutProvider>();
+        checkoutProvider.completeCheckout();
+      }
       
       if (mounted) {
         Navigator.of(context).popUntil((route) => route.isFirst);

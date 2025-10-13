@@ -36,7 +36,7 @@ class AddressCard extends StatelessWidget {
             : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(isSelected ? 0.3 : 0.2),
+            color: Colors.grey.withValues(alpha: isSelected ? 0.3 : 0.2),
             blurRadius: isSelected ? 8 : 4,
             offset: const Offset(0, 2),
           ),

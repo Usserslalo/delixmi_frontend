@@ -6,9 +6,9 @@ class EditModifierGroupForm extends StatefulWidget {
   final ModifierGroup group;
   
   const EditModifierGroupForm({
-    Key? key,
+    super.key,
     required this.group,
-  }) : super(key: key);
+  });
 
   @override
   State<EditModifierGroupForm> createState() => _EditModifierGroupFormState();

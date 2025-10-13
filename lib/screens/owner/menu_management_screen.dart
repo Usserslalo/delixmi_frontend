@@ -8,7 +8,7 @@ import '../../widgets/owner/edit_subcategory_form.dart';
 import '../../widgets/owner/edit_product_form.dart';
 
 class MenuManagementScreen extends StatefulWidget {
-  const MenuManagementScreen({Key? key}) : super(key: key);
+  const MenuManagementScreen({super.key});
 
   @override
   State<MenuManagementScreen> createState() => _MenuManagementScreenState();
@@ -18,7 +18,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
   bool _isLoading = false;
   List<Subcategory> _subcategories = [];
   List<MenuProduct> _products = [];
-  Map<int, List<MenuProduct>> _productsBySubcategory = {};
+  final Map<int, List<MenuProduct>> _productsBySubcategory = {};
 
   @override
   void initState() {
@@ -249,7 +249,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
               ),
             )
           else
-            ...products.map((product) => _buildProductItem(product)).toList(),
+            ...products.map((product) => _buildProductItem(product)),
           
           // Botón para añadir producto a esta subcategoría
           ListTile(
@@ -335,7 +335,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
           Switch(
             value: product.isAvailable,
             onChanged: (bool value) => _toggleProductAvailability(product, value),
-            activeColor: Colors.green,
+            activeThumbColor: Colors.green,
             inactiveThumbColor: Colors.red[300],
             inactiveTrackColor: Colors.red[100],
           ),
@@ -775,8 +775,8 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
           heroTag: 'add_subcategory',
           onPressed: _showAddSubcategoryModal,
           backgroundColor: Colors.blue,
-          child: const Icon(Icons.category),
           tooltip: 'Añadir Subcategoría',
+          child: const Icon(Icons.category),
         ),
         const SizedBox(height: 16),
         // Botón para añadir producto
@@ -784,8 +784,8 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
           heroTag: 'add_product',
           onPressed: () => _showAddProductModal(),
           backgroundColor: Colors.orange,
-          child: const Icon(Icons.add),
           tooltip: 'Añadir Producto',
+          child: const Icon(Icons.add),
         ),
       ],
     );

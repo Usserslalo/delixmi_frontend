@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../services/deep_link_service.dart';
-import '../../models/user.dart';
+import '../../models/auth/user.dart';
 
 // GlobalKey para el NavigatorState
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -67,7 +67,7 @@ class _SplashScreenState extends State<SplashScreen> {
         final primaryRole = user.roles.first.roleName;
         
         // Logging para debugging
-        print('🔑 SplashScreen: Redirigiendo usuario con rol: $primaryRole');
+        debugPrint('🔑 SplashScreen: Redirigiendo usuario con rol: $primaryRole');
         
         if (mounted) {
           _redirectByRole(primaryRole, user);
@@ -79,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen> {
         }
       }
     } catch (e) {
-      print('❌ SplashScreen: Error al obtener datos del usuario: $e');
+      debugPrint('❌ SplashScreen: Error al obtener datos del usuario: $e');
       // En caso de error, ir a login
       if (mounted) {
         Navigator.of(context).pushReplacementNamed('/login');
@@ -142,7 +142,7 @@ class _SplashScreenState extends State<SplashScreen> {
       
       // ===== ROL NO SOPORTADO =====
       default:
-        print('⚠️ SplashScreen: Rol no soportado: $roleName');
+        debugPrint('⚠️ SplashScreen: Rol no soportado: $roleName');
         Navigator.pushReplacementNamed(
           context,
           '/unsupported_role',

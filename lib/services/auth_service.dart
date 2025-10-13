@@ -1,28 +1,22 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import '../models/api_response.dart';
-import '../models/user.dart';
+import '../models/auth/user.dart';
 import '../models/auth/login_response.dart';
+import '../models/auth/register_response.dart';
 import 'api_service.dart';
 import 'token_manager.dart';
 
 class AuthService {
   /// Realiza el registro de un nuevo usuario
-  static Future<ApiResponse<User>> register({
+  /// Devuelve una respuesta especializada que maneja casos como EMAIL_SEND_ERROR
+  static Future<RegisterResponse> register({
     required String name,
     required String lastname,
     required String email,
     required String phone,
     required String password,
   }) async {
-    // Debug: Imprimir datos que se van a enviar (solo en desarrollo)
-    // print('=== DATOS DE REGISTRO ===');
-    // print('name: $name');
-    // print('lastname: $lastname');
-    // print('email: $email');
-    // print('phone: $phone');
-    // print('password: ${password.replaceAll(RegExp(r'.'), '*')}'); // Ocultar contraseña
-    // print('========================');
-    
     final response = await ApiService.makeRequest<Map<String, dynamic>>(
       'POST',
       '/auth/register',
@@ -40,78 +34,164 @@ class AuthService {
     if (response.isSuccess && response.data != null) {
       final userData = response.data!['user'];
       final user = User.fromJson(userData);
-      return ApiResponse<User>(
-        status: 'success',
+      return RegisterResponse.success(
         message: response.message,
-        data: user,
+        user: user,
       );
     }
 
+    // Manejo de errores específicos según la documentación de la API
+    switch (response.code) {
+      case 'USER_EXISTS':
+        return RegisterResponse.error(
+          message: 'El correo electrónico ya está en uso',
+          errorCode: 'USER_EXISTS',
+        );
+      
+      case 'VALIDATION_ERROR':
+        return RegisterResponse.error(
+          message: response.message,
+          errorCode: 'VALIDATION_ERROR',
+        );
+      
+      case 'EMAIL_SEND_ERROR':
+        // Usuario creado pero falló el envío del correo
+        if (response.data != null) {
+          try {
+            // El backend envía userId y email en el data cuando hay EMAIL_SEND_ERROR
+            final userData = response.data!;
+            final partialUser = User(
+              id: userData['userId'],
+              name: name, // Usar los datos que enviamos en el registro
+              lastname: lastname,
+              email: userData['email'],
+              phone: phone,
+              status: 'pending', // El usuario está pendiente de verificación
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              roles: [], // Se llenará cuando el usuario complete la verificación
+            );
+            
+            return RegisterResponse.emailSendError(
+              message: 'Tu cuenta fue creada, pero tuvimos un problema al enviar el correo de verificación. Puedes solicitar un reenvío.',
+              user: partialUser,
+            );
+          } catch (e) {
+            debugPrint('Error al crear usuario parcial desde EMAIL_SEND_ERROR: $e');
+          }
+        }
+        
+        return RegisterResponse.error(
+          message: 'Tu cuenta fue creada, pero tuvimos un problema al enviar el correo de verificación. Puedes solicitar un reenvío.',
+          errorCode: 'EMAIL_SEND_ERROR',
+        );
+      
+      case 'INTERNAL_ERROR':
+        return RegisterResponse.error(
+          message: 'Error interno del servidor. Por favor, intenta más tarde.',
+          errorCode: 'INTERNAL_ERROR',
+        );
+      
+      default:
+        return RegisterResponse.error(
+          message: response.message,
+          errorCode: response.code,
+        );
+    }
+  }
+
+  /// Método de compatibilidad para el registro (devuelve ApiResponse)
+  /// Usado por código existente que no ha sido actualizado
+  static Future<ApiResponse<User>> registerLegacy({
+    required String name,
+    required String lastname,
+    required String email,
+    required String phone,
+    required String password,
+  }) async {
+    final response = await register(
+      name: name,
+      lastname: lastname,
+      email: email,
+      phone: phone,
+      password: password,
+    );
+
     return ApiResponse<User>(
-      status: response.status,
+      status: response.isSuccess ? 'success' : 'error',
       message: response.message,
-      code: response.code,
-      errors: response.errors,
+      code: response.errorCode,
+      data: response.user,
     );
   }
 
   /// Realiza el login del usuario
   /// Inicia sesión y devuelve la respuesta completa
   static Future<LoginResponse> login(String email, String password) async {
-    try {
-      final response = await ApiService.makeRequest<Map<String, dynamic>>(
-        'POST',
-        '/auth/login',
-        ApiService.defaultHeaders,
-        {
-          'email': email,
-          'password': password,
-        },
-        null,
-      );
+    final response = await ApiService.makeRequest<Map<String, dynamic>>(
+      'POST',
+      '/auth/login',
+      ApiService.defaultHeaders,
+      {
+        'email': email,
+        'password': password,
+      },
+      null,
+    );
+    
+    if (response.isSuccess && response.data != null) {
+      final loginResponse = LoginResponse.fromJson({
+        'status': response.status,
+        'message': response.message,
+        'data': response.data!,
+      });
       
-      if (response.isSuccess && response.data != null) {
-        final loginResponse = LoginResponse.fromJson({
-          'status': response.status,
-          'message': response.message,
-          'data': response.data!,
-        });
-        
-        // Guardar token en almacenamiento seguro
-        await TokenManager.saveToken(loginResponse.data.token);
-        
-        // Guardar información del usuario
-        await TokenManager.saveUserData(loginResponse.data.user.toJson());
-        
-        return loginResponse;
-      } else {
-        throw Exception(response.message);
+      // Guardar token en almacenamiento seguro
+      await TokenManager.saveToken(loginResponse.data.token);
+      
+      // Guardar información del usuario
+      await TokenManager.saveUserData(loginResponse.data.user.toJson());
+      
+      return loginResponse;
+    } else {
+      // Mapear códigos de error específicos según la documentación de la API
+      String errorMessage = response.message;
+      
+      switch (response.code) {
+        case 'INVALID_CREDENTIALS':
+          errorMessage = 'Credenciales incorrectas';
+          break;
+        case 'ACCOUNT_NOT_VERIFIED':
+          errorMessage = 'Cuenta no verificada. Por favor, verifica tu correo electrónico.';
+          break;
+        case 'USER_NOT_FOUND':
+          errorMessage = 'Usuario no encontrado';
+          break;
+        case 'VALIDATION_ERROR':
+          errorMessage = response.message; // Usar el mensaje detallado de validación
+          break;
       }
-    } catch (e) {
-      if (e.toString().contains('404')) {
-        throw Exception('Usuario no encontrado');
-      } else if (e.toString().contains('401')) {
-        throw Exception('Credenciales inválidas');
-      } else if (e.toString().contains('403')) {
-        throw Exception('Cuenta no verificada. Por favor, verifica tu correo electrónico.');
-      }
-      rethrow;
+      
+      throw Exception(errorMessage);
     }
   }
   
   /// Cierra sesión
   static Future<void> logout() async {
     try {
-      // Llamar al endpoint de logout (opcional)
+      // Obtener headers con autenticación
+      final headers = await TokenManager.getAuthHeaders();
+      
+      // Llamar al endpoint de logout
       await ApiService.makeRequest<Map<String, dynamic>>(
         'POST',
         '/auth/logout',
-        ApiService.defaultHeaders,
+        headers,
         null,
         null,
       );
     } catch (e) {
-      print('Error en logout del servidor: $e');
+      // debugPrint('Error en logout del servidor: $e');
     } finally {
       // Limpiar almacenamiento local
       await TokenManager.clearToken();
@@ -146,9 +226,20 @@ class AuthService {
         );
       }
 
+      // Manejo de errores específicos según la documentación de la API
+      String errorMessage = response.message;
+      
+      switch (response.code) {
+        case 'MISSING_TOKEN':
+        case 'INVALID_TOKEN':
+        case 'TOKEN_EXPIRED':
+          errorMessage = 'Sesión expirada. Por favor, inicia sesión nuevamente.';
+          break;
+      }
+
       return ApiResponse<User>(
         status: response.status,
-        message: response.message,
+        message: errorMessage,
         code: response.code,
         errors: response.errors,
       );
@@ -197,9 +288,26 @@ class AuthService {
         );
       }
 
+      // Manejo de errores específicos según la documentación de la API
+      String errorMessage = response.message;
+      
+      switch (response.code) {
+        case 'PHONE_EXISTS':
+          errorMessage = 'Este número de teléfono ya está registrado por otro usuario';
+          break;
+        case 'VALIDATION_ERROR':
+          errorMessage = response.message; // Usar el mensaje detallado de validación
+          break;
+        case 'MISSING_TOKEN':
+        case 'INVALID_TOKEN':
+        case 'TOKEN_EXPIRED':
+          errorMessage = 'Sesión expirada. Por favor, inicia sesión nuevamente.';
+          break;
+      }
+
       return ApiResponse<User>(
         status: response.status,
-        message: response.message,
+        message: errorMessage,
         code: response.code,
         errors: response.errors,
       );
@@ -238,9 +346,26 @@ class AuthService {
         );
       }
 
+      // Manejo de errores específicos según la documentación de la API
+      String errorMessage = response.message;
+      
+      switch (response.code) {
+        case 'INVALID_CURRENT_PASSWORD':
+          errorMessage = 'La contraseña actual es incorrecta';
+          break;
+        case 'VALIDATION_ERROR':
+          errorMessage = response.message; // Usar el mensaje detallado de validación
+          break;
+        case 'MISSING_TOKEN':
+        case 'INVALID_TOKEN':
+        case 'TOKEN_EXPIRED':
+          errorMessage = 'Sesión expirada. Por favor, inicia sesión nuevamente.';
+          break;
+      }
+
       return ApiResponse<Map<String, dynamic>>(
         status: response.status,
-        message: response.message,
+        message: errorMessage,
         code: response.code,
         errors: response.errors,
       );
@@ -288,6 +413,33 @@ class AuthService {
       null,
     );
 
+    // Manejo de errores específicos según la documentación de la API
+    if (!response.isSuccess) {
+      String errorMessage = response.message;
+      
+      switch (response.code) {
+        case 'ALREADY_VERIFIED':
+          errorMessage = 'La cuenta ya está verificada';
+          break;
+        case 'USER_NOT_FOUND':
+          errorMessage = 'Usuario no encontrado';
+          break;
+        case 'VALIDATION_ERROR':
+          errorMessage = response.message; // Usar el mensaje detallado de validación
+          break;
+        case 'EMAIL_SEND_ERROR':
+          errorMessage = 'Error al enviar el correo. Por favor, intenta más tarde.';
+          break;
+      }
+
+      return ApiResponse<Map<String, dynamic>>(
+        status: response.status,
+        message: errorMessage,
+        code: response.code,
+        errors: response.errors,
+      );
+    }
+
     return response;
   }
 
@@ -312,6 +464,27 @@ class AuthService {
       null,
     );
 
+    // Manejo de errores específicos según la documentación de la API
+    if (!response.isSuccess) {
+      String errorMessage = response.message;
+      
+      switch (response.code) {
+        case 'VALIDATION_ERROR':
+          errorMessage = response.message; // Usar el mensaje detallado de validación
+          break;
+        case 'EMAIL_SEND_ERROR':
+          errorMessage = 'Error al enviar el correo. Por favor, intenta más tarde.';
+          break;
+      }
+
+      return ApiResponse<Map<String, dynamic>>(
+        status: response.status,
+        message: errorMessage,
+        code: response.code,
+        errors: response.errors,
+      );
+    }
+
     return response;
   }
 
@@ -330,6 +503,27 @@ class AuthService {
       },
       null,
     );
+
+    // Manejo de errores específicos según la documentación de la API
+    if (!response.isSuccess) {
+      String errorMessage = response.message;
+      
+      switch (response.code) {
+        case 'INVALID_OR_EXPIRED_TOKEN':
+          errorMessage = 'Token inválido o expirado. Por favor, solicita un nuevo enlace.';
+          break;
+        case 'VALIDATION_ERROR':
+          errorMessage = response.message; // Usar el mensaje detallado de validación
+          break;
+      }
+
+      return ApiResponse<Map<String, dynamic>>(
+        status: response.status,
+        message: errorMessage,
+        code: response.code,
+        errors: response.errors,
+      );
+    }
 
     return response;
   }
@@ -354,7 +548,7 @@ class AuthService {
       }
       return null;
     } catch (e) {
-      print('Error al obtener datos del usuario: $e');
+      // debugPrint('Error al obtener datos del usuario: $e');
       return null;
     }
   }

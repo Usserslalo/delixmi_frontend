@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
+import '../../models/auth/register_response.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -91,7 +92,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           // Navegar a la pantalla de verificación de email
           Navigator.of(context).pushReplacementNamed(
             '/email-verification',
-            arguments: _emailController.text.trim(),
+            arguments: response.user?.email ?? _emailController.text.trim(),
           );
           
           // Mostrar mensaje de éxito
@@ -102,7 +103,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           );
         } else {
-          // Manejar errores específicos
+          // Manejar errores específicos (incluye EMAIL_SEND_ERROR)
           _handleRegisterError(response);
         }
       }
@@ -125,22 +126,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  void _handleRegisterError(dynamic response) {
+  void _handleRegisterError(RegisterResponse response) {
     String message = response.message;
     
-    switch (response.code) {
+    // Manejar el caso específico de EMAIL_SEND_ERROR
+    if (response.needsEmailResend) {
+      _showEmailResendDialog(response);
+      return;
+    }
+    
+    // Manejar otros errores específicos
+    switch (response.errorCode) {
       case 'USER_EXISTS':
         message = 'Ya existe una cuenta con este email o teléfono.';
         break;
-      case 'INVALID_EMAIL':
-        message = 'El formato del email no es válido.';
+      case 'VALIDATION_ERROR':
+        message = response.message; // Usar el mensaje detallado del backend
         break;
-      case 'INVALID_PHONE':
-        message = 'El formato del teléfono no es válido.';
+      case 'INTERNAL_ERROR':
+        message = 'Error interno del servidor. Por favor, intenta más tarde.';
         break;
-      case 'WEAK_PASSWORD':
-        message = 'La contraseña debe tener al menos 8 caracteres con: 1 mayúscula, 1 minúscula, 1 número y 1 carácter especial.';
-        break;
+      default:
+        message = response.message; // Usar el mensaje por defecto
     }
     
     ScaffoldMessenger.of(context).showSnackBar(
@@ -150,6 +157,103 @@ class _RegisterScreenState extends State<RegisterScreen> {
         duration: const Duration(seconds: 4),
       ),
     );
+  }
+
+  void _showEmailResendDialog(RegisterResponse response) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Cuenta Creada'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(response.message),
+              const SizedBox(height: 16),
+              const Text(
+                '¿Te gustaría que reenviemos el correo de verificación?',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Navegar a la pantalla de verificación de email con el email del usuario
+                Navigator.of(context).pushReplacementNamed(
+                  '/email-verification',
+                  arguments: response.user?.email ?? _emailController.text.trim(),
+                );
+              },
+              child: const Text('Más tarde'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _resendVerificationEmail(response.user?.email ?? _emailController.text.trim());
+              },
+              child: const Text('Reenviar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _resendVerificationEmail(String email) async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      final response = await AuthService.resendVerificationEmail(email: email);
+      
+      if (mounted) {
+        if (response.isSuccess) {
+          // Navegar a la pantalla de verificación de email
+          Navigator.of(context).pushReplacementNamed(
+            '/email-verification',
+            arguments: email,
+          );
+          
+          // Mostrar mensaje de éxito
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response.message),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          // Mostrar error si falla el reenvío
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response.message),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al reenviar el correo: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _validateNameRealTime() {

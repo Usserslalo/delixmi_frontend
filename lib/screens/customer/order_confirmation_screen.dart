@@ -2,20 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/restaurant_cart.dart';
 import '../../models/address.dart';
-import '../../models/api_response.dart';
-import '../../providers/restaurant_cart_provider.dart';
 import '../../providers/address_provider.dart';
-import '../../services/checkout_service.dart';
-import 'payment_screen.dart';
+import '../../providers/checkout_provider.dart';
 
 class OrderConfirmationScreen extends StatefulWidget {
   final RestaurantCart restaurant;
   final String paymentMethod;
+  final Address deliveryAddress;
 
   const OrderConfirmationScreen({
     super.key,
     required this.restaurant,
     required this.paymentMethod,
+    required this.deliveryAddress,
   });
 
   @override
@@ -29,7 +28,6 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
   late Animation<double> _pulseAnimation;
   
   int _countdown = 15;
-  bool _isProcessing = false;
   bool _isCancelled = false;
 
   @override
@@ -80,10 +78,16 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
       }
     });
 
-    // Auto-confirmar cuando llegue a 0
+    // Auto-confirmar cuando llegue a 0 (CON BLOQUEO ESTRICTO)
     _countdownController.addStatusListener((status) {
-      if (status == AnimationStatus.completed && !_isCancelled && !_isProcessing) {
-        _confirmOrder();
+      if (status == AnimationStatus.completed && !_isCancelled) {
+        final checkoutProvider = context.read<CheckoutProvider>();
+        if (!checkoutProvider.isProcessing) {
+          debugPrint('⏰ Countdown completado - Intentando auto-confirmar pedido');
+          _confirmOrder();
+        } else {
+          debugPrint('🚫 Auto-confirmación BLOQUEADA - Ya se está procesando un pedido');
+        }
       }
     });
   }
@@ -97,18 +101,31 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black,
-        leading: _isProcessing 
-            ? null 
-            : IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: _cancelOrder,
-              ),
+        leading: Consumer<CheckoutProvider>(
+          builder: (context, checkoutProvider, child) {
+            if (checkoutProvider.isProcessing) {
+              return const SizedBox.shrink();
+            }
+            return IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: _cancelOrder,
+            );
+          },
+        ),
       ),
-      body: _isProcessing
-          ? _buildProcessingView()
-          : _isCancelled
-              ? _buildCancelledView()
-              : _buildConfirmationView(),
+      body: Consumer<CheckoutProvider>(
+        builder: (context, checkoutProvider, child) {
+          if (checkoutProvider.isProcessing) {
+            return _buildProcessingView();
+          }
+          
+          if (_isCancelled) {
+            return _buildCancelledView();
+          }
+          
+          return _buildConfirmationView();
+        },
+      ),
     );
   }
 
@@ -159,7 +176,7 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -228,7 +245,7 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -297,7 +314,7 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
                 ),
               ],
             ),
-          )).toList(),
+          )),
           
           const Divider(),
           
@@ -346,7 +363,7 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -424,40 +441,69 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
   }
 
   Widget _buildActionButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: _isProcessing ? null : _cancelOrder,
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              side: BorderSide(color: Colors.red[300]!),
-              foregroundColor: Colors.red[700],
+    return Consumer<CheckoutProvider>(
+      builder: (context, checkoutProvider, child) {
+        return Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: checkoutProvider.isProcessing ? null : _cancelOrder,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: BorderSide(color: Colors.red[300]!),
+                  foregroundColor: Colors.red[700],
+                ),
+                child: const Text(
+                  'Cancelar',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
             ),
-            child: const Text(
-              'Cancelar',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            
+            const SizedBox(width: 16),
+            
+            Expanded(
+              child: ElevatedButton(
+                // 🔒 BLOQUEO GLOBAL: Botón deshabilitado si está procesando
+                onPressed: checkoutProvider.isProcessing ? null : () {
+                  debugPrint('🔘 Botón "Confirmar Ahora" presionado');
+                  _confirmOrder();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: checkoutProvider.isProcessing 
+                      ? Colors.grey[400] 
+                      : Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: checkoutProvider.isProcessing 
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Procesando...',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      )
+                    : const Text(
+                        'Confirmar Ahora',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+              ),
             ),
-          ),
-        ),
-        
-        const SizedBox(width: 16),
-        
-        Expanded(
-          child: ElevatedButton(
-            onPressed: _isProcessing ? null : _confirmOrder,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-            child: const Text(
-              'Confirmar Ahora',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 
@@ -529,100 +575,29 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
   }
 
   Future<void> _confirmOrder() async {
-    if (_isProcessing) return;
-
-    setState(() {
-      _isProcessing = true;
-    });
+    final checkoutProvider = context.read<CheckoutProvider>();
+    
+    // 🔒 BLOQUEO GLOBAL: Si ya se está procesando, ignorar completamente
+    if (checkoutProvider.isProcessing) {
+      debugPrint('🚫 _confirmOrder: BLOQUEO GLOBAL ACTIVADO - Ignorando llamada duplicada');
+      return;
+    }
+    
+    debugPrint('🔒 _confirmOrder: Iniciando procesamiento con CheckoutProvider');
 
     try {
-      final addressProvider = context.read<AddressProvider>();
-      final deliveryAddress = addressProvider.currentDeliveryAddress;
-      
-      if (deliveryAddress == null) {
-        throw Exception('No hay dirección de entrega seleccionada');
-      }
-
-      // Preparar items para el pedido
-      final items = widget.restaurant.items.map((item) => {
-        'productId': item.productId,
-        'quantity': item.quantity,
-      }).toList();
-
-      ApiResponse<Map<String, dynamic>> response;
-
-      if (widget.paymentMethod == 'cash') {
-        // Crear pedido de efectivo
-        response = await CheckoutService.createCashOrder(
-          addressId: deliveryAddress.id,
-          restaurantId: widget.restaurant.restaurantId,
-          items: items,
-        );
-      } else {
-        // Navegar a pantalla de pago con Mercado Pago
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => PaymentScreen(
-              restaurant: widget.restaurant,
-              specialInstructions: null, // No hay specialInstructions en este contexto
-            ),
-          ),
-        );
-        return; // No continuar con el flujo normal
-      }
-
-      if (response.isSuccess && response.data != null) {
-        // Limpiar carrito
-        await _clearCart();
-        
-        if (mounted) {
-          // Mostrar mensaje de éxito
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                widget.paymentMethod == 'cash'
-                    ? 'Pedido creado exitosamente. Paga en efectivo al recibir.'
-                    : 'Pedido creado exitosamente. Redirigiendo a Mercado Pago...',
-              ),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 3),
-            ),
-          );
-
-          // Navegar de regreso
-          Navigator.of(context).popUntil((route) => route.isFirst);
-        }
-      } else {
-        throw Exception(response.message);
-      }
+      // Usar el CheckoutProvider para manejar el checkout
+      await checkoutProvider.startCheckout(
+        paymentMethod: widget.paymentMethod == 'cash' ? PaymentMethod.cash : PaymentMethod.card,
+        restaurant: widget.restaurant,
+        address: widget.deliveryAddress,
+        context: context,
+        specialInstructions: null,
+      );
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al crear el pedido: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      debugPrint('Error en _confirmOrder: $e');
+      // El error ya se maneja en el CheckoutProvider
     }
   }
 
-  Future<void> _clearCart() async {
-    try {
-      final restaurantCartProvider = context.read<RestaurantCartProvider>();
-      
-      // El backend ahora limpia automáticamente el carrito
-      // Solo necesitamos recargar para sincronizar con el backend
-      await Future.delayed(const Duration(milliseconds: 1000));
-      await restaurantCartProvider.loadCart();
-      
-      debugPrint('✅ Carrito recargado después de limpieza automática del backend');
-    } catch (e) {
-      debugPrint('Error al recargar carrito: $e');
-    }
-  }
 }

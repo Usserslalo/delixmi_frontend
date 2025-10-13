@@ -1,10 +1,6 @@
 // Guía de Integración de Modificadores de Productos
 // Este archivo documenta cómo usar la nueva funcionalidad de modificadores
 
-import 'package:flutter/material.dart';
-import '../models/product.dart';
-import '../widgets/customer/modifier_selection_modal.dart';
-
 /*
 INTEGRACIÓN DE MODIFICADORES DE PRODUCTOS - GUÍA COMPLETA
 ========================================================

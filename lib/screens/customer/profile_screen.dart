@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
-import '../../models/user.dart';
+import '../../models/auth/user.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -21,10 +21,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadUserData() async {
     try {
-      print('🔍 ProfileScreen: Cargando datos del usuario...');
+      // debugPrint('🔍 ProfileScreen: Cargando datos del usuario...');
       final user = await AuthService.getCurrentUser();
-      print('🔍 ProfileScreen: Usuario obtenido: ${user?.fullName ?? "null"}');
-      print('🔍 ProfileScreen: Usuario phone: "${user?.phone ?? "null"}"');
+      // debugPrint('🔍 ProfileScreen: Usuario obtenido: ${user?.fullName ?? "null"}');
+      // debugPrint('🔍 ProfileScreen: Usuario phone: "${user?.phone ?? "null"}"');
       
       if (mounted) {
         setState(() {
@@ -35,11 +35,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       
       // Si no hay usuario O si el teléfono está vacío, obtener desde backend
       if (user == null || (user.phone.isEmpty)) {
-        print('🔍 ProfileScreen: Usuario sin datos completos, obteniendo desde backend...');
+        // debugPrint('🔍 ProfileScreen: Usuario sin datos completos, obteniendo desde backend...');
         await _loadProfileFromBackend();
       }
     } catch (e) {
-      print('❌ ProfileScreen: Error al cargar usuario: $e');
+      // debugPrint('❌ ProfileScreen: Error al cargar usuario: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -50,21 +50,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadProfileFromBackend() async {
     try {
-      print('🔍 ProfileScreen: Obteniendo perfil desde backend...');
+      // debugPrint('🔍 ProfileScreen: Obteniendo perfil desde backend...');
       final response = await AuthService.getProfile();
       if (response.isSuccess && response.data != null) {
-        print('✅ ProfileScreen: Perfil obtenido desde backend: ${response.data!.fullName}');
-        print('✅ ProfileScreen: Phone desde backend: "${response.data!.phone}"');
+        // debugPrint('✅ ProfileScreen: Perfil obtenido desde backend: ${response.data!.fullName}');
+        // debugPrint('✅ ProfileScreen: Phone desde backend: "${response.data!.phone}"');
         if (mounted) {
           setState(() {
             _currentUser = response.data;
           });
         }
       } else {
-        print('❌ ProfileScreen: Error al obtener perfil del backend: ${response.message}');
+        // debugPrint('❌ ProfileScreen: Error al obtener perfil del backend: ${response.message}');
       }
     } catch (e) {
-      print('❌ ProfileScreen: Error al obtener perfil del backend: $e');
+      // debugPrint('❌ ProfileScreen: Error al obtener perfil del backend: $e');
     }
   }
 
@@ -94,13 +94,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (shouldLogout == true) {
         // Mostrar indicador de carga
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const Center(
-            child: CircularProgressIndicator(),
-          ),
-        );
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
 
         // Realizar logout
         await AuthService.logout();
@@ -258,21 +260,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            _currentUser?.phone?.isNotEmpty == true 
+                            _currentUser?.phone.isNotEmpty == true 
                                 ? _currentUser!.phone
                                 : 'No registrado',
                             style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                              color: _currentUser?.phone?.isNotEmpty == true 
+                              color: _currentUser?.phone.isNotEmpty == true 
                                   ? Colors.grey[600] 
                                   : Colors.grey[400],
-                              fontStyle: _currentUser?.phone?.isNotEmpty == true 
+                              fontStyle: _currentUser?.phone.isNotEmpty == true 
                                   ? FontStyle.normal 
                                   : FontStyle.italic,
                             ),
                           ),
                         ),
                         // Indicador de verificación de teléfono (solo si hay teléfono)
-                        if (_currentUser?.phone?.isNotEmpty == true && _currentUser?.isPhoneVerified == true)
+                        if (_currentUser?.phone.isNotEmpty == true && _currentUser!.isPhoneVerified == true)
                           Container(
                             margin: const EdgeInsets.only(left: 8),
                             padding: const EdgeInsets.all(2),
@@ -293,7 +295,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(
@@ -416,7 +418,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -484,11 +486,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _navigateToEditProfile() async {
-    print('🔍 ProfileScreen: Intentando navegar a editar perfil...');
-    print('🔍 ProfileScreen: Usuario actual: ${_currentUser?.fullName ?? "null"}');
+    // debugPrint('🔍 ProfileScreen: Intentando navegar a editar perfil...');
+    // debugPrint('🔍 ProfileScreen: Usuario actual: ${_currentUser?.fullName ?? "null"}');
     
     if (_currentUser == null) {
-      print('❌ ProfileScreen: No hay usuario, no se puede editar perfil');
+      // debugPrint('❌ ProfileScreen: No hay usuario, no se puede editar perfil');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Error: No se pudo cargar la información del usuario'),
@@ -500,29 +502,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
     
     try {
-      print('🔍 ProfileScreen: Navegando a /edit-profile...');
+      // debugPrint('🔍 ProfileScreen: Navegando a /edit-profile...');
       final updatedUser = await Navigator.of(context).pushNamed(
         '/edit-profile',
         arguments: _currentUser,
       ) as User?;
       
       if (updatedUser != null) {
-        print('✅ ProfileScreen: Usuario actualizado: ${updatedUser.fullName}');
+        // debugPrint('✅ ProfileScreen: Usuario actualizado: ${updatedUser.fullName}');
         setState(() {
           _currentUser = updatedUser;
         });
       } else {
-        print('🔍 ProfileScreen: No se actualizó el usuario');
+        // debugPrint('🔍 ProfileScreen: No se actualizó el usuario');
       }
     } catch (e) {
-      print('❌ ProfileScreen: Error al navegar a editar perfil: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al abrir la pantalla de edición: ${e.toString()}'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      // debugPrint('❌ ProfileScreen: Error al navegar a editar perfil: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al abrir la pantalla de edición: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 
 class DriverDashboardScreen extends StatelessWidget {
-  const DriverDashboardScreen({Key? key}) : super(key: key);
+  const DriverDashboardScreen({super.key});
   
   @override
   Widget build(BuildContext context) {

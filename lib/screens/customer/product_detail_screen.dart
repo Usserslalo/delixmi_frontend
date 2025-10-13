@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/product.dart';
+import '../../models/modifier_selection.dart';
 import '../../providers/cart_provider.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -19,7 +20,7 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerProviderStateMixin {
   int _quantity = 1;
-  Map<int, Set<int>> _selectedModifiers = {};
+  final Map<int, Set<int>> _selectedModifiers = {};
   double _basePrice = 0.0;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -31,19 +32,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
     _basePrice = widget.product.price;
     
     // Debug: Verificar modificadores
-    print('🔍 ProductDetailScreen: Producto recibido: ${widget.product.name}');
-    print('🔍 ProductDetailScreen: ModifierGroups count: ${widget.product.modifierGroups.length}');
+    // debugPrint('🔍 ProductDetailScreen: Producto recibido: ${widget.product.name}');
+    // debugPrint('🔍 ProductDetailScreen: ModifierGroups count: ${widget.product.modifierGroups.length}');
     
     // TEMPORAL: Si no hay modificadores del backend, agregar modificadores reales para demostrar funcionalidad
     if (widget.product.modifierGroups.isEmpty) {
-      print('🔧 ProductDetailScreen: Agregando modificadores reales para demostrar funcionalidad');
+      // debugPrint('🔧 ProductDetailScreen: Agregando modificadores reales para demostrar funcionalidad');
       _addRealModifiers();
-      print('🔧 ProductDetailScreen: Modificadores reales agregados. Total grupos: ${widget.product.modifierGroups.length}');
+      // debugPrint('🔧 ProductDetailScreen: Modificadores reales agregados. Total grupos: ${widget.product.modifierGroups.length}');
     }
     
-    for (final group in widget.product.modifierGroups) {
-      print('🔍 ProductDetailScreen: Grupo "${group.name}" con ${group.options.length} opciones');
-    }
+    // Debug: Log modifier groups
+    // for (final group in widget.product.modifierGroups) {
+    //   debugPrint('🔍 ProductDetailScreen: Grupo "${group.name}" con ${group.options.length} opciones');
+    // }
     
     // Configurar animaciones
     _animationController = AnimationController(
@@ -284,15 +286,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
     }
 
     final cartProvider = context.read<CartProvider>();
-    final selectedOptionIds = _selectedModifiers.values
-        .expand((ids) => ids)
-        .toList();
+    
+    // ✅ NUEVO FORMATO: Convertir _selectedModifiers a List<ModifierSelection>
+    final modifiers = <ModifierSelection>[];
+    for (final groupId in _selectedModifiers.keys) {
+      final selectedOptionIds = _selectedModifiers[groupId];
+      if (selectedOptionIds != null) {
+        for (final optionId in selectedOptionIds) {
+          modifiers.add(ModifierSelection(
+            modifierGroupId: groupId,
+            selectedOptionId: optionId,
+          ));
+        }
+      }
+    }
 
     try {
       final success = await cartProvider.addToCart(
         productId: widget.product.id,
         quantity: _quantity,
-        modifierOptionIds: selectedOptionIds.isNotEmpty ? selectedOptionIds : null,
+        modifiers: modifiers.isNotEmpty ? modifiers : null,
       );
 
       if (mounted) {
@@ -416,7 +429,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
                             end: Alignment.bottomCenter,
                             colors: [
                               Colors.transparent,
-                              Colors.black.withOpacity(0.7),
+                              Colors.black.withValues(alpha: 0.7),
                             ],
                           ),
                         ),
@@ -700,7 +713,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
         border: Border.all(color: Colors.grey[300]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -776,7 +789,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
         border: Border.all(color: Colors.grey[200]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -944,7 +957,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
             color: isSelected ? Colors.orange[50] : Colors.grey[25],
             boxShadow: isSelected ? [
               BoxShadow(
-                color: Colors.orange.withOpacity(0.1),
+                color: Colors.orange.withValues(alpha: 0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),

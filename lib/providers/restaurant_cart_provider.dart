@@ -67,7 +67,7 @@ class RestaurantCartProvider extends ChangeNotifier {
       
       if (response.isSuccess && response.data != null) {
         _restaurantCarts = response.data!;
-        debugPrint('🛒 RestaurantCartProvider: Resumen cargado - ${totalItems} items totales');
+        debugPrint('🛒 RestaurantCartProvider: Resumen cargado - $totalItems items totales');
       }
     } catch (e) {
       debugPrint('❌ RestaurantCartProvider: Error al cargar resumen: $e');

@@ -7,7 +7,7 @@ import '../../widgets/owner/edit_modifier_group_form.dart';
 import '../../widgets/owner/edit_modifier_option_form.dart';
 
 class ModifierGroupsManagementScreen extends StatefulWidget {
-  const ModifierGroupsManagementScreen({Key? key}) : super(key: key);
+  const ModifierGroupsManagementScreen({super.key});
 
   @override
   State<ModifierGroupsManagementScreen> createState() => _ModifierGroupsManagementScreenState();
@@ -298,8 +298,8 @@ class _ModifierGroupsManagementScreenState extends State<ModifierGroupsManagemen
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreateGroupModal,
         backgroundColor: Colors.orange,
-        child: const Icon(Icons.add, color: Colors.white),
         tooltip: 'Crear Grupo de Modificadores',
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/cart.dart';
 import '../models/product.dart';
 import '../models/restaurant_cart.dart';
+import '../models/modifier_selection.dart';
 import '../services/cart_service.dart';
 import '../services/error_handler.dart';
 
@@ -28,7 +29,7 @@ class CartProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      print('🛒 CartProvider: Cargando carrito...');
+      // debugPrint('🛒 CartProvider: Cargando carrito...');
       final response = await CartService.getCart();
 
       if (response.isSuccess && response.data != null) {
@@ -36,10 +37,10 @@ class CartProvider extends ChangeNotifier {
         final restaurantCarts = response.data as List<RestaurantCart>;
         _carts = []; // Limpiar carritos antiguos
         _totalItems = restaurantCarts.fold(0, (sum, cart) => sum + cart.totalItems);
-        print('🛒 CartProvider: Carrito cargado - ${restaurantCarts.length} restaurantes, $_totalItems items');
+        // debugPrint('🛒 CartProvider: Carrito cargado - ${restaurantCarts.length} restaurantes, $_totalItems items');
       } else {
         _setError(response.message);
-        print('❌ CartProvider: Error al cargar carrito: ${response.message}');
+        // debugPrint('❌ CartProvider: Error al cargar carrito: ${response.message}');
       }
     } catch (e) {
       _setError('Error al cargar carrito: $e');
@@ -52,18 +53,65 @@ class CartProvider extends ChangeNotifier {
   /// Obtener resumen del carrito
   Future<void> loadCartSummary() async {
     try {
-      print('🛒 CartProvider: Cargando resumen del carrito...');
+      // debugPrint('🛒 CartProvider: Cargando resumen del carrito...');
       final summary = await CartService.getCartSummary();
 
       _totalItems = summary['totalItems'] ?? 0;
-      print('🛒 CartProvider: Resumen cargado - $_totalItems items');
+      // debugPrint('🛒 CartProvider: Resumen cargado - $_totalItems items');
     } catch (e) {
-      print('❌ CartProvider: Excepción al cargar resumen: $e');
+      // debugPrint('❌ CartProvider: Excepción al cargar resumen: $e');
     }
   }
 
-  /// Agregar producto al carrito
+  /// Agregar producto al carrito con nuevo formato de modificadores
   Future<bool> addToCart({
+    required int productId,
+    required int quantity,
+    List<ModifierSelection>? modifiers,
+  }) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      // debugPrint('🛒 CartProvider: Agregando producto $productId (cantidad: $quantity)...');
+      if (modifiers != null && modifiers.isNotEmpty) {
+        // debugPrint('🛒 CartProvider: Con modificadores (nuevo formato): $modifiers');
+      }
+      
+      final response = await CartService.addToCart(
+        productId: productId,
+        quantity: quantity,
+        modifiers: modifiers,
+      );
+
+      if (response.isSuccess) {
+        // Recargar carrito para obtener el estado actualizado
+        await loadCart();
+        // debugPrint('✅ CartProvider: Producto agregado exitosamente');
+        return true;
+      } else {
+        // Manejar error específico de modificadores requeridos
+        if (response.code == 'MODIFIERS_REQUIRED') {
+          _setError('MODIFIERS_REQUIRED');
+          // debugPrint('⚠️ CartProvider: Modificadores requeridos para el producto');
+        } else {
+          _setError(response.message);
+          // debugPrint('❌ CartProvider: Error al agregar producto: ${response.message}');
+        }
+        return false;
+      }
+    } catch (e) {
+      _setError('Error al agregar producto: $e');
+      // debugPrint('❌ CartProvider: Excepción al agregar producto: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Agregar producto al carrito (método de compatibilidad con formato antiguo)
+  @Deprecated('Usar addToCart con parámetro modifiers en lugar de modifierOptionIds')
+  Future<bool> addToCartLegacy({
     required int productId,
     required int quantity,
     List<int>? modifierOptionIds,
@@ -72,12 +120,12 @@ class CartProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      print('🛒 CartProvider: Agregando producto $productId (cantidad: $quantity)...');
+      // debugPrint('🛒 CartProvider: Agregando producto $productId (cantidad: $quantity) [MODO LEGACY]...');
       if (modifierOptionIds != null && modifierOptionIds.isNotEmpty) {
-        print('🛒 CartProvider: Con modificadores: $modifierOptionIds');
+        // debugPrint('🛒 CartProvider: Con modificadores (formato legacy): $modifierOptionIds');
       }
       
-      final response = await CartService.addToCart(
+      final response = await CartService.addToCartLegacy(
         productId: productId,
         quantity: quantity,
         modifierOptionIds: modifierOptionIds,
@@ -86,22 +134,16 @@ class CartProvider extends ChangeNotifier {
       if (response.isSuccess) {
         // Recargar carrito para obtener el estado actualizado
         await loadCart();
-        print('✅ CartProvider: Producto agregado exitosamente');
+        // debugPrint('✅ CartProvider: Producto agregado exitosamente (legacy)');
         return true;
       } else {
-        // Manejar error específico de modificadores requeridos
-        if (response.code == 'MODIFIERS_REQUIRED') {
-          _setError('MODIFIERS_REQUIRED');
-          print('⚠️ CartProvider: Modificadores requeridos para el producto');
-        } else {
-          _setError(response.message);
-          print('❌ CartProvider: Error al agregar producto: ${response.message}');
-        }
+        _setError(response.message);
+        // debugPrint('❌ CartProvider: Error al agregar producto: ${response.message}');
         return false;
       }
     } catch (e) {
-      _setError('Error al agregar producto: $e');
-      print('❌ CartProvider: Excepción al agregar producto: $e');
+      _setError('Error al agregar producto al carrito: $e');
+      // debugPrint('❌ CartProvider: Excepción al agregar producto: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -117,7 +159,7 @@ class CartProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      print('🛒 CartProvider: Actualizando item $itemId con cantidad $quantity...');
+      // debugPrint('🛒 CartProvider: Actualizando item $itemId con cantidad $quantity...');
       final response = await CartService.updateQuantity(
         itemId: itemId,
         quantity: quantity,
@@ -126,16 +168,16 @@ class CartProvider extends ChangeNotifier {
       if (response.isSuccess) {
         // Recargar carrito para obtener el estado actualizado
         await loadCart();
-        print('✅ CartProvider: Item actualizado exitosamente');
+        // debugPrint('✅ CartProvider: Item actualizado exitosamente');
         return true;
       } else {
         _setError(response.message);
-        print('❌ CartProvider: Error al actualizar item: ${response.message}');
+        // debugPrint('❌ CartProvider: Error al actualizar item: ${response.message}');
         return false;
       }
     } catch (e) {
       _setError('Error al actualizar item: $e');
-      print('❌ CartProvider: Excepción al actualizar item: $e');
+      // debugPrint('❌ CartProvider: Excepción al actualizar item: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -168,22 +210,22 @@ class CartProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      print('🛒 CartProvider: Eliminando item $itemId...');
+      // debugPrint('🛒 CartProvider: Eliminando item $itemId...');
       final response = await CartService.removeFromCart(itemId: itemId);
 
       if (response.isSuccess) {
         // Recargar carrito para obtener el estado actualizado
         await loadCart();
-        print('✅ CartProvider: Item eliminado exitosamente');
+        // debugPrint('✅ CartProvider: Item eliminado exitosamente');
         return true;
       } else {
         _setError(response.message);
-        print('❌ CartProvider: Error al eliminar item: ${response.message}');
+        // debugPrint('❌ CartProvider: Error al eliminar item: ${response.message}');
         return false;
       }
     } catch (e) {
       _setError('Error al eliminar item: $e');
-      print('❌ CartProvider: Excepción al eliminar item: $e');
+      // debugPrint('❌ CartProvider: Excepción al eliminar item: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -196,22 +238,22 @@ class CartProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      print('🛒 CartProvider: Limpiando carrito${restaurantId != null ? ' del restaurante $restaurantId' : ''}...');
+      // debugPrint('🛒 CartProvider: Limpiando carrito${restaurantId != null ? ' del restaurante $restaurantId' : ''}...');
       final response = await CartService.clearCart();
 
       if (response.isSuccess) {
         // Recargar carrito para obtener el estado actualizado
         await loadCart();
-        print('✅ CartProvider: Carrito limpiado exitosamente');
+        // debugPrint('✅ CartProvider: Carrito limpiado exitosamente');
         return true;
       } else {
         _setError(response.message);
-        print('❌ CartProvider: Error al limpiar carrito: ${response.message}');
+        // debugPrint('❌ CartProvider: Error al limpiar carrito: ${response.message}');
         return false;
       }
     } catch (e) {
       _setError('Error al limpiar carrito: $e');
-      print('❌ CartProvider: Excepción al limpiar carrito: $e');
+      // debugPrint('❌ CartProvider: Excepción al limpiar carrito: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -224,7 +266,7 @@ class CartProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      print('🛒 CartProvider: Validando carrito del restaurante $restaurantId...');
+      // debugPrint('🛒 CartProvider: Validando carrito del restaurante $restaurantId...');
       // Validación simple - en el futuro se puede implementar
       final response = await CartService.getCart();
 
@@ -232,16 +274,16 @@ class CartProvider extends ChangeNotifier {
         // Validar que hay productos en el carrito
         final restaurantCarts = response.data as List<RestaurantCart>;
         final isValid = restaurantCarts.any((cart) => cart.restaurantId == restaurantId && cart.isNotEmpty);
-        print('✅ CartProvider: Carrito validado - Válido: $isValid');
+        // debugPrint('✅ CartProvider: Carrito validado - Válido: $isValid');
         return isValid;
       } else {
         _setError(response.message);
-        print('❌ CartProvider: Error al validar carrito: ${response.message}');
+        // debugPrint('❌ CartProvider: Error al validar carrito: ${response.message}');
         return false;
       }
     } catch (e) {
       _setError('Error al validar carrito: $e');
-      print('❌ CartProvider: Excepción al validar carrito: $e');
+      // debugPrint('❌ CartProvider: Excepción al validar carrito: $e');
       return false;
     } finally {
       _setLoading(false);

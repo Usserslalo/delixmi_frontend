@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 
 class UnsupportedRoleScreen extends StatelessWidget {
-  const UnsupportedRoleScreen({Key? key}) : super(key: key);
+  const UnsupportedRoleScreen({super.key});
   
   @override
   Widget build(BuildContext context) {
@@ -48,11 +48,11 @@ class UnsupportedRoleScreen extends StatelessWidget {
                     );
                   }
                 },
-                child: const Text('Cerrar Sesión'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
                 ),
+                child: const Text('Cerrar Sesión'),
               ),
             ],
           ),

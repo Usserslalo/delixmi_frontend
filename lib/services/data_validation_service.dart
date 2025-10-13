@@ -1,4 +1,4 @@
-import '../models/user.dart';
+import '../models/auth/user.dart';
 import '../models/address.dart';
 import '../models/product.dart';
 import '../models/restaurant.dart';

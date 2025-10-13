@@ -170,7 +170,7 @@ class RestaurantCartWidget extends StatelessWidget {
                     ),
                   ],
                 ),
-              )).toList(),
+              )),
               
               // Mostrar "..." si hay más productos
               if (restaurant.items.length > 2)

@@ -6,9 +6,9 @@ class AddModifierOptionForm extends StatefulWidget {
   final int groupId;
   
   const AddModifierOptionForm({
-    Key? key,
+    super.key,
     required this.groupId,
-  }) : super(key: key);
+  });
 
   @override
   State<AddModifierOptionForm> createState() => _AddModifierOptionFormState();
@@ -352,7 +352,7 @@ class _AddModifierOptionFormState extends State<AddModifierOptionForm> {
             ),
           ),
           Text(
-            '\$${price}',
+            '\$$price',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.bold,

@@ -61,7 +61,7 @@ class _LocationPickerScreenTempState extends State<LocationPickerScreenTemp> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -75,7 +75,7 @@ class _LocationPickerScreenTempState extends State<LocationPickerScreenTemp> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: colorScheme.primary.withOpacity(0.1),
+                        color: colorScheme.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
@@ -187,7 +187,7 @@ class _LocationPickerScreenTempState extends State<LocationPickerScreenTemp> {
                       borderRadius: BorderRadius.circular(12),
                       gradient: _selectedLatitude != null
                           ? LinearGradient(
-                              colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.8)],
+                              colors: [colorScheme.primary, colorScheme.primary.withValues(alpha: 0.8)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             )

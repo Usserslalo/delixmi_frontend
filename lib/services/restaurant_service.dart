@@ -124,7 +124,7 @@ class RestaurantService {
       final token = await TokenManager.getToken();
       
       // Crear MultipartRequest
-      final uri = Uri.parse('${ApiService.baseUrl}/restaurant/uploads/logo');
+      final uri = Uri.parse('${ApiService.fullUrl}/restaurant/uploads/logo');
       final request = http.MultipartRequest('POST', uri);
       
       // Agregar headers
@@ -183,7 +183,7 @@ class RestaurantService {
       final token = await TokenManager.getToken();
       
       // Crear MultipartRequest
-      final uri = Uri.parse('${ApiService.baseUrl}/restaurant/uploads/cover');
+      final uri = Uri.parse('${ApiService.fullUrl}/restaurant/uploads/cover');
       final request = http.MultipartRequest('POST', uri);
       
       // Agregar headers

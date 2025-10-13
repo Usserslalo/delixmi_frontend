@@ -41,7 +41,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       setState(() {
         _isTokenValid = false;
       });
-      print('❌ Token de reset password está vacío');
+      // debugPrint('❌ Token de reset password está vacío');
       
       // Mostrar error y navegar de vuelta al login
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -57,7 +57,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         }
       });
     } else {
-      print('✅ Token de reset password válido: ${widget.token.substring(0, 10)}...');
+      // debugPrint('✅ Token de reset password válido: ${widget.token.substring(0, 10)}...');
     }
   }
 

@@ -59,7 +59,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print('🗺️ Construyendo LocationPickerScreen con Google Maps');
+    // debugPrint('🗺️ Construyendo LocationPickerScreen con Google Maps');
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     
@@ -103,7 +103,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -117,7 +117,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: colorScheme.primary.withOpacity(0.1),
+                        color: colorScheme.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
@@ -177,7 +177,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -231,7 +231,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                       borderRadius: BorderRadius.circular(12),
                       gradient: _selectedLocation != null
                           ? LinearGradient(
-                              colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.8)],
+                              colors: [colorScheme.primary, colorScheme.primary.withValues(alpha: 0.8)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             )
@@ -291,7 +291,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             zoom: 15.0,
           ),
           onMapCreated: (GoogleMapController controller) {
-            print('🗺️ Google Maps cargado exitosamente!');
+            // debugPrint('🗺️ Google Maps cargado exitosamente!');
             _mapController = controller;
             setState(() {
               _hasMapError = false;
@@ -338,7 +338,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -349,7 +349,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: _isGettingCurrentLocation ? null : _getCurrentLocation,
-                child: Container(
+                child: SizedBox(
                   width: 48,
                   height: 48,
                   child: _isGettingCurrentLocation
@@ -389,7 +389,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -400,7 +400,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -453,7 +453,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                 borderRadius: BorderRadius.circular(50),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -592,7 +592,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
       // Obtener ubicación actual
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
 
       final location = LatLng(position.latitude, position.longitude);

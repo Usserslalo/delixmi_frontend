@@ -55,7 +55,7 @@ class CheckoutSummary {
   static CheckoutSummary calculate({
     required List<CartItem> items,
     required Address deliveryAddress,
-    double deliveryFee = 25.0,
+    double deliveryFee = 20.0, // Valor real del backend
     double serviceFeePercentage = 0.05, // 5%
     String? estimatedDeliveryTime,
     String paymentMethod = 'cash',

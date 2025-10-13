@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/product.dart';
+import '../../models/modifier_selection.dart';
 import '../../providers/cart_provider.dart';
 
 class ModifierSelectionModal extends StatefulWidget {
@@ -95,13 +96,6 @@ class _ModifierSelectionModalState extends State<ModifierSelectionModal> {
     return total;
   }
 
-  List<int> _getSelectedOptionIds() {
-    final List<int> allSelectedIds = [];
-    for (final selectedIds in _selectedOptions.values) {
-      allSelectedIds.addAll(selectedIds);
-    }
-    return allSelectedIds;
-  }
 
   Future<void> _addToCart() async {
     if (!_isValidSelection()) return;
@@ -112,12 +106,25 @@ class _ModifierSelectionModalState extends State<ModifierSelectionModal> {
 
     try {
       final cartProvider = context.read<CartProvider>();
-      final selectedOptionIds = _getSelectedOptionIds();
+      
+      // ✅ NUEVO FORMATO: Convertir _selectedOptions a List<ModifierSelection>
+      final modifiers = <ModifierSelection>[];
+      for (final groupId in _selectedOptions.keys) {
+        final selectedOptionIds = _selectedOptions[groupId];
+        if (selectedOptionIds != null && selectedOptionIds.isNotEmpty) {
+          for (final optionId in selectedOptionIds) {
+            modifiers.add(ModifierSelection(
+              modifierGroupId: groupId,
+              selectedOptionId: optionId,
+            ));
+          }
+        }
+      }
       
       final success = await cartProvider.addToCart(
         productId: widget.product.id,
         quantity: _quantity,
-        modifierOptionIds: selectedOptionIds.isNotEmpty ? selectedOptionIds : null,
+        modifiers: modifiers.isNotEmpty ? modifiers : null,
       );
 
       if (mounted) {
@@ -447,19 +454,7 @@ class _ModifierSelectionModalState extends State<ModifierSelectionModal> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       child: group.isSingleSelection
-          ? RadioListTile<int>(
-              title: Text(option.name),
-              subtitle: option.price > 0 ? Text(option.formattedPrice) : null,
-              value: option.id,
-              groupValue: _selectedOptions[group.id]?.isNotEmpty == true 
-                  ? _selectedOptions[group.id]!.first 
-                  : null,
-              onChanged: canSelect 
-                  ? (value) => _onOptionSelected(group, option, value == option.id)
-                  : null,
-              contentPadding: EdgeInsets.zero,
-              activeColor: Theme.of(context).colorScheme.primary,
-            )
+          ? _buildRadioOption(group, option, isSelected, canSelect)
           : CheckboxListTile(
               title: Text(option.name),
               subtitle: option.price > 0 ? Text(option.formattedPrice) : null,
@@ -470,6 +465,72 @@ class _ModifierSelectionModalState extends State<ModifierSelectionModal> {
               contentPadding: EdgeInsets.zero,
               activeColor: Theme.of(context).colorScheme.primary,
             ),
+    );
+  }
+
+  Widget _buildRadioOption(
+    ModifierGroup group,
+    ModifierOption option,
+    bool isSelected,
+    bool canSelect,
+  ) {
+    return InkWell(
+      onTap: canSelect
+          ? () => _onOptionSelected(group, option, !isSelected)
+          : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        child: Row(
+          children: [
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected 
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.grey,
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? Center(
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    option.name,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: canSelect ? null : Colors.grey,
+                    ),
+                  ),
+                  if (option.price > 0)
+                    Text(
+                      option.formattedPrice,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

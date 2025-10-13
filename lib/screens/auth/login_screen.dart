@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
-import '../../models/auth/user.dart' as AuthUser;
+import '../../models/auth/user.dart' as auth_user;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -44,12 +44,14 @@ class _LoginScreenState extends State<LoginScreen> {
       
       if (user.roles.isEmpty) {
         // Caso raro: usuario sin roles
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error: Usuario sin roles asignados'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: Usuario sin roles asignados'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
         return;
       }
       
@@ -59,12 +61,14 @@ class _LoginScreenState extends State<LoginScreen> {
       _redirectByRole(primaryRole, user);
       
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -73,9 +77,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
   
   /// Redirige al usuario a la pantalla correcta según su rol
-  void _redirectByRole(String roleName, AuthUser.User user) {
+  void _redirectByRole(String roleName, auth_user.User user) {
     // Logging para debugging
-    print('🔑 Redirigiendo usuario con rol: $roleName');
+    // debugPrint('🔑 Redirigiendo usuario con rol: $roleName');
     
     switch (roleName) {
       // ===== ROLES DE PLATAFORMA =====
@@ -147,7 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
       
       // ===== ROL NO RECONOCIDO =====
       default:
-        print('⚠️ Rol no reconocido: $roleName');
+        // debugPrint('⚠️ Rol no reconocido: $roleName');
         Navigator.pushReplacementNamed(context, '/unsupported_role');
         break;
     }

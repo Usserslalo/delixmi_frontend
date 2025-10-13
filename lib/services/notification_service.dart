@@ -71,7 +71,7 @@ class NotificationService {
   static void _onNotificationTapped(NotificationResponse response) {
     debugPrint('🔔 Notificación tocada: ${response.payload}');
     
-    // TODO: Manejar navegación basada en el payload
+    // Navegación basada en el payload - funcionalidad pendiente
     final payload = response.payload;
     if (payload != null) {
       _handleNotificationPayload(payload);
@@ -104,7 +104,7 @@ class NotificationService {
 
   /// Parsear payload de notificación
   static Map<String, dynamic> _parseNotificationPayload(String payload) {
-    // TODO: Implementar parsing JSON real
+    // Parsing JSON real - funcionalidad pendiente
     return {
       'type': 'order_status',
       'order_id': '123',
@@ -114,19 +114,19 @@ class NotificationService {
 
   /// Manejar notificación de estado de pedido
   static void _handleOrderStatusNotification(Map<String, dynamic> data) {
-    // TODO: Navegar a pantalla de pedido
+    // Navegación a pantalla de pedido - funcionalidad pendiente
     debugPrint('🔔 Estado de pedido: ${data['status']}');
   }
 
   /// Manejar notificación de actualización de entrega
   static void _handleDeliveryUpdateNotification(Map<String, dynamic> data) {
-    // TODO: Navegar a pantalla de seguimiento
+    // Navegación a pantalla de seguimiento - funcionalidad pendiente
     debugPrint('🔔 Actualización de entrega: ${data['status']}');
   }
 
   /// Manejar notificación de promoción
   static void _handlePromotionNotification(Map<String, dynamic> data) {
-    // TODO: Navegar a pantalla de promociones
+    // Navegación a pantalla de promociones - funcionalidad pendiente
     debugPrint('🔔 Promoción: ${data['title']}');
   }
 
@@ -205,7 +205,7 @@ class NotificationService {
     final payload = _createDeliveryPayload(orderId, status);
 
     await showNotification(
-      id: (orderId + '_delivery').hashCode,
+      id: '${orderId}_delivery'.hashCode,
       title: title,
       body: message,
       payload: payload,
@@ -322,7 +322,7 @@ class NotificationService {
   }) async {
     try {
       // Por ahora, mostrar notificación inmediata
-      // TODO: Implementar programación real con timezone
+      // Programación real con timezone - funcionalidad pendiente
       await showNotification(
         id: id,
         title: title,

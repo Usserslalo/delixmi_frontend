@@ -20,7 +20,7 @@ class RestaurantCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -33,8 +33,8 @@ class RestaurantCard extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(20),
-            splashColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-            highlightColor: Theme.of(context).colorScheme.primary.withOpacity(0.05),
+            splashColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+            highlightColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -74,7 +74,7 @@ class RestaurantCard extends StatelessWidget {
     return Stack(
       children: [
         // Imagen de portada con caché
-        Container(
+        SizedBox(
           height: 180,
           width: double.infinity,
           child: restaurant.coverPhotoUrl != null && restaurant.coverPhotoUrl!.isNotEmpty
@@ -83,8 +83,8 @@ class RestaurantCard extends StatelessWidget {
                   fit: BoxFit.cover,
                   placeholder: (context, url) => _buildImagePlaceholder(),
                   errorWidget: (context, url, error) {
-                    print('❌ Error cargando imagen de portada: $error');
-                    print('❌ URL intentada: $url');
+                    // debugPrint('❌ Error cargando imagen de portada: $error');
+                    // debugPrint('❌ URL intentada: $url');
                     return _buildImagePlaceholder();
                   },
                   fadeInDuration: const Duration(milliseconds: 300),
@@ -105,7 +105,7 @@ class RestaurantCard extends StatelessWidget {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -119,8 +119,8 @@ class RestaurantCard extends StatelessWidget {
                         fit: BoxFit.cover,
                         placeholder: (context, url) => _buildLogoPlaceholder(),
                         errorWidget: (context, url, error) {
-                          print('❌ Error cargando logo: $error');
-                          print('❌ URL intentada: $url');
+                          // debugPrint('❌ Error cargando logo: $error');
+                          // debugPrint('❌ URL intentada: $url');
                           return _buildLogoPlaceholder();
                         },
                         fadeInDuration: const Duration(milliseconds: 200),
@@ -160,7 +160,7 @@ class RestaurantCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey[300]!.withOpacity(0.3),
+                color: Colors.grey[300]!.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Icon(
@@ -215,7 +215,7 @@ class RestaurantCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -337,10 +337,10 @@ class RestaurantCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha: 0.3),
           width: 0.5,
         ),
       ),

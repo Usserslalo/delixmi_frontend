@@ -51,13 +51,13 @@ class TokenManager {
   /// Guarda los datos del usuario de forma segura
   static Future<void> saveUserData(Map<String, dynamic> userData) async {
     try {
-      print('🔍 TokenManager.saveUserData: Guardando datos: $userData');
+      // debugPrint('🔍 TokenManager.saveUserData: Guardando datos: $userData');
       final userJson = jsonEncode(userData);
-      print('🔍 TokenManager.saveUserData: JSON generado: $userJson');
+      // debugPrint('🔍 TokenManager.saveUserData: JSON generado: $userJson');
       await _storage.write(key: _userKey, value: userJson);
-      print('✅ TokenManager.saveUserData: Datos guardados exitosamente');
+      // debugPrint('✅ TokenManager.saveUserData: Datos guardados exitosamente');
     } catch (e) {
-      print('❌ TokenManager.saveUserData: Error: $e');
+      // debugPrint('❌ TokenManager.saveUserData: Error: $e');
       throw Exception('Error al guardar los datos del usuario: ${e.toString()}');
     }
   }
@@ -66,10 +66,10 @@ class TokenManager {
   static Future<String?> getUserData() async {
     try {
       final data = await _storage.read(key: _userKey);
-      print('🔍 TokenManager.getUserData: Datos recuperados: $data');
+      // debugPrint('🔍 TokenManager.getUserData: Datos recuperados: $data');
       return data;
     } catch (e) {
-      print('❌ TokenManager.getUserData: Error: $e');
+      // debugPrint('❌ TokenManager.getUserData: Error: $e');
       return null;
     }
   }

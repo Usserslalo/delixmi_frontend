@@ -24,7 +24,7 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   CheckoutSummary? _checkoutSummary;
   String _paymentMethod = 'cash';
-  bool _isProcessing = false;
+  final bool _isProcessing = false;
 
   @override
   void initState() {
@@ -41,10 +41,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (deliveryAddress != null) {
       try {
         // Obtener cálculos reales del backend
-        final response = await CheckoutService.createMercadoPagoPreference(
+        final response = await CheckoutService.createMercadoPagoPreferenceFromCart(
           addressId: deliveryAddress.id,
           restaurantId: widget.restaurant.restaurantId,
-          useCart: true,
         );
         
         if (response.isSuccess && response.data != null) {
@@ -166,13 +165,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+         boxShadow: [
+           BoxShadow(
+             color: Colors.grey.withValues(alpha: 0.3),
+             blurRadius: 8,
+             offset: const Offset(0, 2),
+           ),
+         ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -217,7 +216,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.95),
+                  color: Colors.white.withValues(alpha: 0.95),
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(12),
                     bottomRight: Radius.circular(12),
@@ -256,7 +255,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.3),
+                      color: Colors.grey.withValues(alpha: 0.3),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -287,7 +286,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
+            color: Colors.grey.withValues(alpha: 0.2),
             spreadRadius: 1,
             blurRadius: 3,
             offset: const Offset(0, 2),
@@ -350,7 +349,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
+            color: Colors.grey.withValues(alpha: 0.2),
             spreadRadius: 1,
             blurRadius: 3,
             offset: const Offset(0, 2),
@@ -417,7 +416,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
               ],
             ),
-          )).toList(),
+          )),
           
           const Divider(),
           
@@ -467,7 +466,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
+            color: Colors.grey.withValues(alpha: 0.2),
             spreadRadius: 1,
             blurRadius: 3,
             offset: const Offset(0, 2),
@@ -496,31 +495,85 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           const SizedBox(height: 16),
           
           // Opciones de pago
-          RadioListTile<String>(
-            title: const Text('Efectivo'),
-            subtitle: const Text('Paga al recibir tu pedido'),
+          _buildPaymentOption(
+            title: 'Efectivo',
+            subtitle: 'Paga al recibir tu pedido',
             value: 'cash',
-            groupValue: _paymentMethod,
-            onChanged: (value) {
-              setState(() {
-                _paymentMethod = value!;
-              });
-            },
-            activeColor: Theme.of(context).colorScheme.primary,
           ),
-          RadioListTile<String>(
-            title: const Text('Tarjeta'),
-            subtitle: const Text('Pago seguro con Mercado Pago'),
+          _buildPaymentOption(
+            title: 'Tarjeta',
+            subtitle: 'Pago seguro con Mercado Pago',
             value: 'card',
-            groupValue: _paymentMethod,
-            onChanged: (value) {
-              setState(() {
-                _paymentMethod = value!;
-              });
-            },
-            activeColor: Theme.of(context).colorScheme.primary,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentOption({
+    required String title,
+    required String subtitle,
+    required String value,
+  }) {
+    final isSelected = _paymentMethod == value;
+    
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _paymentMethod = value;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        child: Row(
+          children: [
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected 
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.grey,
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? Center(
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -565,8 +618,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     
     // Si se seleccionó una dirección, actualizar el estado
     if (selectedAddress != null && selectedAddress is Address) {
-      final addressProvider = context.read<AddressProvider>();
-      addressProvider.selectAddress(selectedAddress);
+      if (mounted) {
+        final addressProvider = context.read<AddressProvider>();
+        addressProvider.selectAddress(selectedAddress);
+      }
       
       // Mostrar mensaje de confirmación
       if (mounted) {
@@ -590,6 +645,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         builder: (context) => OrderConfirmationScreen(
           restaurant: widget.restaurant,
           paymentMethod: _paymentMethod,
+          deliveryAddress: _checkoutSummary!.deliveryAddress,
         ),
       ),
     );
@@ -611,7 +667,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           final int roundedMin = minMinutes.round();
           final int roundedMax = maxMinutes.round();
           
-          return '${roundedMin}-${roundedMax} min';
+          return '$roundedMin-$roundedMax min';
         }
       } catch (e) {
         debugPrint('Error al formatear tiempo: $e');

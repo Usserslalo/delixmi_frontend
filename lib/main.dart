@@ -8,7 +8,7 @@ import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
 import 'screens/auth/unsupported_role_screen.dart';
 import 'screens/owner/owner_dashboard_screen.dart';
-import 'screens/owner/edit_profile_screen.dart' as OwnerScreens;
+import 'screens/owner/edit_profile_screen.dart' as owner_screens;
 import 'screens/owner/menu_management_screen.dart';
 import 'screens/owner/modifier_groups_management_screen.dart';
 import 'screens/driver/driver_dashboard_screen.dart';
@@ -33,11 +33,12 @@ import 'screens/test/cart_badge_test_screen.dart';
 import 'screens/shared/splash_screen.dart';
 import 'models/address.dart';
 import 'models/product.dart';
-import 'models/user.dart';
+import 'models/auth/user.dart';
 import 'models/restaurant_cart.dart';
 import 'providers/cart_provider.dart';
 import 'providers/restaurant_cart_provider.dart';
 import 'providers/address_provider.dart';
+import 'providers/checkout_provider.dart';
 import 'services/notification_service.dart';
 import 'services/payment_service.dart';
 import 'theme.dart';
@@ -183,6 +184,7 @@ class _DelixmiAppState extends State<DelixmiApp> {
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => RestaurantCartProvider()),
         ChangeNotifierProvider(create: (_) => AddressProvider()),
+        ChangeNotifierProvider(create: (_) => CheckoutProvider()),
       ],
       child: MaterialApp(
         title: 'Delixmi',
@@ -254,8 +256,7 @@ class _DelixmiAppState extends State<DelixmiApp> {
         '/edit-profile': (context) {
           final user = ModalRoute.of(context)?.settings.arguments as User?;
           return EditProfileScreen(user: user!);
-        },
-        '/change-password': (context) => const ChangePasswordScreen(),
+        },        '/change-password': (context) => const ChangePasswordScreen(),
         '/help-support': (context) => const HelpSupportScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/test-cart-badge': (context) => const CartBadgeTestScreen(),
@@ -268,7 +269,7 @@ class _DelixmiAppState extends State<DelixmiApp> {
         
         // ===== RUTAS DE OWNER =====
         '/owner_dashboard': (context) => const OwnerDashboardScreen(),
-        '/owner_profile_edit': (context) => const OwnerScreens.EditProfileScreen(),
+        '/owner_profile_edit': (context) => const owner_screens.EditProfileScreen(),
         '/owner_menu': (context) => const MenuManagementScreen(),
         '/owner_modifier_groups': (context) => const ModifierGroupsManagementScreen(),
         

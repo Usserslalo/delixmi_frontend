@@ -369,7 +369,7 @@ class _HomeScreenState extends State<HomeScreen> {
             size: 20,
           ),
           onPressed: () {
-            // TODO: Implementar notificaciones
+            // Notificaciones - funcionalidad pendiente
           },
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),

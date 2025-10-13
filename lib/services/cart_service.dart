@@ -1,5 +1,6 @@
 import '../models/api_response.dart';
 import '../models/restaurant_cart.dart';
+import '../models/modifier_selection.dart';
 import 'api_service.dart';
 import 'token_manager.dart';
 import 'logger_service.dart';
@@ -125,16 +126,56 @@ class CartService {
     }
   }
 
-  /// Agregar producto al carrito
+  /// Agregar producto al carrito con nuevo formato de modificadores
   static Future<ApiResponse<Map<String, dynamic>>> addToCart({
+    required int productId,
+    required int quantity,
+    List<ModifierSelection>? modifiers,
+  }) async {
+    try {
+      LoggerService.cart('Agregando producto $productId al carrito (cantidad: $quantity)...', tag: 'CartService');
+      if (modifiers != null && modifiers.isNotEmpty) {
+        LoggerService.cart('Con modificadores (nuevo formato): $modifiers', tag: 'CartService');
+      }
+      
+      final response = await ApiService.makeRequest<Map<String, dynamic>>(
+        'POST',
+        '/cart/add',
+        await TokenManager.getAuthHeaders(),
+        {
+          'productId': productId,
+          'quantity': quantity,
+          if (modifiers != null && modifiers.isNotEmpty)
+            'modifiers': ModifierSelection.toMapList(modifiers),
+        },
+        (data) => data as Map<String, dynamic>,
+      );
+
+      LoggerService.cart('Respuesta al agregar: ${response.status}', tag: 'CartService');
+      LoggerService.cart('Datos de respuesta: ${response.data}', tag: 'CartService');
+
+      return response;
+    } catch (e) {
+      LoggerService.error('Error al agregar producto al carrito: $e', tag: 'CartService');
+      return ApiResponse<Map<String, dynamic>>(
+        status: 'error',
+        message: 'Error al agregar producto al carrito: $e',
+        data: null,
+      );
+    }
+  }
+
+  /// Agregar producto al carrito (método de compatibilidad con formato antiguo)
+  @Deprecated('Usar addToCart con parámetro modifiers en lugar de modifierOptionIds')
+  static Future<ApiResponse<Map<String, dynamic>>> addToCartLegacy({
     required int productId,
     required int quantity,
     List<int>? modifierOptionIds,
   }) async {
     try {
-      LoggerService.cart('Agregando producto $productId al carrito (cantidad: $quantity)...', tag: 'CartService');
+      LoggerService.cart('Agregando producto $productId al carrito (cantidad: $quantity) [MODO LEGACY]...', tag: 'CartService');
       if (modifierOptionIds != null && modifierOptionIds.isNotEmpty) {
-        LoggerService.cart('Con modificadores: $modifierOptionIds', tag: 'CartService');
+        LoggerService.cart('Con modificadores (formato legacy): $modifierOptionIds', tag: 'CartService');
       }
       
       final response = await ApiService.makeRequest<Map<String, dynamic>>(
@@ -150,12 +191,12 @@ class CartService {
         (data) => data as Map<String, dynamic>,
       );
 
-      LoggerService.cart('Respuesta al agregar: ${response.status}', tag: 'CartService');
+      LoggerService.cart('Respuesta al agregar (legacy): ${response.status}', tag: 'CartService');
       LoggerService.cart('Datos de respuesta: ${response.data}', tag: 'CartService');
 
       return response;
     } catch (e) {
-      LoggerService.error('Error al agregar producto al carrito: $e', tag: 'CartService');
+      LoggerService.error('Error al agregar producto al carrito (legacy): $e', tag: 'CartService');
       return ApiResponse<Map<String, dynamic>>(
         status: 'error',
         message: 'Error al agregar producto al carrito: $e',

@@ -35,58 +35,58 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     });
 
         try {
-            print('🔍 Cargando detalles del restaurante ID: ${widget.restaurantId}');
+            // debugPrint('🔍 Cargando detalles del restaurante ID: ${widget.restaurantId}');
             final response = await ApiService.getRestaurantDetail(
               restaurantId: widget.restaurantId,
             );
 
-      print('📡 Respuesta del servidor: ${response.status}');
-      print('📡 Datos recibidos: ${response.data}');
-      print('📡 Mensaje: ${response.message}');
+      // debugPrint('📡 Respuesta del servidor: ${response.status}');
+      // debugPrint('📡 Datos recibidos: ${response.data}');
+      // debugPrint('📡 Mensaje: ${response.message}');
 
       if (mounted) {
         if (response.isSuccess && response.data != null) {
-          print('✅ Respuesta exitosa, parseando datos...');
+          // debugPrint('✅ Respuesta exitosa, parseando datos...');
           try {
             final restaurant = RestaurantDetail.fromJson(response.data!);
-            print('✅ Restaurante parseado: ${restaurant.name}');
-            print('✅ Categorías: ${restaurant.categories.length}');
+            // debugPrint('✅ Restaurante parseado: ${restaurant.name}');
+            // debugPrint('✅ Categorías: ${restaurant.categories.length}');
             
-            // Debug: Contar productos totales
-            int totalProducts = 0;
-            for (final category in restaurant.categories) {
-              for (final subcategory in category.subcategories) {
-                totalProducts += subcategory.products.length;
-                print('📦 Categoría "${category.name}" > "${subcategory.name}": ${subcategory.products.length} productos');
-                for (final product in subcategory.products) {
-                  print('  - ${product.name} (modificadores: ${product.modifierGroups.length})');
-                }
-              }
-            }
-            print('📊 Total de productos en el restaurante: $totalProducts');
+            // Debug: Log restaurant structure
+            // int totalProducts = 0;
+            // for (final category in restaurant.categories) {
+            //   for (final subcategory in category.subcategories) {
+            //     totalProducts += subcategory.products.length;
+            //     debugPrint('📦 Categoría "${category.name}" > "${subcategory.name}": ${subcategory.products.length} productos');
+            //     for (final product in subcategory.products) {
+            //       debugPrint('  - ${product.name} (modificadores: ${product.modifierGroups.length})');
+            //     }
+            //   }
+            // }
+            // debugPrint('📊 Total de productos en el restaurante: $totalProducts');
             
             setState(() {
               _restaurant = restaurant;
               _isLoading = false;
             });
           } catch (parseError) {
-            print('❌ Error al parsear: $parseError');
+            // debugPrint('❌ Error al parsear: $parseError');
             setState(() {
               _errorMessage = 'Error al procesar datos del restaurante: $parseError';
               _isLoading = false;
             });
           }
         } else {
-          print('❌ Respuesta fallida: ${response.message}');
+          // debugPrint('❌ Respuesta fallida: ${response.message}');
           // Usar datos de prueba si falla la API
-          print('🔄 Cargando datos de prueba...');
+          // debugPrint('🔄 Cargando datos de prueba...');
           _loadMockData();
         }
       }
     } catch (e) {
-      print('❌ Error en la petición: $e');
+      // debugPrint('❌ Error en la petición: $e');
       // Usar datos de prueba si falla la conexión
-      print('🔄 Cargando datos de prueba...');
+      // debugPrint('🔄 Cargando datos de prueba...');
       _loadMockData();
     }
   }
@@ -95,12 +95,12 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     // Datos de prueba para demostrar la funcionalidad
     RestaurantDetail mockRestaurant;
     
-    print('🔍 RestaurantDetailScreen: Cargando mock data para restaurantId: ${widget.restaurantId}');
+    // debugPrint('🔍 RestaurantDetailScreen: Cargando mock data para restaurantId: ${widget.restaurantId}');
     
     // Crear datos diferentes según el restaurantId
     if (widget.restaurantId == 1) {
       // Pizzería de Ana
-      print('🔍 RestaurantDetailScreen: Cargando Pizzería de Ana');
+      // debugPrint('🔍 RestaurantDetailScreen: Cargando Pizzería de Ana');
       mockRestaurant = RestaurantDetail(
         id: widget.restaurantId,
         name: 'Pizzería de Ana',
@@ -238,7 +238,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     );
     } else if (widget.restaurantId == 2) {
       // Sushi Master Kenji
-      print('🔍 RestaurantDetailScreen: Cargando Sushi Master Kenji');
+      // debugPrint('🔍 RestaurantDetailScreen: Cargando Sushi Master Kenji');
       mockRestaurant = RestaurantDetail(
         id: widget.restaurantId,
         name: 'Sushi Master Kenji',
@@ -363,11 +363,12 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
 
   void _navigateToProductDetail(Product product) {
     // Debug: Verificar producto antes de navegar
-    print('🔍 RestaurantDetailScreen: Navegando a detalles de: ${product.name}');
-    print('🔍 RestaurantDetailScreen: ModifierGroups count: ${product.modifierGroups.length}');
-    for (final group in product.modifierGroups) {
-      print('🔍 RestaurantDetailScreen: Grupo "${group.name}" con ${group.options.length} opciones');
-    }
+    // debugPrint('🔍 RestaurantDetailScreen: Navegando a detalles de: ${product.name}');
+    // debugPrint('🔍 RestaurantDetailScreen: ModifierGroups count: ${product.modifierGroups.length}');
+    // Debug: Log modifier groups
+    // for (final group in product.modifierGroups) {
+    //   debugPrint('🔍 RestaurantDetailScreen: Grupo "${group.name}" con ${group.options.length} opciones');
+    // }
     
     Navigator.of(context).pushNamed(
       '/product-detail',
@@ -396,7 +397,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
               BoxShadow(
                 color: (isInCart 
                     ? Colors.green[600]! 
-                    : Theme.of(context).colorScheme.primary).withOpacity(0.3),
+                    : Theme.of(context).colorScheme.primary).withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -446,26 +447,26 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   /// Maneja la lógica de agregar al carrito
   Future<void> _handleAddToCart(Product product) async {
     try {
-      print('🛒 RestaurantDetailScreen: Intentando agregar ${product.name} al carrito');
+      // debugPrint('🛒 RestaurantDetailScreen: Intentando agregar ${product.name} al carrito');
       
       // Verificar si el producto tiene modificadores requeridos
       final hasRequiredModifiers = product.modifierGroups.any((group) => group.minSelection > 0);
       
       if (hasRequiredModifiers) {
-        print('🛒 RestaurantDetailScreen: Producto tiene modificadores requeridos, navegando a detalles');
+        // debugPrint('🛒 RestaurantDetailScreen: Producto tiene modificadores requeridos, navegando a detalles');
         // Si tiene modificadores requeridos, navegar a la pantalla de detalles
         _navigateToProductDetail(product);
         return;
       }
       
       // Si no tiene modificadores requeridos, agregar directamente al carrito
-      print('🛒 RestaurantDetailScreen: Producto sin modificadores requeridos, agregando directamente');
+      // debugPrint('🛒 RestaurantDetailScreen: Producto sin modificadores requeridos, agregando directamente');
       final cartProvider = context.read<CartProvider>();
       
       final success = await cartProvider.addToCart(
         productId: product.id,
         quantity: 1,
-        modifierOptionIds: null,
+        modifiers: null, // Sin modificadores
       );
       
       if (mounted) {
@@ -504,7 +505,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
           // Verificar si es error de modificadores requeridos
           if (cartProvider.isModifiersRequiredError) {
             // Navegar a detalles del producto para seleccionar modificadores
-            print('🛒 RestaurantDetailScreen: Modificadores requeridos, navegando a detalles');
+            // debugPrint('🛒 RestaurantDetailScreen: Modificadores requeridos, navegando a detalles');
             _navigateToProductDetail(product);
           } else {
             // Mostrar error genérico
@@ -529,7 +530,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
         }
       }
     } catch (e) {
-      print('❌ RestaurantDetailScreen: Error al agregar al carrito: $e');
+      // debugPrint('❌ RestaurantDetailScreen: Error al agregar al carrito: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -691,13 +692,13 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
               IconButton(
                 icon: const Icon(Icons.favorite_border),
                 onPressed: () {
-                  // TODO: Implementar favoritos
+                  // Favoritos - funcionalidad pendiente
                 },
               ),
               IconButton(
                 icon: const Icon(Icons.share),
                 onPressed: () {
-                  // TODO: Implementar compartir
+                  // Compartir - funcionalidad pendiente
                 },
               ),
             ],
@@ -733,7 +734,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                           ],
                         ),
                       ),
-                      // TODO: Agregar rating cuando esté disponible en el modelo
+                      // Rating - funcionalidad pendiente
                     ],
                   ),
                   

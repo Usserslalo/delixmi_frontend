@@ -1,7 +1,9 @@
 // Ejemplo de uso del CartService con soporte para modificadores
 // Este archivo es solo para documentación y ejemplos
 
+import 'package:flutter/foundation.dart';
 import '../services/cart_service.dart';
+import '../models/modifier_selection.dart';
 
 class CartWithModifiersExample {
   /// Ejemplo de agregar un producto básico al carrito (sin modificadores)
@@ -12,58 +14,65 @@ class CartWithModifiersExample {
     );
     
     if (response.isSuccess) {
-      print('✅ Producto agregado exitosamente');
+      debugPrint('✅ Producto agregado exitosamente');
     } else {
-      print('❌ Error: ${response.message}');
+      debugPrint('❌ Error: ${response.message}');
     }
   }
 
   /// Ejemplo de agregar un producto con modificadores
   /// Supongamos que queremos una Pizza Margherita grande con orilla rellena de queso
   static Future<void> addProductWithModifiers() async {
+    // ✅ NUEVO FORMATO: Usar ModifierSelection
+    final modifiers = [
+      ModifierSelection(modifierGroupId: 1, selectedOptionId: 3),  // Grupo 1: Tamaño, Opción 3: Grande
+      ModifierSelection(modifierGroupId: 2, selectedOptionId: 27), // Grupo 2: Extras, Opción 27: Orilla Rellena
+    ];
+    
     final response = await CartService.addToCart(
       productId: 1, // Pizza Margherita
       quantity: 1,
-      modifierOptionIds: [
-        3,  // ID 3: Tamaño Grande
-        27, // ID 27: Orilla Rellena de Queso
-      ],
+      modifiers: modifiers,
     );
     
     if (response.isSuccess) {
-      print('✅ Pizza Margherita Grande con orilla rellena agregada');
-      print('📊 Respuesta: ${response.data}');
+      debugPrint('✅ Pizza Margherita Grande con orilla rellena agregada');
+      debugPrint('📊 Respuesta: ${response.data}');
     } else {
-      print('❌ Error: ${response.message}');
+      debugPrint('❌ Error: ${response.message}');
     }
   }
 
   /// Ejemplo de agregar múltiples productos con diferentes modificadores
   static Future<void> addMultipleProductsWithModifiers() async {
     // Producto 1: Pizza Hawaiana Mediana con extra queso
+    final modifiers1 = [
+      ModifierSelection(modifierGroupId: 1, selectedOptionId: 2), // Grupo 1: Tamaño, Opción 2: Mediana
+      ModifierSelection(modifierGroupId: 2, selectedOptionId: 5), // Grupo 2: Extras, Opción 5: Extra Queso
+    ];
+    
     final response1 = await CartService.addToCart(
       productId: 2, // Pizza Hawaiana
       quantity: 1,
-      modifierOptionIds: [
-        2, // ID 2: Tamaño Mediana
-        5, // ID 5: Extra Queso
-      ],
+      modifiers: modifiers1,
     );
 
     // Producto 2: Pizza Pepperoni Pequeña sin cebolla
+    final modifiers2 = [
+      ModifierSelection(modifierGroupId: 1, selectedOptionId: 1),  // Grupo 1: Tamaño, Opción 1: Pequeña
+      ModifierSelection(modifierGroupId: 3, selectedOptionId: 10), // Grupo 3: Ingredientes, Opción 10: Sin Cebolla
+    ];
+    
     final response2 = await CartService.addToCart(
       productId: 3, // Pizza Pepperoni
       quantity: 2,
-      modifierOptionIds: [
-        1,  // ID 1: Tamaño Pequeña
-        10, // ID 10: Sin Cebolla
-      ],
+      modifiers: modifiers2,
     );
 
     if (response1.isSuccess && response2.isSuccess) {
-      print('✅ Ambos productos agregados exitosamente');
+      debugPrint('✅ Ambos productos agregados exitosamente');
     } else {
-      print('❌ Error en uno o ambos productos');
+      debugPrint('❌ Error en uno o ambos productos');
     }
   }
 }

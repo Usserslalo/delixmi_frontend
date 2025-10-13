@@ -3,12 +3,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/api_response.dart';
+import '../core/constants/api_constants.dart';
 
 class ApiService {
-  // Configuración de URLs
-  static const String baseUrl = 'http://10.0.2.2:3000'; // Para emulador Android
-  // static const String baseUrl = 'http://localhost:3000'; // Para web y iOS
-  // static const String baseUrl = 'https://783df38e9ffd.ngrok-free.app'; // Para ngrok - Backend con imágenes
+  // Configuración de URLs - Usa la constante BASE_URL definida en api_constants.dart
   static const String apiVersion = '/api';
   
   static String get fullUrl => '$baseUrl$apiVersion';
@@ -217,21 +215,21 @@ class ApiService {
       }
 
       // Debug: Imprimir respuesta del servidor (solo en desarrollo)
-      print('=== RESPUESTA DEL SERVIDOR ===');
-      print('URL: $url');
-      print('Method: $method');
-      print('Status Code: ${response.statusCode}');
-      print('Response Headers: ${response.headers}');
-      print('Response Body Raw: ${response.body}');
-      print('==============================');
+      // debugPrint('=== RESPUESTA DEL SERVIDOR ===');
+      // debugPrint('URL: $url');
+      // debugPrint('Method: $method');
+      // debugPrint('Status Code: ${response.statusCode}');
+      // debugPrint('Response Headers: ${response.headers}');
+      // debugPrint('Response Body Raw: ${response.body}');
+      // debugPrint('==============================');
 
       Map<String, dynamic> responseData;
       try {
         responseData = jsonDecode(response.body);
-        print('Response Body Parsed: $responseData');
+        // debugPrint('Response Body Parsed: $responseData');
       } catch (e) {
-        print('❌ Error parsing JSON: $e');
-        print('❌ Raw response body: ${response.body}');
+        // debugPrint('❌ Error parsing JSON: $e');
+        // debugPrint('❌ Raw response body: ${response.body}');
         return ApiResponse<T>(
           status: 'error',
           message: 'Error en el formato de respuesta del servidor: ${e.toString()}',

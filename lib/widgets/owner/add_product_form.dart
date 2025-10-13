@@ -10,9 +10,9 @@ class AddProductForm extends StatefulWidget {
   final int? preSelectedSubcategoryId;
   
   const AddProductForm({
-    Key? key,
+    super.key,
     this.preSelectedSubcategoryId,
-  }) : super(key: key);
+  });
 
   @override
   State<AddProductForm> createState() => _AddProductFormState();
@@ -31,7 +31,7 @@ class _AddProductFormState extends State<AddProductForm> {
   List<ModifierGroup> _modifierGroups = [];
   
   int? _selectedSubcategoryId;
-  Set<int> _selectedModifierGroupIds = {};
+  final Set<int> _selectedModifierGroupIds = {};
   
   // Variables para manejo de imagen
   File? _selectedImage;
@@ -290,7 +290,7 @@ class _AddProductFormState extends State<AddProductForm> {
                   children: [
                     // Dropdown de Subcategoría
                     DropdownButtonFormField<int>(
-                      value: _selectedSubcategoryId,
+                      initialValue: _selectedSubcategoryId,
                       decoration: const InputDecoration(
                         labelText: 'Subcategoría',
                         hintText: 'Selecciona una subcategoría',

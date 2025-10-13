@@ -41,10 +41,6 @@ class Restaurant {
     
     // Debug logs para verificar URLs de imágenes y estado
     final isOpenValue = json['isOpen'] ?? json['is_open'];
-    print('🖼️ Restaurant ${json['name']}:');
-    print('   Logo URL: $logoUrl');
-    print('   Cover URL: $coverPhotoUrl');
-    print('   isOpen: $isOpenValue (${isOpenValue.runtimeType})');
     
     return Restaurant(
       id: json['id'] ?? 0,
