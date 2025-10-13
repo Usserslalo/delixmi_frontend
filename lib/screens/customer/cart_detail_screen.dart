@@ -19,13 +19,24 @@ class CartDetailScreen extends StatefulWidget {
 class _CartDetailScreenState extends State<CartDetailScreen> {
   @override
   Widget build(BuildContext context) {
+    const primaryOrange = Color(0xFFF2843A);
+    const white = Color(0xFFFFFFFF);
+    const darkGray = Color(0xFF1A1A1A);
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F7F6),
       appBar: AppBar(
-        title: Text(widget.restaurant.restaurantName),
+        title: Text(
+          widget.restaurant.restaurantName,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: darkGray,
+          ),
+        ),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: white,
+        surfaceTintColor: white,
         elevation: 0,
-        foregroundColor: Colors.black,
         actions: [
           Consumer<RestaurantCartProvider>(
             builder: (context, cartProvider, child) {
@@ -33,17 +44,17 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
               if (currentRestaurant != null && currentRestaurant.totalItems > 0) {
                 return Container(
                   margin: const EdgeInsets.only(right: 16),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    borderRadius: BorderRadius.circular(12),
+                    color: primaryOrange,
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     '${currentRestaurant.totalItems}',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: 13,
                     ),
                   ),
                 );
@@ -76,9 +87,9 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
                         item: item,
                         onQuantityChanged: (newQuantity) {
                           if (newQuantity <= 0) {
-                            _showRemoveConfirmation(item.productName, () {
-                              cartProvider.removeFromCart(itemId: item.id);
-                            });
+                            // Eliminar directamente sin mostrar diálogo adicional
+                            // ya que el CartItemWidget tiene su propio diálogo de confirmación
+                            cartProvider.removeFromCart(itemId: item.id);
                           } else {
                             cartProvider.updateQuantity(
                               itemId: item.id,
@@ -87,9 +98,9 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
                           }
                         },
                         onRemove: () {
-                          _showRemoveConfirmation(item.productName, () {
-                            cartProvider.removeFromCart(itemId: item.id);
-                          });
+                          // Eliminar directamente sin mostrar diálogo adicional
+                          // ya que el CartItemWidget tiene su propio diálogo de confirmación
+                          cartProvider.removeFromCart(itemId: item.id);
                         },
                       );
                     },
@@ -107,144 +118,188 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
   }
 
   Widget _buildEmptyCart() {
+    const primaryOrange = Color(0xFFF2843A);
+    const white = Color(0xFFFFFFFF);
+    const darkGray = Color(0xFF1A1A1A);
+
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.shopping_cart_outlined,
-            size: 80,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Carrito vacío',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'No hay productos en el carrito de este restaurante',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.of(context).pushNamed(
-                '/restaurant-detail',
-                arguments: widget.restaurant.restaurantId,
-              );
-            },
-            icon: const Icon(Icons.restaurant),
-            label: const Text('Ver Restaurante'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: primaryOrange.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.shopping_cart_outlined,
+                size: 80,
+                color: primaryOrange.withValues(alpha: 0.6),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 32),
+            Text(
+              'Carrito vacío',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: darkGray,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No hay productos en el carrito\nde este restaurante',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: const Color(0xFF757575),
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 40),
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.of(context).pushNamed(
+                  '/restaurant-detail',
+                  arguments: widget.restaurant.restaurantId,
+                );
+              },
+              icon: const Icon(Icons.restaurant_rounded),
+              label: const Text('Ver Restaurante'),
+              style: FilledButton.styleFrom(
+                backgroundColor: primaryOrange,
+                foregroundColor: white,
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildCheckoutSection(RestaurantCart restaurant) {
+    const primaryOrange = Color(0xFFF2843A);
+    const white = Color(0xFFFFFFFF);
+
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.3),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, -3),
+      padding: const EdgeInsets.all(20),
+      decoration: const BoxDecoration(
+        color: white,
+        border: Border(
+          top: BorderSide(
+            color: Color(0xFFE0E0E0),
+            width: 1,
           ),
-        ],
+        ),
       ),
-      child: Column(
-        children: [
-          // Resumen de precios
-          _buildPriceSummary(restaurant),
-          
-          const SizedBox(height: 16),
-          
-          // Botón continuar
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: () => _navigateToCheckout(restaurant),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Resumen de precios
+            _buildPriceSummary(restaurant),
+            
+            const SizedBox(height: 20),
+            
+            // Botón continuar con Material 3
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => _navigateToCheckout(restaurant),
+                icon: const Icon(Icons.arrow_forward_rounded, size: 20),
+                label: const Text(
+                  'Continuar al checkout',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              child: Text(
-                'Continuar',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                style: FilledButton.styleFrom(
+                  backgroundColor: primaryOrange,
+                  foregroundColor: white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildPriceSummary(RestaurantCart restaurant) {
+    const primaryOrange = Color(0xFFF2843A);
+    const darkGray = Color(0xFF1A1A1A);
+
     return Column(
       children: [
-        // Subtotal
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Subtotal',
-              style: Theme.of(context).textTheme.bodyLarge,
+        // Subtotal con Material 3
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: primaryOrange.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: primaryOrange.withValues(alpha: 0.3),
+              width: 1,
             ),
-            Text(
-              '\$${restaurant.subtotal.toStringAsFixed(2)}',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Subtotal',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: darkGray,
+                ),
               ),
-            ),
-          ],
+              Text(
+                '\$${restaurant.subtotal.toStringAsFixed(2)}',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: primaryOrange,
+                ),
+              ),
+            ],
+          ),
         ),
         
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         
-        // Nota sobre tarifas
+        // Nota sobre tarifas con Material 3
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.blue[50],
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue[200]!),
+            color: const Color(0xFFE3F2FD),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: const Color(0xFF90CAF9),
+              width: 1,
+            ),
           ),
           child: Row(
             children: [
-              Icon(
-                Icons.info_outline,
-                color: Colors.blue[600],
-                size: 16,
+              const Icon(
+                Icons.info_outline_rounded,
+                color: Color(0xFF1976D2),
+                size: 18,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   'Las tarifas de envío y servicio se calcularán en el checkout',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.blue[700],
+                    color: const Color(0xFF1565C0),
+                    height: 1.4,
                   ),
                 ),
               ),
@@ -255,33 +310,6 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
     );
   }
 
-  void _showRemoveConfirmation(String productName, VoidCallback onConfirm) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Eliminar producto'),
-        content: Text(
-          '¿Estás seguro de que quieres eliminar "$productName" del carrito?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              onConfirm();
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _navigateToCheckout(RestaurantCart restaurant) {
     Navigator.of(context).pushNamed(

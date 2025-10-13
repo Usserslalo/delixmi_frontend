@@ -95,19 +95,29 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
       appBar: AppBar(
-        title: const Text('Confirmar Pedido'),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: Colors.black,
+        title: Text(
+          'Confirmar Pedido',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        surfaceTintColor: Theme.of(context).colorScheme.surfaceTint,
+        elevation: 1,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         leading: Consumer<CheckoutProvider>(
           builder: (context, checkoutProvider, child) {
             if (checkoutProvider.isProcessing) {
               return const SizedBox.shrink();
             }
             return IconButton(
-              icon: const Icon(Icons.close),
+              icon: Icon(
+                Icons.close_rounded,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
               onPressed: _cancelOrder,
             );
           },
@@ -169,162 +179,235 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
   }
 
   Widget _buildCountdownHeader() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: Column(
-        children: [
-          AnimatedBuilder(
-            animation: _pulseAnimation,
-            builder: (context, child) {
-              return Transform.scale(
-                scale: _pulseAnimation.value,
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: _countdown <= 5 ? Colors.red[50] : Colors.orange[50],
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: _countdown <= 5 ? Colors.red[300]! : Colors.orange[300]!,
-                      width: 3,
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          children: [
+            AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _pulseAnimation.value,
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: _countdown <= 5 
+                            ? [
+                                Theme.of(context).colorScheme.errorContainer,
+                                Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.8),
+                              ]
+                            : [
+                                Theme.of(context).colorScheme.primaryContainer,
+                                Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.8),
+                              ],
+                      ),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _countdown <= 5 
+                            ? Theme.of(context).colorScheme.error
+                            : Theme.of(context).colorScheme.primary,
+                        width: 4,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (_countdown <= 5 
+                              ? Theme.of(context).colorScheme.error
+                              : Theme.of(context).colorScheme.primary).withValues(alpha: 0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$_countdown',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: _countdown <= 5 ? Colors.red[700] : Colors.orange[700],
+                    child: Center(
+                      child: Text(
+                        '$_countdown',
+                        style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: _countdown <= 5 
+                              ? Theme.of(context).colorScheme.onErrorContainer
+                              : Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
                       ),
                     ),
                   ),
+                );
+              },
+            ),
+            
+            const SizedBox(height: 24),
+            
+            Text(
+              'Confirmando pedido automáticamente',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            
+            const SizedBox(height: 12),
+            
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Tu pedido se confirmará en $_countdown segundos',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
                 ),
-              );
-            },
-          ),
-          
-          const SizedBox(height: 16),
-          
-          Text(
-            'Confirmando pedido automáticamente',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
+                textAlign: TextAlign.center,
+              ),
             ),
-          ),
-          
-          const SizedBox(height: 8),
-          
-          Text(
-            'Tu pedido se confirmará en $_countdown segundos',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildOrderSummary(Address deliveryAddress) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.restaurant,
-                color: Theme.of(context).colorScheme.primary,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  widget.restaurant.restaurantName,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Lista de productos
-          ...widget.restaurant.items.map((item) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${item.productName} x${item.quantity}',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      // Mostrar modificadores si existen
-                      if (item.modifiers.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        ...item.modifiers.map((modifier) => Padding(
-                          padding: const EdgeInsets.only(bottom: 2),
-                          child: Text(
-                            '• ${modifier.name} (+\$${modifier.price.toStringAsFixed(2)})',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.orange[600],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        )),
-                      ],
-                    ],
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.restaurant_rounded,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    size: 24,
                   ),
                 ),
-                Text(
-                  '\$${item.subtotal.toStringAsFixed(2)}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    widget.restaurant.restaurantName,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                 ),
               ],
             ),
-          )),
+            
+            const SizedBox(height: 20),
           
-          const Divider(),
+            // Lista de productos
+            ...widget.restaurant.items.map((item) => Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${item.productName} x${item.quantity}',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        // Mostrar modificadores si existen
+                        if (item.modifiers.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          ...item.modifiers.map((modifier) => Padding(
+                            padding: const EdgeInsets.only(bottom: 3),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 4,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${modifier.name} (+\$${modifier.price.toStringAsFixed(2)})',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '\$${item.subtotal.toStringAsFixed(2)}',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )),
           
-          // Totales
-          _buildTotalRow('Subtotal', widget.restaurant.subtotal),
-          _buildTotalRow('Costo de envío', 25.0),
-          _buildTotalRow('Cuota de servicio', widget.restaurant.subtotal * 0.05),
-          const Divider(),
-          _buildTotalRow('TOTAL', widget.restaurant.subtotal + 25.0 + (widget.restaurant.subtotal * 0.05), isTotal: true),
-        ],
+            const SizedBox(height: 16),
+            
+            // Totales
+            _buildTotalRow('Subtotal', widget.restaurant.subtotal),
+            _buildTotalRow('Costo de envío', 25.0),
+            _buildTotalRow('Cuota de servicio', widget.restaurant.subtotal * 0.05),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
+              child: _buildTotalRow('TOTAL', widget.restaurant.subtotal + 25.0 + (widget.restaurant.subtotal * 0.05), isTotal: true),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -356,86 +439,113 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
   }
 
   Widget _buildDeliveryInfo(Address deliveryAddress) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.location_on,
-                color: Theme.of(context).colorScheme.primary,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Dirección de entrega',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.location_on_rounded,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    size: 24,
+                  ),
                 ),
+                const SizedBox(width: 12),
+                Text(
+                  'Información de entrega',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+            
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(12),
               ),
-            ],
-          ),
-          
-          const SizedBox(height: 12),
-          
-          Text(
-            deliveryAddress.fullAddress,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          
-          const SizedBox(height: 16),
-          
-          Row(
-            children: [
-              Icon(
-                Icons.access_time,
-                color: Colors.green[600],
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Tiempo estimado: 30-45 min',
+              child: Text(
+                deliveryAddress.fullAddress,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.green[700],
-                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  height: 1.4,
                 ),
               ),
-            ],
-          ),
-          
-          const SizedBox(height: 8),
-          
-          Row(
-            children: [
-              Icon(
-                widget.paymentMethod == 'cash' ? Icons.money : Icons.credit_card,
-                color: Colors.blue[600],
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Pago: ${widget.paymentMethod == 'cash' ? 'Efectivo' : 'Tarjeta'}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.blue[700],
-                  fontWeight: FontWeight.w600,
+            ),
+            
+            const SizedBox(height: 16),
+            
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.tertiaryContainer,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.access_time_rounded,
+                    color: Theme.of(context).colorScheme.onTertiaryContainer,
+                    size: 18,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(width: 12),
+                Text(
+                  'Tiempo estimado: 30-45 min',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onTertiaryContainer,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 12),
+            
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    widget.paymentMethod == 'cash' ? Icons.money_rounded : Icons.credit_card_rounded,
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Pago: ${widget.paymentMethod == 'cash' ? 'Efectivo' : 'Tarjeta'}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -443,62 +553,110 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
   Widget _buildActionButtons() {
     return Consumer<CheckoutProvider>(
       builder: (context, checkoutProvider, child) {
-        return Row(
+        return Column(
           children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: checkoutProvider.isProcessing ? null : _cancelOrder,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: BorderSide(color: Colors.red[300]!),
-                  foregroundColor: Colors.red[700],
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: checkoutProvider.isProcessing ? null : _cancelOrder,
+                    icon: Icon(
+                      Icons.cancel_outlined,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    label: Text(
+                      'Cancelar',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.error.withValues(alpha: 0.5),
+                        width: 1.5,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
                 ),
-                child: const Text(
-                  'Cancelar',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
-            ),
-            
-            const SizedBox(width: 16),
-            
-            Expanded(
-              child: ElevatedButton(
-                // 🔒 BLOQUEO GLOBAL: Botón deshabilitado si está procesando
-                onPressed: checkoutProvider.isProcessing ? null : () {
-                  debugPrint('🔘 Botón "Confirmar Ahora" presionado');
-                  _confirmOrder();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: checkoutProvider.isProcessing 
-                      ? Colors.grey[400] 
-                      : Theme.of(context).colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: checkoutProvider.isProcessing 
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 16,
-                            height: 16,
+                
+                const SizedBox(width: 16),
+                
+                Expanded(
+                  child: FilledButton.icon(
+                    // 🔒 BLOQUEO GLOBAL: Botón deshabilitado si está procesando
+                    onPressed: checkoutProvider.isProcessing ? null : () {
+                      debugPrint('🔘 Botón "Confirmar Ahora" presionado');
+                      _confirmOrder();
+                    },
+                    icon: checkoutProvider.isProcessing 
+                        ? SizedBox(
+                            width: 18,
+                            height: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
                               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Procesando...',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      )
-                    : const Text(
-                        'Confirmar Ahora',
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                          )
+                        : const Icon(Icons.check_circle_outline, size: 18),
+                    label: Text(
+                      checkoutProvider.isProcessing ? 'Procesando...' : 'Confirmar Ahora',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: checkoutProvider.isProcessing 
+                          ? Theme.of(context).colorScheme.surfaceContainerHighest
+                          : Theme.of(context).colorScheme.primary,
+                      foregroundColor: checkoutProvider.isProcessing 
+                          ? Theme.of(context).colorScheme.onSurfaceVariant
+                          : Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      elevation: checkoutProvider.isProcessing ? 0 : 2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Información adicional
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline_rounded,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'El pedido se confirmará automáticamente si no tomas acción',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -509,60 +667,115 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
 
   Widget _buildProcessingView() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const CircularProgressIndicator(),
-          const SizedBox(height: 24),
-          Text(
-            'Procesando tu pedido...',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: CircularProgressIndicator(
+                strokeWidth: 4,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Theme.of(context).colorScheme.primary,
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Por favor espera un momento',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
+            const SizedBox(height: 32),
+            Text(
+              'Procesando tu pedido...',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Por favor espera un momento mientras procesamos tu pedido',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildCancelledView() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.cancel_outlined,
-            size: 80,
-            color: Colors.red[300],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Pedido Cancelado',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.red[700],
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.cancel_outlined,
+                size: 48,
+                color: Theme.of(context).colorScheme.error,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tu pedido ha sido cancelado exitosamente',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
+            const SizedBox(height: 32),
+            Text(
+              'Pedido Cancelado',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Volver al Carrito'),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Tu pedido ha sido cancelado exitosamente',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 32),
+            FilledButton.icon(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.arrow_back_rounded, size: 18),
+              label: const Text('Volver al Carrito'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

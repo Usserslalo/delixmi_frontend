@@ -382,18 +382,34 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
 
   @override
   Widget build(BuildContext context) {
+    const primaryOrange = Color(0xFFF2843A);
+    const white = Color(0xFFFFFFFF);
+    const darkGray = Color(0xFF1A1A1A);
+
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF8F7F6),
       body: CustomScrollView(
         slivers: [
-          // App Bar personalizada con imagen
+          // App Bar con imagen del producto - Material 3
           SliverAppBar(
-            expandedHeight: 300,
+            expandedHeight: 320,
             floating: false,
             pinned: true,
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
+            backgroundColor: white,
+            surfaceTintColor: white,
             elevation: 0,
+            leading: Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: white.withValues(alpha: 0.95),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded, color: darkGray),
+                onPressed: () => Navigator.of(context).pop(),
+                padding: EdgeInsets.zero,
+              ),
+            ),
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: BoxDecoration(
@@ -460,19 +476,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            '\$${_basePrice.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              color: Colors.orange[300],
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              shadows: const [
-                                Shadow(
-                                  offset: Offset(0, 2),
-                                  blurRadius: 4,
-                                  color: Colors.black54,
-                                ),
-                              ],
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: primaryOrange,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '\$${_basePrice.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                color: white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
@@ -503,50 +519,60 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Descripción del producto
+                        // Descripción del producto con Material 3
                         if (widget.product.description != null) ...[
-                          Text(
-                            'Descripción',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[800],
-                            ),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.description_rounded,
+                                color: primaryOrange,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Descripción',
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: darkGray,
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 12),
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.grey[50],
+                              color: const Color(0xFFF5F5F5),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey[200]!),
+                              border: Border.all(color: const Color(0xFFE0E0E0)),
                             ),
                             child: Text(
                               widget.product.description!,
                               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: Colors.grey[700],
-                                height: 1.5,
+                                color: const Color(0xFF757575),
+                                height: 1.6,
                               ),
                             ),
                           ),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 24),
                         ],
                         
-                        // Modificadores
+                        // Modificadores con Material 3
                         if (widget.product.modifierGroups.isNotEmpty) ...[
                           Row(
                             children: [
                               Icon(
-                                Icons.tune,
-                                color: Colors.orange[600],
-                                size: 24,
+                                Icons.tune_rounded,
+                                color: primaryOrange,
+                                size: 22,
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 'Personaliza tu pedido',
                                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.grey[800],
+                                  color: darkGray,
                                 ),
                               ),
                             ],
@@ -605,77 +631,58 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
         ],
       ),
       
-      // Botón flotante de agregar al carrito
+      // Botón flotante de agregar al carrito - Material 3
       floatingActionButton: Container(
         width: double.infinity,
-        margin: const EdgeInsets.symmetric(horizontal: 24),
-        child: FloatingActionButton.extended(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        child: FilledButton(
           onPressed: _canAddToCart() ? _addToCart : null,
-          backgroundColor: _canAddToCart() ? Colors.orange[600] : Colors.grey[400],
-          foregroundColor: Colors.white,
-          elevation: _canAddToCart() ? 8 : 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+          style: FilledButton.styleFrom(
+            backgroundColor: _canAddToCart() ? primaryOrange : const Color(0xFFBDBDBD),
+            foregroundColor: white,
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            elevation: 0,
           ),
-          label: Row(
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.add_shopping_cart,
-                size: 24,
+              const Icon(
+                Icons.add_shopping_cart_rounded,
+                size: 22,
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Agregar al carrito',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(width: 8),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Agregar al carrito',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '\$${_totalPrice.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: white,
                   ),
-                  Text(
-                    '\$${_totalPrice.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
         ),
       ),
       
-      // Precio total flotante
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      persistentFooterButtons: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Total:',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
-              ),
-              Text(
-                '\$${_totalPrice.toStringAsFixed(2)}',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green[700],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
@@ -706,18 +713,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
   }
 
   Widget _buildQuantitySelector() {
+    const primaryOrange = Color(0xFFF2843A);
+    const darkGray = Color(0xFF1A1A1A);
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -726,32 +729,32 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
             color: Colors.transparent,
             child: InkWell(
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                bottomLeft: Radius.circular(12),
+                topLeft: Radius.circular(10),
+                bottomLeft: Radius.circular(10),
               ),
               onTap: _quantity > 1 ? () => setState(() => _quantity--) : null,
               child: Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 child: Icon(
-                  Icons.remove,
-                  color: _quantity > 1 ? Colors.orange[600] : Colors.grey[400],
+                  Icons.remove_rounded,
+                  color: _quantity > 1 ? primaryOrange : const Color(0xFFBDBDBD),
                   size: 20,
                 ),
               ),
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: const BoxDecoration(
               border: Border.symmetric(
-                vertical: BorderSide(color: Colors.grey[300]!),
+                vertical: BorderSide(color: Color(0xFFE0E0E0)),
               ),
             ),
             child: Text(
               '$_quantity',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
+                color: darkGray,
               ),
             ),
           ),
@@ -759,15 +762,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
             color: Colors.transparent,
             child: InkWell(
               borderRadius: const BorderRadius.only(
-                topRight: Radius.circular(12),
-                bottomRight: Radius.circular(12),
+                topRight: Radius.circular(10),
+                bottomRight: Radius.circular(10),
               ),
               onTap: _quantity < 99 ? () => setState(() => _quantity++) : null,
               child: Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 child: Icon(
-                  Icons.add,
-                  color: _quantity < 99 ? Colors.orange[600] : Colors.grey[400],
+                  Icons.add_rounded,
+                  color: _quantity < 99 ? primaryOrange : const Color(0xFFBDBDBD),
                   size: 20,
                 ),
               ),
@@ -937,6 +940,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
   }
 
   Widget _buildModifierOption(ModifierGroup group, ModifierOption option) {
+    const primaryOrange = Color(0xFFF2843A);
+    const white = Color(0xFFFFFFFF);
+    const darkGray = Color(0xFF1A1A1A);
+
     final isSelected = _selectedModifiers[group.id]?.contains(option.id) ?? false;
     final canSelect = group.maxSelection > (_selectedModifiers[group.id]?.length ?? 0) || isSelected;
     
@@ -950,22 +957,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             border: Border.all(
-              color: isSelected ? Colors.orange[400]! : Colors.grey[200]!,
+              color: isSelected ? primaryOrange : const Color(0xFFE0E0E0),
               width: isSelected ? 2 : 1,
             ),
             borderRadius: BorderRadius.circular(12),
-            color: isSelected ? Colors.orange[50] : Colors.grey[25],
-            boxShadow: isSelected ? [
-              BoxShadow(
-                color: Colors.orange.withValues(alpha: 0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ] : null,
+            color: isSelected ? primaryOrange.withValues(alpha: 0.08) : white,
           ),
           child: Row(
             children: [
-              // Indicador de selección
+              // Indicador de selección con Material 3
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 width: 24,
@@ -973,17 +973,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
                 decoration: BoxDecoration(
                   shape: group.maxSelection == 1 ? BoxShape.circle : BoxShape.rectangle,
                   border: Border.all(
-                    color: isSelected ? Colors.orange[600]! : Colors.grey[400]!,
+                    color: isSelected ? primaryOrange : const Color(0xFFE0E0E0),
                     width: 2,
                   ),
-                  color: isSelected ? Colors.orange[600] : Colors.transparent,
+                  color: isSelected ? primaryOrange : Colors.transparent,
                   borderRadius: group.maxSelection == 1 ? null : BorderRadius.circular(6),
                 ),
                 child: isSelected
-                    ? Icon(
-                        group.maxSelection == 1 ? Icons.check : Icons.check,
+                    ? const Icon(
+                        Icons.check_rounded,
                         size: 16,
-                        color: Colors.white,
+                        color: white,
                       )
                     : null,
               ),
@@ -999,7 +999,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
                       option.name,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                        color: isSelected ? Colors.orange[800] : Colors.grey[800],
+                        color: isSelected ? primaryOrange : darkGray,
                       ),
                     ),
                     if (option.price > 0) ...[
@@ -1015,19 +1015,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
                 ),
               ),
               
-              // Precio
+              // Precio con Material 3
               if (option.price > 0)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.green[100],
+                    color: primaryOrange.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     '+\$${option.price.toStringAsFixed(2)}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.green[700],
+                      color: primaryOrange,
+                      fontSize: 14,
                     ),
                   ),
                 )
@@ -1035,14 +1036,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with TickerPr
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.blue[100],
+                    color: const Color(0xFFE8F5E9),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
+                  child: const Text(
                     'Incluido',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.blue[700],
-                      fontWeight: FontWeight.w500,
+                    style: TextStyle(
+                      color: Color(0xFF2E7D32),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
                     ),
                   ),
                 ),

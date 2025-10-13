@@ -25,13 +25,24 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const primaryOrange = Color(0xFFF2843A);
+    const white = Color(0xFFFFFFFF);
+    const darkGray = Color(0xFF1A1A1A);
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F7F6),
       appBar: AppBar(
-        title: const Text('Mi Carrito'),
+        title: const Text(
+          'Mi Carrito',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: darkGray,
+          ),
+        ),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: white,
+        surfaceTintColor: white,
         elevation: 0,
-        foregroundColor: Colors.black,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
@@ -39,9 +50,9 @@ class _CartScreenState extends State<CartScreen> {
               onTap: () {
                 // El badge es solo visual en esta pantalla
               },
-              child: Icon(
-                Icons.shopping_cart,
-                color: Colors.grey[600],
+              child: const Icon(
+                Icons.shopping_cart_rounded,
+                color: primaryOrange,
                 size: 24,
               ),
             ),
@@ -71,82 +82,124 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Widget _buildErrorState(String errorMessage) {
+    const primaryOrange = Color(0xFFF2843A);
+    const white = Color(0xFFFFFFFF);
+    const darkGray = Color(0xFF1A1A1A);
+
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Colors.red[300],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Error al cargar el carrito',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            errorMessage,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFEBEE),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.error_outline_rounded,
+                size: 64,
+                color: Color(0xFFD32F2F),
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () {
-              context.read<RestaurantCartProvider>().loadCart();
-            },
-            child: const Text('Reintentar'),
-          ),
-        ],
+            const SizedBox(height: 24),
+            Text(
+              'Error al cargar el carrito',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: darkGray,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              errorMessage,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: const Color(0xFF757575),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            FilledButton.icon(
+              onPressed: () {
+                context.read<RestaurantCartProvider>().loadCart();
+              },
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Reintentar'),
+              style: FilledButton.styleFrom(
+                backgroundColor: primaryOrange,
+                foregroundColor: white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmptyCart() {
+    const primaryOrange = Color(0xFFF2843A);
+    const white = Color(0xFFFFFFFF);
+    const darkGray = Color(0xFF1A1A1A);
+
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.shopping_cart_outlined,
-            size: 100,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Tu carrito está vacío',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Agrega algunos productos para comenzar',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Colors.grey[600],
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            icon: const Icon(Icons.restaurant),
-            label: const Text('Explorar Restaurantes'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: primaryOrange.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.shopping_cart_outlined,
+                size: 80,
+                color: primaryOrange.withValues(alpha: 0.6),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 32),
+            Text(
+              'Tu carrito está vacío',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: darkGray,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Agrega algunos productos deliciosos\npara comenzar tu pedido',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: const Color(0xFF757575),
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 40),
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              icon: const Icon(Icons.restaurant_rounded),
+              label: const Text('Explorar Restaurantes'),
+              style: FilledButton.styleFrom(
+                backgroundColor: primaryOrange,
+                foregroundColor: white,
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

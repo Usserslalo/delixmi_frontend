@@ -93,11 +93,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Completa tu pedido'),
+        title: Text(
+          'Completa tu pedido',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: Colors.black,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        surfaceTintColor: Theme.of(context).colorScheme.surfaceTint,
+        elevation: 1,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
       ),
       body: Consumer<AddressProvider>(
         builder: (context, addressProvider, child) {
@@ -278,155 +284,209 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildDeliveryInfo() {
-    return Container(
+    return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.2),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 2),
-          ),
-        ],
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.location_on,
-                color: Theme.of(context).colorScheme.primary,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Dirección de entrega',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.location_on_rounded,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    size: 20,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _checkoutSummary!.deliveryAddress.fullAddress,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(
-                Icons.access_time,
-                color: Colors.green[600],
-                size: 16,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Tiempo estimado: ${_formatEstimatedTime(_checkoutSummary!.estimatedDeliveryTime)}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.green[700],
-                  fontWeight: FontWeight.w600,
+                const SizedBox(width: 12),
+                Text(
+                  'Dirección de entrega',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _checkoutSummary!.deliveryAddress.fullAddress,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                height: 1.4,
               ),
-            ],
-          ),
-        ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.access_time_rounded,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Tiempo estimado: ${_formatEstimatedTime(_checkoutSummary!.estimatedDeliveryTime)}',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildOrderSummary() {
-    return Container(
+    return Card(
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.2),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 2),
-          ),
-        ],
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.receipt_long,
-                color: Theme.of(context).colorScheme.primary,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Resumen del pedido',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          
-          // Lista de productos
-          ...widget.restaurant.items.map((item) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${item.productName} x${item.quantity}',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      // Mostrar modificadores si existen
-                      if (item.modifiers.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        ...item.modifiers.map((modifier) => Padding(
-                          padding: const EdgeInsets.only(bottom: 2),
-                          child: Text(
-                            '• ${modifier.name} (+\$${modifier.price.toStringAsFixed(2)})',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.orange[600],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        )),
-                      ],
-                    ],
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.receipt_long_rounded,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    size: 20,
                   ),
                 ),
+                const SizedBox(width: 12),
                 Text(
-                  '\$${item.subtotal.toStringAsFixed(2)}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  'Resumen del pedido',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
             ),
-          )),
+            const SizedBox(height: 20),
           
-          const Divider(),
+            // Lista de productos
+            ...widget.restaurant.items.map((item) => Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${item.productName} x${item.quantity}',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        // Mostrar modificadores si existen
+                        if (item.modifiers.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          ...item.modifiers.map((modifier) => Padding(
+                            padding: const EdgeInsets.only(bottom: 3),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 4,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${modifier.name} (+\$${modifier.price.toStringAsFixed(2)})',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '\$${item.subtotal.toStringAsFixed(2)}',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )),
           
-          // Totales
-          _buildTotalRow('Subtotal', _checkoutSummary!.subtotal),
-          _buildTotalRow('Costo de envío', _checkoutSummary!.deliveryFee),
-          _buildTotalRow('Cuota de servicio', _checkoutSummary!.serviceFee),
-          const Divider(),
-          _buildTotalRow('TOTAL', _checkoutSummary!.total, isTotal: true),
-        ],
+            const SizedBox(height: 16),
+            
+            // Totales
+            _buildTotalRow('Subtotal', _checkoutSummary!.subtotal),
+            _buildTotalRow('Costo de envío', _checkoutSummary!.deliveryFee),
+            _buildTotalRow('Cuota de servicio', _checkoutSummary!.serviceFee),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
+              child: _buildTotalRow('TOTAL', _checkoutSummary!.total, isTotal: true),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -458,54 +518,57 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildPaymentMethod() {
-    return Container(
+    return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.2),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 2),
-          ),
-        ],
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.payment,
-                color: Theme.of(context).colorScheme.primary,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Método de pago',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.payment_rounded,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    size: 20,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+                const SizedBox(width: 12),
+                Text(
+                  'Método de pago',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
           
-          // Opciones de pago
-          _buildPaymentOption(
-            title: 'Efectivo',
-            subtitle: 'Paga al recibir tu pedido',
-            value: 'cash',
-          ),
-          _buildPaymentOption(
-            title: 'Tarjeta',
-            subtitle: 'Pago seguro con Mercado Pago',
-            value: 'card',
-          ),
-        ],
+            // Opciones de pago
+            _buildPaymentOption(
+              title: 'Efectivo',
+              subtitle: 'Paga al recibir tu pedido',
+              value: 'cash',
+            ),
+            const SizedBox(height: 12),
+            _buildPaymentOption(
+              title: 'Tarjeta',
+              subtitle: 'Pago seguro con Mercado Pago',
+              value: 'card',
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -516,6 +579,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     required String value,
   }) {
     final isSelected = _paymentMethod == value;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     
     return InkWell(
       onTap: () {
@@ -523,50 +588,63 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           _paymentMethod = value;
         });
       },
+      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? colorScheme.primaryContainer.withValues(alpha: 0.5)
+              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected 
+                ? colorScheme.primary
+                : colorScheme.outline.withValues(alpha: 0.2),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
         child: Row(
           children: [
             Container(
-              width: 20,
-              height: 20,
+              width: 24,
+              height: 24,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isSelected 
-                      ? Theme.of(context).colorScheme.primary
-                      : Colors.grey,
+                      ? colorScheme.primary
+                      : colorScheme.outline,
                   width: 2,
                 ),
+                color: isSelected ? colorScheme.primary : Colors.transparent,
               ),
               child: isSelected
-                  ? Center(
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
+                  ? Icon(
+                      Icons.check_rounded,
+                      color: colorScheme.onPrimary,
+                      size: 16,
                     )
                   : null,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w500,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? colorScheme.primary : colorScheme.onSurface,
                     ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: isSelected 
+                          ? colorScheme.onPrimaryContainer
+                          : colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -583,25 +661,34 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       margin: const EdgeInsets.all(16),
       child: SizedBox(
         width: double.infinity,
-        height: 50,
-        child: ElevatedButton(
+        height: 56,
+        child: FilledButton.icon(
           onPressed: _isProcessing ? null : _processOrder,
-          style: ElevatedButton.styleFrom(
+          icon: _isProcessing
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Icon(Icons.shopping_cart_checkout_rounded, size: 20),
+          label: Text(
+            _isProcessing ? 'Procesando...' : 'Hacer pedido',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          style: FilledButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.primary,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(16),
             ),
+            elevation: 2,
           ),
-          child: _isProcessing
-              ? const CircularProgressIndicator(color: Colors.white)
-              : Text(
-                  'Hacer pedido',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
         ),
       ),
     );
