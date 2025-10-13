@@ -80,6 +80,9 @@ dependencies:
   
   # Package info for app version
   package_info_plus: ^8.0.0
+  
+  # Shared preferences for storing app state
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:

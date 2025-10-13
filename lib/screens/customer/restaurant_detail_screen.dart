@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../config/app_routes.dart';
 import '../../services/api_service.dart';
 import '../../models/product.dart';
 import '../../providers/cart_provider.dart';
@@ -851,7 +852,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             children: [
               FloatingActionButton.extended(
                 onPressed: () {
-                  Navigator.of(context).pushNamed('/cart');
+                  Navigator.of(context).pushNamed(AppRoutes.cart);
                 },
                 icon: const Icon(Icons.shopping_cart),
                 label: Text('Ver carrito${itemCount > 0 ? ' ($itemCount)' : ''}'),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../config/app_routes.dart';
 import '../../models/address.dart';
 import '../../providers/address_provider.dart';
 import '../../widgets/customer/address_card.dart';
@@ -38,18 +39,37 @@ class _AddressesScreenState extends State<AddressesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    const primaryOrange = Color(0xFFF2843A);
+    const darkGray = Color(0xFF1A1A1A);
+    const white = Color(0xFFFFFFFF);
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F7F6),
       appBar: AppBar(
-        title: Text(widget.isSelectionMode ? 'Seleccionar Dirección' : 'Mis Direcciones'),
-        backgroundColor: Colors.white,
+        title: Text(
+          widget.isSelectionMode ? 'Seleccionar Dirección' : 'Mis Direcciones',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: darkGray,
+          ),
+        ),
+        backgroundColor: white,
         elevation: 0,
-        foregroundColor: Colors.black,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: darkGray),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         actions: [
           if (!widget.isSelectionMode)
-            IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: () => _navigateToAddAddress(),
-              tooltip: 'Agregar dirección',
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              child: IconButton(
+                icon: const Icon(Icons.add_rounded, color: primaryOrange, size: 28),
+                onPressed: () => _navigateToAddAddress(),
+                tooltip: 'Agregar dirección',
+              ),
             ),
         ],
       ),
@@ -63,73 +83,127 @@ class _AddressesScreenState extends State<AddressesScreen> {
 
           if (addressProvider.errorMessage != null) {
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red[300],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error al cargar direcciones',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    addressProvider.errorMessage!,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                      child: const Icon(
+                        Icons.error_outline_rounded,
+                        size: 64,
+                        color: Colors.red,
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () => addressProvider.loadAddresses(),
-                    child: const Text('Reintentar'),
-                  ),
-                ],
+                    const SizedBox(height: 24),
+                    Text(
+                      'Error al cargar direcciones',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: darkGray,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      addressProvider.errorMessage!,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF757575),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton.icon(
+                        onPressed: () => addressProvider.loadAddresses(),
+                        icon: const Icon(Icons.refresh_rounded, size: 22),
+                        label: const Text('Reintentar'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryOrange,
+                          foregroundColor: white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           }
 
           if (addressProvider.isEmpty) {
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.location_on_outlined,
-                    size: 64,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No tienes direcciones guardadas',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Agrega una dirección para recibir tus pedidos',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(28),
+                      decoration: BoxDecoration(
+                        color: primaryOrange.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(32),
+                      ),
+                      child: const Icon(
+                        Icons.location_on_rounded,
+                        size: 64,
+                        color: primaryOrange,
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () => _navigateToAddAddress(),
-                    child: const Text('Agregar Primera Dirección'),
-                  ),
-                ],
+                    const SizedBox(height: 24),
+                    Text(
+                      'No tienes direcciones guardadas',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: darkGray,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Agrega una dirección para recibir tus pedidos y ver restaurantes disponibles',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF757575),
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _navigateToAddAddress(),
+                        icon: const Icon(Icons.add_location_rounded, size: 22),
+                        label: const Text('Agregar Primera Dirección'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryOrange,
+                          foregroundColor: white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           }
 
           return Column(
             children: [
-              // Barra de búsqueda
+              // Barra de búsqueda con Material 3
               if (addressProvider.addresses.length > 3)
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -138,10 +212,16 @@ class _AddressesScreenState extends State<AddressesScreen> {
                     onChanged: addressProvider.updateSearchQuery,
                     decoration: InputDecoration(
                       hintText: 'Buscar direcciones...',
-                      prefixIcon: const Icon(Icons.search),
+                      hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF757575),
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        color: Color(0xFF757575),
+                      ),
                       suffixIcon: addressProvider.searchQuery.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear),
+                              icon: const Icon(Icons.clear_rounded),
                               onPressed: () {
                                 _searchController.clear();
                                 addressProvider.clearSearchQuery();
@@ -150,10 +230,21 @@ class _AddressesScreenState extends State<AddressesScreen> {
                           : null,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
                       ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: primaryOrange, width: 2),
+                      ),
+                      filled: true,
+                      fillColor: white,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
-                        vertical: 12,
+                        vertical: 14,
                       ),
                     ),
                   ),
@@ -190,27 +281,34 @@ class _AddressesScreenState extends State<AddressesScreen> {
                 ),
               ),
 
-              // Botón de confirmar selección
+              // Botón de confirmar selección con Material 3
               if (widget.isSelectionMode && addressProvider.selectedAddress != null)
                 Container(
                   padding: const EdgeInsets.all(16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () => _confirmSelection(addressProvider.selectedAddress!),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                  decoration: const BoxDecoration(
+                    color: white,
+                    border: Border(
+                      top: BorderSide(
+                        color: Color(0xFFE0E0E0),
+                        width: 1,
                       ),
-                      child: const Text(
-                        'Confirmar Dirección',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  child: SafeArea(
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _confirmSelection(addressProvider.selectedAddress!),
+                        icon: const Icon(Icons.check_circle_rounded, size: 22),
+                        label: const Text('Confirmar Dirección'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryOrange,
+                          foregroundColor: white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ),
@@ -223,13 +321,27 @@ class _AddressesScreenState extends State<AddressesScreen> {
     );
   }
 
-  void _navigateToAddAddress() {
-    Navigator.of(context).pushNamed('/address-form');
+  void _navigateToAddAddress() async {
+    // Nuevo flujo: primero mapa, luego formulario
+    final geocodeResult = await Navigator.of(context).pushNamed(AppRoutes.locationPicker);
+    
+    if (geocodeResult != null && mounted) {
+      // Navegar al formulario con los datos pre-llenados
+      final success = await Navigator.of(context).pushNamed(
+        AppRoutes.addressForm,
+        arguments: geocodeResult,
+      );
+      
+      // Si se guardó exitosamente, recargar direcciones
+      if (success == true && mounted) {
+        context.read<AddressProvider>().loadAddresses();
+      }
+    }
   }
 
   void _navigateToEditAddress(Address address) {
     Navigator.of(context).pushNamed(
-      '/address-form',
+      AppRoutes.addressForm,
       arguments: address,
     );
   }

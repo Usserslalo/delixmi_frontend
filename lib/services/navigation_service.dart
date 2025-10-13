@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/app_routes.dart';
 import '../models/address.dart';
 
 class NavigationService {
@@ -61,52 +62,52 @@ class NavigationService {
 
   /// Navegar a la pantalla de inicio
   static Future<void> goToHome() {
-    return pushNamedAndRemoveUntil('/home');
+    return pushNamedAndRemoveUntil(AppRoutes.home);
   }
 
   /// Navegar al login
   static Future<void> goToLogin() {
-    return pushNamedAndRemoveUntil('/login');
+    return pushNamedAndRemoveUntil(AppRoutes.login);
   }
 
   /// Navegar al registro
   static Future<void> goToRegister() {
-    return pushNamed('/register');
+    return pushNamed(AppRoutes.register);
   }
 
   /// Navegar a la verificación de email
   static Future<void> goToEmailVerification(String email) {
-    return pushNamed('/email-verification', arguments: email);
+    return pushNamed(AppRoutes.emailVerification, arguments: email);
   }
 
   /// Navegar al reset de contraseña
   static Future<void> goToResetPassword(String token) {
-    return pushNamed('/reset-password', arguments: token);
+    return pushNamed(AppRoutes.resetPassword, arguments: token);
   }
 
   /// Navegar a los detalles del restaurante
   static Future<void> goToRestaurantDetail(int restaurantId) {
-    return pushNamed('/restaurant-detail', arguments: restaurantId);
+    return pushNamed(AppRoutes.restaurantDetail, arguments: restaurantId);
   }
 
   /// Navegar al carrito
   static Future<void> goToCart() {
-    return pushNamed('/cart');
+    return pushNamed(AppRoutes.cart);
   }
 
   /// Navegar a las direcciones
   static Future<void> goToAddresses({bool isSelectionMode = false}) {
-    return pushNamed('/addresses', arguments: isSelectionMode);
+    return pushNamed(AppRoutes.addresses, arguments: isSelectionMode);
   }
 
   /// Navegar al formulario de dirección
   static Future<void> goToAddressForm({Address? address}) {
-    return pushNamed('/address-form', arguments: address);
+    return pushNamed(AppRoutes.addressForm, arguments: address);
   }
 
   /// Navegar al checkout
   static Future<void> goToCheckout({int? restaurantId}) {
-    return pushNamed('/checkout', arguments: restaurantId);
+    return pushNamed(AppRoutes.checkout, arguments: restaurantId);
   }
 
   /// Mostrar un diálogo

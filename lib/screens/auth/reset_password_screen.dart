@@ -22,18 +22,50 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isTokenValid = true;
+  
+  // Estados de validación en tiempo real
+  bool _isPasswordValid = false;
+  
+  // Detalles de validación de contraseña
+  bool _hasMinLength = false;
+  bool _hasUppercase = false;
+  bool _hasLowercase = false;
+  bool _hasNumber = false;
+  bool _hasSpecialChar = false;
 
   @override
   void initState() {
     super.initState();
     _validateToken();
+    // Agregar listeners para validación en tiempo real
+    _passwordController.addListener(_validatePasswordRealTime);
+    _confirmPasswordController.addListener(_validateConfirmPasswordRealTime);
   }
 
   @override
   void dispose() {
+    _passwordController.removeListener(_validatePasswordRealTime);
+    _confirmPasswordController.removeListener(_validateConfirmPasswordRealTime);
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+  
+  void _validatePasswordRealTime() {
+    final value = _passwordController.text;
+    setState(() {
+      _hasMinLength = value.length >= 8;
+      _hasUppercase = value.contains(RegExp(r'[A-Z]'));
+      _hasLowercase = value.contains(RegExp(r'[a-z]'));
+      _hasNumber = value.contains(RegExp(r'[0-9]'));
+      _hasSpecialChar = value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+      _isPasswordValid = _hasMinLength && _hasUppercase && _hasLowercase && _hasNumber && _hasSpecialChar;
+    });
+  }
+
+  void _validateConfirmPasswordRealTime() {
+    // La validación de confirmación se maneja en el validator
+    setState(() {});
   }
 
   void _validateToken() {
@@ -179,6 +211,74 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     return null;
   }
 
+  Widget _buildPasswordRequirements() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3), // M3: Color del tema
+        borderRadius: BorderRadius.circular(12), // M3: Borde más redondeado
+        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)), // M3: Borde del tema
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Requisitos de contraseña:',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant, // M3: Color del tema
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildRequirementItem(
+            'Al menos 8 caracteres',
+            _hasMinLength,
+          ),
+          _buildRequirementItem(
+            'Una letra mayúscula',
+            _hasUppercase,
+          ),
+          _buildRequirementItem(
+            'Una letra minúscula',
+            _hasLowercase,
+          ),
+          _buildRequirementItem(
+            'Un número',
+            _hasNumber,
+          ),
+          _buildRequirementItem(
+            'Un carácter especial',
+            _hasSpecialChar,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRequirementItem(String text, bool isValid) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Icon(
+            isValid ? Icons.check_circle : Icons.circle_outlined,
+            size: 16,
+            color: isValid ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant, // M3: Colores del tema
+          ),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith( // M3: Usar textTheme
+              fontSize: 12,
+              color: isValid ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant, // M3: Colores del tema
+              fontWeight: isValid ? FontWeight.w500 : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Si el token no es válido, mostrar loading mientras se navega de vuelta
@@ -293,43 +393,92 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Container(
-                                  height: 56, // h-14 en Tailwind = 56px
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).inputDecorationTheme.fillColor,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: TextFormField(
-                                    controller: _passwordController,
-                                    obscureText: _obscurePassword,
-                                    textInputAction: TextInputAction.next,
-                                    style: Theme.of(context).textTheme.bodyLarge,
-                                    decoration: InputDecoration(
-                                      hintText: 'Ingresa tu nueva contraseña',
-                                      hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
-                                      border: InputBorder.none,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 16,
-                                      ),
-                                      suffixIcon: IconButton(
-                                        icon: Icon(
-                                          _obscurePassword 
-                                            ? Icons.visibility_off_outlined
-                                            : Icons.visibility_outlined,
-                                          color: const Color(0xFF9B6B4B),
-                                          size: 20,
-                                        ),
-                                        onPressed: () {
-                                          setState(() {
-                                            _obscurePassword = !_obscurePassword;
-                                          });
-                                        },
+                                // M3: Eliminado Container wrapper, aplicado estilo M3 directamente
+                                TextFormField(
+                                  controller: _passwordController,
+                                  obscureText: _obscurePassword,
+                                  textInputAction: TextInputAction.next,
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                  decoration: InputDecoration(
+                                    hintText: 'Ej: MiPass123!',
+                                    hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
+                                    filled: true, // M3: Activado color de fondo del tema
+                                    fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3), // M3: Color de fondo
+                                    border: OutlineInputBorder( // M3: Borde redondeado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide.none, // M3: Sin borde visible por defecto
+                                    ),
+                                    enabledBorder: OutlineInputBorder( // M3: Borde cuando está habilitado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide(
+                                        color: _passwordController.text.isNotEmpty
+                                            ? (_isPasswordValid ? Colors.green : Colors.red)
+                                            : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                                        width: _passwordController.text.isNotEmpty ? 2 : 1,
                                       ),
                                     ),
-                                    validator: _validatePassword,
+                                    focusedBorder: OutlineInputBorder( // M3: Borde cuando está enfocado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide(
+                                        color: _passwordController.text.isNotEmpty
+                                            ? (_isPasswordValid ? Colors.green : Colors.red)
+                                            : Theme.of(context).colorScheme.primary,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
+                                    suffixIcon: _passwordController.text.isNotEmpty
+                                        ? Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                _isPasswordValid ? Icons.check_circle : Icons.error,
+                                                color: _isPasswordValid ? Colors.green : Colors.red,
+                                                size: 20,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              IconButton(
+                                                icon: Icon(
+                                                  _obscurePassword 
+                                                    ? Icons.visibility_off_outlined
+                                                    : Icons.visibility_outlined,
+                                                  color: Theme.of(context).colorScheme.onSurfaceVariant, // M3: Color del tema
+                                                  size: 20,
+                                                ),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    _obscurePassword = !_obscurePassword;
+                                                  });
+                                                },
+                                              ),
+                                            ],
+                                          )
+                                        : IconButton(
+                                            icon: Icon(
+                                              _obscurePassword 
+                                                ? Icons.visibility_off_outlined
+                                                : Icons.visibility_outlined,
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant, // M3: Color del tema
+                                              size: 20,
+                                            ),
+                                            onPressed: () {
+                                              setState(() {
+                                                _obscurePassword = !_obscurePassword;
+                                              });
+                                            },
+                                          ),
                                   ),
+                                  validator: _validatePassword,
                                 ),
+                                
+                                // Indicadores de requisitos de contraseña
+                                if (_passwordController.text.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  _buildPasswordRequirements(),
+                                ],
                               ],
                             ),
                             
@@ -346,43 +495,56 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Container(
-                                  height: 56, // h-14 en Tailwind = 56px
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).inputDecorationTheme.fillColor,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: TextFormField(
-                                    controller: _confirmPasswordController,
-                                    obscureText: _obscureConfirmPassword,
-                                    textInputAction: TextInputAction.done,
-                                    onFieldSubmitted: (_) => _handleResetPassword(),
-                                    style: Theme.of(context).textTheme.bodyLarge,
-                                    decoration: InputDecoration(
-                                      hintText: 'Confirma tu nueva contraseña',
-                                      hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
-                                      border: InputBorder.none,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 16,
-                                      ),
-                                      suffixIcon: IconButton(
-                                        icon: Icon(
-                                          _obscureConfirmPassword 
-                                            ? Icons.visibility_off_outlined
-                                            : Icons.visibility_outlined,
-                                          color: const Color(0xFF9B6B4B),
-                                          size: 20,
-                                        ),
-                                        onPressed: () {
-                                          setState(() {
-                                            _obscureConfirmPassword = !_obscureConfirmPassword;
-                                          });
-                                        },
+                                // M3: Eliminado Container wrapper, aplicado estilo M3 directamente
+                                TextFormField(
+                                  controller: _confirmPasswordController,
+                                  obscureText: _obscureConfirmPassword,
+                                  textInputAction: TextInputAction.done,
+                                  onFieldSubmitted: (_) => _handleResetPassword(),
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                  decoration: InputDecoration(
+                                    hintText: 'Ej: MiPass123!',
+                                    hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
+                                    filled: true, // M3: Activado color de fondo del tema
+                                    fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3), // M3: Color de fondo
+                                    border: OutlineInputBorder( // M3: Borde redondeado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide.none, // M3: Sin borde visible por defecto
+                                    ),
+                                    enabledBorder: OutlineInputBorder( // M3: Borde cuando está habilitado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide(
+                                        color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                                        width: 1,
                                       ),
                                     ),
-                                    validator: _validateConfirmPassword,
+                                    focusedBorder: OutlineInputBorder( // M3: Borde cuando está enfocado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide(
+                                        color: Theme.of(context).colorScheme.primary,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _obscureConfirmPassword 
+                                          ? Icons.visibility_off_outlined
+                                          : Icons.visibility_outlined,
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant, // M3: Color del tema
+                                        size: 20,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _obscureConfirmPassword = !_obscureConfirmPassword;
+                                        });
+                                      },
+                                    ),
                                   ),
+                                  validator: _validateConfirmPassword,
                                 ),
                               ],
                             ),
@@ -393,15 +555,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                             SizedBox(
                               width: double.infinity,
                               height: 48, // h-12 en Tailwind = 48px
-                              child: ElevatedButton(
+                              // M3: Reemplazado ElevatedButton por FilledButton
+                              child: FilledButton(
                                 onPressed: _isLoading ? null : _handleResetPassword,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Theme.of(context).colorScheme.primary,
-                                  foregroundColor: Colors.white,
+                                style: FilledButton.styleFrom(
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(16.0), // M3: Bordes más redondeados
                                   ),
-                                  elevation: 0,
                                 ),
                                 child: _isLoading
                                   ? const SizedBox(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../config/app_routes.dart';
 import '../../services/auth_service.dart';
 
 class OwnerDashboardScreen extends StatelessWidget {
@@ -17,7 +18,7 @@ class OwnerDashboardScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {
-              Navigator.pushNamed(context, '/owner_profile_edit');
+              Navigator.pushNamed(context, AppRoutes.ownerProfileEdit);
             },
             tooltip: 'Editar Perfil',
           ),
@@ -67,7 +68,7 @@ class OwnerDashboardScreen extends StatelessWidget {
               elevation: 4,
               child: InkWell(
                 onTap: () {
-                  Navigator.pushNamed(context, '/owner_menu');
+                  Navigator.pushNamed(context, AppRoutes.ownerMenu);
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(20),
@@ -108,7 +109,7 @@ class OwnerDashboardScreen extends StatelessWidget {
               elevation: 4,
               child: InkWell(
                 onTap: () {
-                  Navigator.pushNamed(context, '/owner_modifier_groups');
+                  Navigator.pushNamed(context, AppRoutes.ownerModifierGroups);
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(20),

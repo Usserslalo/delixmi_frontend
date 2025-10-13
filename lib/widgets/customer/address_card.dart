@@ -21,26 +21,22 @@ class AddressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    const primaryOrange = Color(0xFFF2843A);
+    const darkGray = Color(0xFF1A1A1A);
+    const white = Color(0xFFFFFFFF);
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeInOut,
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: isSelected
-            ? Border.all(
-                color: Theme.of(context).colorScheme.primary,
-                width: 2,
-              )
-            : null,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: isSelected ? 0.3 : 0.2),
-            blurRadius: isSelected ? 8 : 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isSelected ? primaryOrange : const Color(0xFFE0E0E0),
+          width: isSelected ? 2 : 1,
+        ),
       ),
       child: Column(
         children: [
@@ -58,20 +54,18 @@ class AddressCard extends StatelessWidget {
                     children: [
                       // Icono de tipo de dirección
                       Container(
-                        width: 40,
-                        height: 40,
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
-                              : Colors.grey[100],
-                          borderRadius: BorderRadius.circular(20),
+                              ? primaryOrange.withValues(alpha: 0.15)
+                              : const Color(0xFFF5F5F5),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
                           _getAddressIcon(address.alias),
-                          color: isSelected
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.grey[600],
-                          size: 20,
+                          color: isSelected ? primaryOrange : darkGray,
+                          size: 22,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -83,18 +77,16 @@ class AddressCard extends StatelessWidget {
                           children: [
                             Text(
                               address.alias,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: isSelected
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Colors.black,
+                                color: isSelected ? primaryOrange : darkGray,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               address.shortAddress,
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey[600],
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: const Color(0xFF757575),
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -113,21 +105,17 @@ class AddressCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: isSelected
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Colors.grey[400]!,
+                              color: isSelected ? primaryOrange : const Color(0xFFE0E0E0),
                               width: 2,
                             ),
-                            color: isSelected
-                                ? Theme.of(context).colorScheme.primary
-                                : Colors.transparent,
+                            color: isSelected ? primaryOrange : Colors.transparent,
                           ),
                           child: AnimatedSwitcher(
                             duration: const Duration(milliseconds: 200),
                             child: isSelected
                                 ? const Icon(
-                                    Icons.check,
-                                    color: Colors.white,
+                                    Icons.check_rounded,
+                                    color: white,
                                     size: 16,
                                     key: ValueKey('check'),
                                   )
@@ -144,8 +132,9 @@ class AddressCard extends StatelessWidget {
                   // Dirección completa
                   Text(
                     address.fullAddress,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[700],
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFF757575),
+                      height: 1.4,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -155,25 +144,28 @@ class AddressCard extends StatelessWidget {
                   if (address.references != null && address.references!.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.blue[50],
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: Colors.blue[200]!),
+                        color: primaryOrange.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: primaryOrange.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Row(
                         children: [
                           Icon(
-                            Icons.info_outline,
-                            size: 14,
-                            color: Colors.blue[600],
+                            Icons.info_outline_rounded,
+                            size: 16,
+                            color: primaryOrange,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 6),
                           Expanded(
                             child: Text(
                               address.references!,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.blue[700],
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: primaryOrange,
+                                fontWeight: FontWeight.w500,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -188,7 +180,7 @@ class AddressCard extends StatelessWidget {
             ),
           ),
           
-          // Acciones (solo si no es modo selección) - fuera del área clickeable
+          // Acciones con Material 3
           if (!isSelectionMode)
             Container(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -198,33 +190,39 @@ class AddressCard extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: onEdit,
-                      icon: const Icon(Icons.edit, size: 16),
+                      icon: const Icon(Icons.edit_rounded, size: 18),
                       label: const Text('Editar'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Theme.of(context).colorScheme.primary,
-                        side: BorderSide(
-                          color: Theme.of(context).colorScheme.primary,
+                        foregroundColor: primaryOrange,
+                        side: const BorderSide(
+                          color: primaryOrange,
+                          width: 1.5,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(10),
                         ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   
                   // Botón eliminar
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: onDelete,
-                      icon: const Icon(Icons.delete_outline, size: 16),
+                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
                       label: const Text('Eliminar'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                        foregroundColor: const Color(0xFFD32F2F),
+                        side: const BorderSide(
+                          color: Color(0xFFD32F2F),
+                          width: 1.5,
                         ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
                   ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../config/app_routes.dart';
 import '../../services/auth_service.dart';
 import '../../models/auth/user.dart' as auth_user;
 
@@ -84,22 +85,22 @@ class _LoginScreenState extends State<LoginScreen> {
     switch (roleName) {
       // ===== ROLES DE PLATAFORMA =====
       case 'super_admin':
-        Navigator.pushReplacementNamed(context, '/admin_dashboard');
+        Navigator.pushReplacementNamed(context, AppRoutes.adminDashboard);
         break;
         
       case 'platform_manager':
-        Navigator.pushReplacementNamed(context, '/platform_dashboard');
+        Navigator.pushReplacementNamed(context, AppRoutes.platformDashboard);
         break;
         
       case 'support_agent':
-        Navigator.pushReplacementNamed(context, '/support_dashboard');
+        Navigator.pushReplacementNamed(context, AppRoutes.supportDashboard);
         break;
       
       // ===== ROLES DE RESTAURANTE =====
       case 'owner':
         Navigator.pushReplacementNamed(
           context,
-          '/owner_dashboard',
+          AppRoutes.ownerDashboard,
           arguments: {
             'restaurantId': user.roles.first.restaurantId,
           },
@@ -109,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
       case 'branch_manager':
         Navigator.pushReplacementNamed(
           context,
-          '/branch_dashboard',
+          AppRoutes.branchDashboard,
           arguments: {
             'restaurantId': user.roles.first.restaurantId,
             'branchId': user.roles.first.branchId,
@@ -120,7 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
       case 'order_manager':
         Navigator.pushReplacementNamed(
           context,
-          '/orders_dashboard',
+          AppRoutes.ordersDashboard,
           arguments: {
             'restaurantId': user.roles.first.restaurantId,
             'branchId': user.roles.first.branchId,
@@ -131,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
       case 'kitchen_staff':
         Navigator.pushReplacementNamed(
           context,
-          '/kitchen_dashboard',
+          AppRoutes.kitchenDashboard,
           arguments: {
             'branchId': user.roles.first.branchId,
           },
@@ -141,18 +142,18 @@ class _LoginScreenState extends State<LoginScreen> {
       // ===== ROLES DE REPARTIDORES =====
       case 'driver_platform':
       case 'driver_restaurant':
-        Navigator.pushReplacementNamed(context, '/driver_dashboard');
+        Navigator.pushReplacementNamed(context, AppRoutes.driverDashboard);
         break;
       
       // ===== ROL DE CLIENTE =====
       case 'customer':
-        Navigator.pushReplacementNamed(context, '/customer_home');
+        Navigator.pushReplacementNamed(context, AppRoutes.customerHome);
         break;
       
       // ===== ROL NO RECONOCIDO =====
       default:
         // debugPrint('⚠️ Rol no reconocido: $roleName');
-        Navigator.pushReplacementNamed(context, '/unsupported_role');
+        Navigator.pushReplacementNamed(context, AppRoutes.unsupportedRole);
         break;
     }
   }
@@ -272,33 +273,30 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Container(
-                                  height: 56, // h-14 en Tailwind = 56px
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).inputDecorationTheme.fillColor,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: TextFormField(
-                                    controller: _emailController,
-                                    keyboardType: TextInputType.emailAddress,
-                                    textInputAction: TextInputAction.next,
-                                    style: Theme.of(context).textTheme.bodyLarge,
-                                    decoration: InputDecoration(
-                                      hintText: 'tucorreo@ejemplo.com',
-                                      hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
-                                      border: InputBorder.none,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 16,
-                                      ),
-                                      suffixIcon: const Icon(
-                                        Icons.mail_outline,
-                                        color: Color(0xFF9B6B4B),
-                                        size: 20,
-                                      ),
+                                // M3: Eliminado Container wrapper, aplicado estilo M3 directamente
+                                TextFormField(
+                                  controller: _emailController,
+                                  keyboardType: TextInputType.emailAddress,
+                                  textInputAction: TextInputAction.next,
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                  decoration: InputDecoration(
+                                    hintText: 'tucorreo@ejemplo.com',
+                                    hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
+                                    filled: true, // M3: Activado color de fondo del tema
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16.0), // M3: Bordes más redondeados
                                     ),
-                                    validator: _validateEmail,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
+                                    suffixIcon: Icon(
+                                      Icons.mail_outline,
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant, // M3: Color del tema
+                                      size: 20,
+                                    ),
                                   ),
+                                  validator: _validateEmail,
                                 ),
                               ],
                             ),
@@ -316,56 +314,53 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Container(
-                                  height: 56, // h-14 en Tailwind = 56px
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).inputDecorationTheme.fillColor,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: TextFormField(
-                                    controller: _passwordController,
-                                    obscureText: _obscurePassword,
-                                    textInputAction: TextInputAction.done,
-                                    onFieldSubmitted: (_) => _handleLogin(),
-                                    style: Theme.of(context).textTheme.bodyLarge,
-                                    decoration: InputDecoration(
-                                      hintText: 'Ingresa tu contraseña',
-                                      hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
-                                      border: InputBorder.none,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 16,
-                                      ),
-                                      suffixIcon: IconButton(
-                                        icon: Icon(
-                                          _obscurePassword 
-                                            ? Icons.visibility_off_outlined
-                                            : Icons.visibility_outlined,
-                                          color: const Color(0xFF9B6B4B),
-                                          size: 20,
-                                        ),
-                                        onPressed: () {
-                                          setState(() {
-                                            _obscurePassword = !_obscurePassword;
-                                          });
-                                        },
-                                      ),
+                                // M3: Eliminado Container wrapper, aplicado estilo M3 directamente
+                                TextFormField(
+                                  controller: _passwordController,
+                                  obscureText: _obscurePassword,
+                                  textInputAction: TextInputAction.done,
+                                  onFieldSubmitted: (_) => _handleLogin(),
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                  decoration: InputDecoration(
+                                    hintText: 'Ingresa tu contraseña',
+                                    hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
+                                    filled: true, // M3: Activado color de fondo del tema
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16.0), // M3: Bordes más redondeados
                                     ),
-                                    validator: _validatePassword,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _obscurePassword 
+                                          ? Icons.visibility_off_outlined
+                                          : Icons.visibility_outlined,
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant, // M3: Color del tema
+                                        size: 20,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _obscurePassword = !_obscurePassword;
+                                        });
+                                      },
+                                    ),
                                   ),
+                                  validator: _validatePassword,
                                 ),
                               ],
                             ),
                             
                             const SizedBox(height: 16),
                             
-                                    // Enlace de olvidé mi contraseña
-                                    Align(
-                                      alignment: Alignment.centerRight,
-                                      child: TextButton(
-                                        onPressed: () {
-                                          Navigator.of(context).pushNamed('/forgot-password');
-                                        },
+                            // Enlace de olvidé mi contraseña
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pushNamed(AppRoutes.forgotPassword);
+                                },
                                 style: TextButton.styleFrom(
                                   foregroundColor: Theme.of(context).colorScheme.primary,
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -385,15 +380,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             SizedBox(
                               width: double.infinity,
                               height: 48, // h-12 en Tailwind = 48px
-                              child: ElevatedButton(
+                              // M3: Reemplazado ElevatedButton por FilledButton
+                              child: FilledButton(
                                 onPressed: _isLoading ? null : _handleLogin,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Theme.of(context).colorScheme.primary,
-                                  foregroundColor: Colors.white,
+                                style: FilledButton.styleFrom(
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(16.0), // M3: Bordes más redondeados
                                   ),
-                                  elevation: 0,
                                 ),
                                 child: _isLoading
                                   ? const SizedBox(
@@ -417,20 +410,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         
                         const SizedBox(height: 16),
-                        
-                        // Botón de debug temporal
-                        Center(
-                          child: TextButton.icon(
-                            onPressed: () {
-                              Navigator.of(context).pushNamed('/debug-backend');
-                            },
-                            icon: const Icon(Icons.bug_report, size: 16),
-                            label: const Text('Debug Backend'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.grey[600],
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -452,7 +431,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               WidgetSpan(
                                 child: TextButton(
                                   onPressed: () {
-                                    Navigator.of(context).pushNamed('/register');
+                                    Navigator.of(context).pushNamed(AppRoutes.register);
                                   },
                                   style: TextButton.styleFrom(
                                     foregroundColor: Theme.of(context).colorScheme.primary,

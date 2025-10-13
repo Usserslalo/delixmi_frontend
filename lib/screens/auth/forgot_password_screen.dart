@@ -12,11 +12,29 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   bool _isLoading = false;
+  
+  // Estado de validación en tiempo real
+  bool _isEmailValid = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Agregar listener para validación en tiempo real
+    _emailController.addListener(_validateEmailRealTime);
+  }
 
   @override
   void dispose() {
+    _emailController.removeListener(_validateEmailRealTime);
     _emailController.dispose();
     super.dispose();
+  }
+  
+  void _validateEmailRealTime() {
+    final value = _emailController.text;
+    setState(() {
+      _isEmailValid = value.isNotEmpty && RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value);
+    });
   }
 
   Future<void> _handleForgotPassword() async {
@@ -198,34 +216,57 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Container(
-                                  height: 56, // h-14 en Tailwind = 56px
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).inputDecorationTheme.fillColor,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: TextFormField(
-                                    controller: _emailController,
-                                    keyboardType: TextInputType.emailAddress,
-                                    textInputAction: TextInputAction.done,
-                                    onFieldSubmitted: (_) => _handleForgotPassword(),
-                                    style: Theme.of(context).textTheme.bodyLarge,
-                                    decoration: InputDecoration(
-                                      hintText: 'tucorreo@ejemplo.com',
-                                      hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
-                                      border: InputBorder.none,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 16,
-                                      ),
-                                      suffixIcon: const Icon(
-                                        Icons.mail_outline,
-                                        color: Color(0xFF9B6B4B),
-                                        size: 20,
+                                // M3: Eliminado Container wrapper, aplicado estilo M3 directamente
+                                TextFormField(
+                                  controller: _emailController,
+                                  keyboardType: TextInputType.emailAddress,
+                                  textInputAction: TextInputAction.done,
+                                  onFieldSubmitted: (_) => _handleForgotPassword(),
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                  decoration: InputDecoration(
+                                    hintText: 'tucorreo@ejemplo.com',
+                                    hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
+                                    filled: true, // M3: Activado color de fondo del tema
+                                    fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3), // M3: Color de fondo
+                                    border: OutlineInputBorder( // M3: Borde redondeado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide.none, // M3: Sin borde visible por defecto
+                                    ),
+                                    enabledBorder: OutlineInputBorder( // M3: Borde cuando está habilitado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide(
+                                        color: _emailController.text.isNotEmpty
+                                            ? (_isEmailValid ? Colors.green : Colors.red)
+                                            : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                                        width: _emailController.text.isNotEmpty ? 2 : 1,
                                       ),
                                     ),
-                                    validator: _validateEmail,
+                                    focusedBorder: OutlineInputBorder( // M3: Borde cuando está enfocado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide(
+                                        color: _emailController.text.isNotEmpty
+                                            ? (_isEmailValid ? Colors.green : Colors.red)
+                                            : Theme.of(context).colorScheme.primary,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
+                                    suffixIcon: _emailController.text.isNotEmpty
+                                        ? Icon(
+                                            _isEmailValid ? Icons.check_circle : Icons.error,
+                                            color: _isEmailValid ? Colors.green : Colors.red,
+                                            size: 20,
+                                          )
+                                        : Icon( // M3: Color de ícono del tema
+                                            Icons.mail_outline,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            size: 20,
+                                          ),
                                   ),
+                                  validator: _validateEmail,
                                 ),
                               ],
                             ),
@@ -236,15 +277,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             SizedBox(
                               width: double.infinity,
                               height: 48, // h-12 en Tailwind = 48px
-                              child: ElevatedButton(
+                              // M3: Reemplazado ElevatedButton por FilledButton
+                              child: FilledButton(
                                 onPressed: _isLoading ? null : _handleForgotPassword,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Theme.of(context).colorScheme.primary,
-                                  foregroundColor: Colors.white,
+                                style: FilledButton.styleFrom(
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(16.0), // M3: Bordes más redondeados
                                   ),
-                                  elevation: 0,
                                 ),
                                 child: _isLoading
                                   ? const SizedBox(

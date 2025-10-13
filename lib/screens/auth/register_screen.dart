@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../config/app_routes.dart';
 import '../../services/auth_service.dart';
 import '../../models/auth/register_response.dart';
 
@@ -91,7 +92,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         if (response.isSuccess) {
           // Navegar a la pantalla de verificación de email
           Navigator.of(context).pushReplacementNamed(
-            '/email-verification',
+            AppRoutes.emailVerification,
             arguments: response.user?.email ?? _emailController.text.trim(),
           );
           
@@ -184,13 +185,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Navigator.of(context).pop();
                 // Navegar a la pantalla de verificación de email con el email del usuario
                 Navigator.of(context).pushReplacementNamed(
-                  '/email-verification',
+                  AppRoutes.emailVerification,
                   arguments: response.user?.email ?? _emailController.text.trim(),
                 );
               },
               child: const Text('Más tarde'),
             ),
-            ElevatedButton(
+            FilledButton( // M3: Reemplazado por FilledButton
               onPressed: () async {
                 Navigator.of(context).pop();
                 await _resendVerificationEmail(response.user?.email ?? _emailController.text.trim());
@@ -215,7 +216,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         if (response.isSuccess) {
           // Navegar a la pantalla de verificación de email
           Navigator.of(context).pushReplacementNamed(
-            '/email-verification',
+            AppRoutes.emailVerification,
             arguments: email,
           );
           
@@ -403,9 +404,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
+        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3), // M3: Color del tema
+        borderRadius: BorderRadius.circular(12), // M3: Borde más redondeado
+        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)), // M3: Borde del tema
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -414,7 +415,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             'Requisitos de contraseña:',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
+              color: Theme.of(context).colorScheme.onSurfaceVariant, // M3: Color del tema
             ),
           ),
           const SizedBox(height: 8),
@@ -451,14 +452,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Icon(
             isValid ? Icons.check_circle : Icons.circle_outlined,
             size: 16,
-            color: isValid ? Colors.green : Colors.grey,
+            color: isValid ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant, // M3: Colores del tema
           ),
           const SizedBox(width: 8),
           Text(
             text,
-            style: TextStyle(
+            style: Theme.of(context).textTheme.bodySmall?.copyWith( // M3: Usar textTheme
               fontSize: 12,
-              color: isValid ? Colors.green : Colors.grey,
+              color: isValid ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant, // M3: Colores del tema
               fontWeight: isValid ? FontWeight.w500 : FontWeight.normal,
             ),
           ),
@@ -561,44 +562,56 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Container(
-                                  height: 56,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).inputDecorationTheme.fillColor,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: _nameController.text.isNotEmpty
-                                        ? Border.all(
-                                            color: _isNameValid ? Colors.green : Colors.red,
-                                            width: 2,
-                                          )
-                                        : null,
-                                  ),
-                                  child: TextFormField(
-                                    controller: _nameController,
-                                    textInputAction: TextInputAction.next,
-                                    style: Theme.of(context).textTheme.bodyLarge,
-                                    decoration: InputDecoration(
-                                      hintText: 'Tu nombre',
-                                      hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
-                                      border: InputBorder.none,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 16,
-                                      ),
-                                      suffixIcon: _nameController.text.isNotEmpty
-                                          ? Icon(
-                                              _isNameValid ? Icons.check_circle : Icons.error,
-                                              color: _isNameValid ? Colors.green : Colors.red,
-                                              size: 20,
-                                            )
-                                          : const Icon(
-                                              Icons.person_outline,
-                                              color: Color(0xFF9B6B4B),
-                                              size: 20,
-                                            ),
+                                TextFormField( // M3: Eliminado Container wrapper
+                                  controller: _nameController,
+                                  textInputAction: TextInputAction.next,
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                  decoration: InputDecoration( // M3: Estilo de Material 3
+                                    filled: true, // M3: Activa el color de fondo del tema
+                                    fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3), // M3: Color de fondo
+                                    border: OutlineInputBorder( // M3: Borde redondeado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide.none, // M3: Sin borde visible por defecto
                                     ),
-                                    validator: _validateName,
+                                    enabledBorder: OutlineInputBorder( // M3: Borde cuando está habilitado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide(
+                                        color: _nameController.text.isNotEmpty
+                                            ? (_isNameValid ? Colors.green : Colors.red)
+                                            : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                                        width: _nameController.text.isNotEmpty ? 2 : 1,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder( // M3: Borde cuando está enfocado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide(
+                                        color: _nameController.text.isNotEmpty
+                                            ? (_isNameValid ? Colors.green : Colors.red)
+                                            : Theme.of(context).colorScheme.primary,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    hintText: 'Tu nombre',
+                                    hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
+                                    suffixIcon: _nameController.text.isNotEmpty
+                                        ? Icon(
+                                            _isNameValid ? Icons.check_circle : Icons.error,
+                                            color: _isNameValid ? Colors.green : Colors.red,
+                                            size: 20,
+                                          )
+                                        : Icon( // M3: Color de ícono del tema
+                                            Icons.person_outline,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            size: 20,
+                                          ),
                                   ),
+                                  validator: _validateName,
                                 ),
                               ],
                             ),
@@ -616,44 +629,56 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Container(
-                                  height: 56,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).inputDecorationTheme.fillColor,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: _lastnameController.text.isNotEmpty
-                                        ? Border.all(
-                                            color: _isLastnameValid ? Colors.green : Colors.red,
-                                            width: 2,
-                                          )
-                                        : null,
-                                  ),
-                                  child: TextFormField(
-                                    controller: _lastnameController,
-                                    textInputAction: TextInputAction.next,
-                                    style: Theme.of(context).textTheme.bodyLarge,
-                                    decoration: InputDecoration(
-                                      hintText: 'Tus apellidos',
-                                      hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
-                                      border: InputBorder.none,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 16,
-                                      ),
-                                      suffixIcon: _lastnameController.text.isNotEmpty
-                                          ? Icon(
-                                              _isLastnameValid ? Icons.check_circle : Icons.error,
-                                              color: _isLastnameValid ? Colors.green : Colors.red,
-                                              size: 20,
-                                            )
-                                          : const Icon(
-                                              Icons.person_outline,
-                                              color: Color(0xFF9B6B4B),
-                                              size: 20,
-                                            ),
+                                TextFormField( // M3: Eliminado Container wrapper
+                                  controller: _lastnameController,
+                                  textInputAction: TextInputAction.next,
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                  decoration: InputDecoration( // M3: Estilo de Material 3
+                                    filled: true, // M3: Activa el color de fondo del tema
+                                    fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3), // M3: Color de fondo
+                                    border: OutlineInputBorder( // M3: Borde redondeado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide.none, // M3: Sin borde visible por defecto
                                     ),
-                                    validator: _validateLastname,
+                                    enabledBorder: OutlineInputBorder( // M3: Borde cuando está habilitado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide(
+                                        color: _lastnameController.text.isNotEmpty
+                                            ? (_isLastnameValid ? Colors.green : Colors.red)
+                                            : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                                        width: _lastnameController.text.isNotEmpty ? 2 : 1,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder( // M3: Borde cuando está enfocado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide(
+                                        color: _lastnameController.text.isNotEmpty
+                                            ? (_isLastnameValid ? Colors.green : Colors.red)
+                                            : Theme.of(context).colorScheme.primary,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    hintText: 'Tus apellidos',
+                                    hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
+                                    suffixIcon: _lastnameController.text.isNotEmpty
+                                        ? Icon(
+                                            _isLastnameValid ? Icons.check_circle : Icons.error,
+                                            color: _isLastnameValid ? Colors.green : Colors.red,
+                                            size: 20,
+                                          )
+                                        : Icon( // M3: Color de ícono del tema
+                                            Icons.person_outline,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            size: 20,
+                                          ),
                                   ),
+                                  validator: _validateLastname,
                                 ),
                               ],
                             ),
@@ -671,45 +696,57 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Container(
-                                  height: 56,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).inputDecorationTheme.fillColor,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: _emailController.text.isNotEmpty
-                                        ? Border.all(
-                                            color: _isEmailValid ? Colors.green : Colors.red,
-                                            width: 2,
-                                          )
-                                        : null,
-                                  ),
-                                  child: TextFormField(
-                                    controller: _emailController,
-                                    keyboardType: TextInputType.emailAddress,
-                                    textInputAction: TextInputAction.next,
-                                    style: Theme.of(context).textTheme.bodyLarge,
-                                    decoration: InputDecoration(
-                                      hintText: 'tucorreo@ejemplo.com',
-                                      hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
-                                      border: InputBorder.none,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 16,
-                                      ),
-                                      suffixIcon: _emailController.text.isNotEmpty
-                                          ? Icon(
-                                              _isEmailValid ? Icons.check_circle : Icons.error,
-                                              color: _isEmailValid ? Colors.green : Colors.red,
-                                              size: 20,
-                                            )
-                                          : const Icon(
-                                              Icons.mail_outline,
-                                              color: Color(0xFF9B6B4B),
-                                              size: 20,
-                                            ),
+                                TextFormField( // M3: Eliminado Container wrapper
+                                  controller: _emailController,
+                                  keyboardType: TextInputType.emailAddress,
+                                  textInputAction: TextInputAction.next,
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                  decoration: InputDecoration( // M3: Estilo de Material 3
+                                    filled: true, // M3: Activa el color de fondo del tema
+                                    fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3), // M3: Color de fondo
+                                    border: OutlineInputBorder( // M3: Borde redondeado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide.none, // M3: Sin borde visible por defecto
                                     ),
-                                    validator: _validateEmail,
+                                    enabledBorder: OutlineInputBorder( // M3: Borde cuando está habilitado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide(
+                                        color: _emailController.text.isNotEmpty
+                                            ? (_isEmailValid ? Colors.green : Colors.red)
+                                            : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                                        width: _emailController.text.isNotEmpty ? 2 : 1,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder( // M3: Borde cuando está enfocado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide(
+                                        color: _emailController.text.isNotEmpty
+                                            ? (_isEmailValid ? Colors.green : Colors.red)
+                                            : Theme.of(context).colorScheme.primary,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    hintText: 'tucorreo@ejemplo.com',
+                                    hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
+                                    suffixIcon: _emailController.text.isNotEmpty
+                                        ? Icon(
+                                            _isEmailValid ? Icons.check_circle : Icons.error,
+                                            color: _isEmailValid ? Colors.green : Colors.red,
+                                            size: 20,
+                                          )
+                                        : Icon( // M3: Color de ícono del tema
+                                            Icons.mail_outline,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            size: 20,
+                                          ),
                                   ),
+                                  validator: _validateEmail,
                                 ),
                               ],
                             ),
@@ -727,45 +764,57 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Container(
-                                  height: 56,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).inputDecorationTheme.fillColor,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: _phoneController.text.isNotEmpty
-                                        ? Border.all(
-                                            color: _isPhoneValid ? Colors.green : Colors.red,
-                                            width: 2,
-                                          )
-                                        : null,
-                                  ),
-                                  child: TextFormField(
-                                    controller: _phoneController,
-                                    keyboardType: TextInputType.phone,
-                                    textInputAction: TextInputAction.next,
-                                    style: Theme.of(context).textTheme.bodyLarge,
-                                    decoration: InputDecoration(
-                                      hintText: '5512345678',
-                                      hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
-                                      border: InputBorder.none,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 16,
-                                      ),
-                                      suffixIcon: _phoneController.text.isNotEmpty
-                                          ? Icon(
-                                              _isPhoneValid ? Icons.check_circle : Icons.error,
-                                              color: _isPhoneValid ? Colors.green : Colors.red,
-                                              size: 20,
-                                            )
-                                          : const Icon(
-                                              Icons.phone_outlined,
-                                              color: Color(0xFF9B6B4B),
-                                              size: 20,
-                                            ),
+                                TextFormField( // M3: Eliminado Container wrapper
+                                  controller: _phoneController,
+                                  keyboardType: TextInputType.phone,
+                                  textInputAction: TextInputAction.next,
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                  decoration: InputDecoration( // M3: Estilo de Material 3
+                                    filled: true, // M3: Activa el color de fondo del tema
+                                    fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3), // M3: Color de fondo
+                                    border: OutlineInputBorder( // M3: Borde redondeado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide.none, // M3: Sin borde visible por defecto
                                     ),
-                                    validator: _validatePhone,
+                                    enabledBorder: OutlineInputBorder( // M3: Borde cuando está habilitado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide(
+                                        color: _phoneController.text.isNotEmpty
+                                            ? (_isPhoneValid ? Colors.green : Colors.red)
+                                            : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                                        width: _phoneController.text.isNotEmpty ? 2 : 1,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder( // M3: Borde cuando está enfocado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide(
+                                        color: _phoneController.text.isNotEmpty
+                                            ? (_isPhoneValid ? Colors.green : Colors.red)
+                                            : Theme.of(context).colorScheme.primary,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    hintText: '5512345678',
+                                    hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
+                                    suffixIcon: _phoneController.text.isNotEmpty
+                                        ? Icon(
+                                            _isPhoneValid ? Icons.check_circle : Icons.error,
+                                            color: _isPhoneValid ? Colors.green : Colors.red,
+                                            size: 20,
+                                          )
+                                        : Icon( // M3: Color de ícono del tema
+                                            Icons.phone_outlined,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            size: 20,
+                                          ),
                                   ),
+                                  validator: _validatePhone,
                                 ),
                               ],
                             ),
@@ -783,74 +832,86 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Container(
-                                  height: 56,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).inputDecorationTheme.fillColor,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: _passwordController.text.isNotEmpty
-                                        ? Border.all(
-                                            color: _isPasswordValid ? Colors.green : Colors.red,
-                                            width: 2,
-                                          )
-                                        : null,
-                                  ),
-                                  child: TextFormField(
-                                    controller: _passwordController,
-                                    obscureText: _obscurePassword,
-                                    textInputAction: TextInputAction.next,
-                                    style: Theme.of(context).textTheme.bodyLarge,
-                                    decoration: InputDecoration(
-                                      hintText: 'Ej: MiPass123!',
-                                      hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
-                                      border: InputBorder.none,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 16,
+                                TextFormField( // M3: Eliminado Container wrapper
+                                  controller: _passwordController,
+                                  obscureText: _obscurePassword,
+                                  textInputAction: TextInputAction.next,
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                  decoration: InputDecoration( // M3: Estilo de Material 3
+                                    filled: true, // M3: Activa el color de fondo del tema
+                                    fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3), // M3: Color de fondo
+                                    border: OutlineInputBorder( // M3: Borde redondeado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide.none, // M3: Sin borde visible por defecto
+                                    ),
+                                    enabledBorder: OutlineInputBorder( // M3: Borde cuando está habilitado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide(
+                                        color: _passwordController.text.isNotEmpty
+                                            ? (_isPasswordValid ? Colors.green : Colors.red)
+                                            : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                                        width: _passwordController.text.isNotEmpty ? 2 : 1,
                                       ),
-                                      suffixIcon: _passwordController.text.isNotEmpty
-                                          ? Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  _isPasswordValid ? Icons.check_circle : Icons.error,
-                                                  color: _isPasswordValid ? Colors.green : Colors.red,
-                                                  size: 20,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                IconButton(
-                                                  icon: Icon(
-                                                    _obscurePassword 
-                                                      ? Icons.visibility_off_outlined
-                                                      : Icons.visibility_outlined,
-                                                    color: const Color(0xFF9B6B4B),
-                                                    size: 20,
-                                                  ),
-                                                  onPressed: () {
-                                                    setState(() {
-                                                      _obscurePassword = !_obscurePassword;
-                                                    });
-                                                  },
-                                                ),
-                                              ],
-                                            )
-                                          : IconButton(
-                                              icon: Icon(
-                                                _obscurePassword 
-                                                  ? Icons.visibility_off_outlined
-                                                  : Icons.visibility_outlined,
-                                                color: const Color(0xFF9B6B4B),
+                                    ),
+                                    focusedBorder: OutlineInputBorder( // M3: Borde cuando está enfocado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide(
+                                        color: _passwordController.text.isNotEmpty
+                                            ? (_isPasswordValid ? Colors.green : Colors.red)
+                                            : Theme.of(context).colorScheme.primary,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    hintText: 'Ej: MiPass123!',
+                                    hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
+                                    suffixIcon: _passwordController.text.isNotEmpty
+                                        ? Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                _isPasswordValid ? Icons.check_circle : Icons.error,
+                                                color: _isPasswordValid ? Colors.green : Colors.red,
                                                 size: 20,
                                               ),
-                                              onPressed: () {
-                                                setState(() {
-                                                  _obscurePassword = !_obscurePassword;
-                                                });
-                                              },
+                                              const SizedBox(width: 8),
+                                              IconButton(
+                                                icon: Icon(
+                                                  _obscurePassword 
+                                                    ? Icons.visibility_off_outlined
+                                                    : Icons.visibility_outlined,
+                                                  color: Theme.of(context).colorScheme.onSurfaceVariant, // M3: Color del tema
+                                                  size: 20,
+                                                ),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    _obscurePassword = !_obscurePassword;
+                                                  });
+                                                },
+                                              ),
+                                            ],
+                                          )
+                                        : IconButton(
+                                            icon: Icon(
+                                              _obscurePassword 
+                                                ? Icons.visibility_off_outlined
+                                                : Icons.visibility_outlined,
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant, // M3: Color del tema
+                                              size: 20,
                                             ),
-                                    ),
-                                    validator: _validatePassword,
+                                            onPressed: () {
+                                              setState(() {
+                                                _obscurePassword = !_obscurePassword;
+                                              });
+                                            },
+                                          ),
                                   ),
+                                  validator: _validatePassword,
                                 ),
                                 
                                 // Indicadores de requisitos de contraseña
@@ -874,43 +935,57 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Container(
-                                  height: 56,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).inputDecorationTheme.fillColor,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: TextFormField(
-                                    controller: _confirmPasswordController,
-                                    obscureText: _obscureConfirmPassword,
-                                    textInputAction: TextInputAction.done,
-                                    onFieldSubmitted: (_) => _handleRegister(),
-                                    style: Theme.of(context).textTheme.bodyLarge,
-                                    decoration: InputDecoration(
-                                      hintText: 'Ej: MiPass123!',
-                                      hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
-                                      border: InputBorder.none,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 16,
-                                      ),
-                                      suffixIcon: IconButton(
-                                        icon: Icon(
-                                          _obscureConfirmPassword 
-                                            ? Icons.visibility_off_outlined
-                                            : Icons.visibility_outlined,
-                                          color: const Color(0xFF9B6B4B),
-                                          size: 20,
-                                        ),
-                                        onPressed: () {
-                                          setState(() {
-                                            _obscureConfirmPassword = !_obscureConfirmPassword;
-                                          });
-                                        },
+                                TextFormField( // M3: Eliminado Container wrapper
+                                  controller: _confirmPasswordController,
+                                  obscureText: _obscureConfirmPassword,
+                                  textInputAction: TextInputAction.done,
+                                  onFieldSubmitted: (_) => _handleRegister(),
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                  decoration: InputDecoration( // M3: Estilo de Material 3
+                                    filled: true, // M3: Activa el color de fondo del tema
+                                    fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3), // M3: Color de fondo
+                                    border: OutlineInputBorder( // M3: Borde redondeado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide.none, // M3: Sin borde visible por defecto
+                                    ),
+                                    enabledBorder: OutlineInputBorder( // M3: Borde cuando está habilitado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide(
+                                        color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                                        width: 1,
                                       ),
                                     ),
-                                    validator: _validateConfirmPassword,
+                                    focusedBorder: OutlineInputBorder( // M3: Borde cuando está enfocado
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      borderSide: BorderSide(
+                                        color: Theme.of(context).colorScheme.primary,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    hintText: 'Ej: MiPass123!',
+                                    hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _obscureConfirmPassword 
+                                          ? Icons.visibility_off_outlined
+                                          : Icons.visibility_outlined,
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant, // M3: Color del tema
+                                        size: 20,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _obscureConfirmPassword = !_obscureConfirmPassword;
+                                        });
+                                      },
+                                    ),
                                   ),
+                                  validator: _validateConfirmPassword,
                                 ),
                               ],
                             ),
@@ -921,15 +996,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             SizedBox(
                               width: double.infinity,
                               height: 48,
-                              child: ElevatedButton(
+                              child: FilledButton( // M3: Reemplazado por FilledButton
                                 onPressed: _isLoading ? null : _handleRegister,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Theme.of(context).colorScheme.primary,
-                                  foregroundColor: Colors.white,
+                                style: FilledButton.styleFrom( // M3: Estilo de Material 3
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(16.0), // M3: Borde redondeado
                                   ),
-                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(vertical: 12), // M3: Ajuste de padding
                                 ),
                                 child: _isLoading
                                   ? const SizedBox(
@@ -944,7 +1017,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       'Registrarse',
                                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                         fontWeight: FontWeight.w700,
-                                        color: Colors.white,
+                                        color: Theme.of(context).colorScheme.onPrimary, // M3: Color de texto del tema
                                       ),
                                     ),
                               ),
@@ -969,7 +1042,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           WidgetSpan(
                             child: TextButton(
                               onPressed: () {
-                                Navigator.of(context).pushReplacementNamed('/login');
+                                Navigator.of(context).pushReplacementNamed(AppRoutes.login);
                               },
                               style: TextButton.styleFrom(
                                 foregroundColor: Theme.of(context).colorScheme.primary,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../config/app_routes.dart';
 import '../../services/auth_service.dart';
 import '../../models/auth/user.dart';
 
@@ -478,11 +479,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _navigateToAddresses() {
-    Navigator.of(context).pushNamed('/addresses');
+    Navigator.of(context).pushNamed(AppRoutes.addresses);
   }
 
   void _navigateToOrderHistory() {
-    Navigator.of(context).pushNamed('/order-history');
+    Navigator.of(context).pushNamed(AppRoutes.orderHistory);
   }
 
   Future<void> _navigateToEditProfile() async {
@@ -531,10 +532,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _navigateToChangePassword() {
-    Navigator.of(context).pushNamed('/change-password');
+    Navigator.of(context).pushNamed(AppRoutes.changePassword);
   }
 
   void _navigateToHelpSupport() {
-    Navigator.of(context).pushNamed('/help-support');
+    Navigator.of(context).pushNamed(AppRoutes.helpSupport);
   }
 }

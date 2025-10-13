@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../config/app_routes.dart';
 import '../../services/auth_service.dart';
 import '../../services/api_service.dart';
 import '../../services/error_handler.dart';
 import '../../services/coverage_service.dart';
+import '../../services/onboarding_service.dart';
 import '../../models/restaurant.dart';
 import '../../models/category.dart';
 import '../../widgets/customer/restaurant_card.dart';
 import '../../widgets/shared/loading_widget.dart';
+import '../../widgets/onboarding/onboarding_overlay.dart';
 import '../../providers/address_provider.dart';
 import '../../providers/restaurant_cart_provider.dart';
 
@@ -38,6 +41,10 @@ class _HomeScreenState extends State<HomeScreen> {
   
   // Referencia al provider para evitar acceso al context en dispose
   AddressProvider? _addressProvider;
+  
+  // Variables de onboarding
+  bool _showOnboarding = false;
+  bool _checkingOnboarding = true;
 
   @override
   void initState() {
@@ -128,6 +135,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadInitialData() async {
+    // Verificar si debe mostrar onboarding para usuarios nuevos
+    await _checkOnboardingStatus();
+    
     // Cargar carrito primero para que el badge se actualice inmediatamente
     await _loadCartSummary();
     
@@ -137,6 +147,38 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadRestaurants(),
       _loadAddresses(),
     ]);
+  }
+
+  Future<void> _checkOnboardingStatus() async {
+    try {
+      final shouldShow = await OnboardingService.instance.shouldShowOnboarding();
+      debugPrint('🔍 Verificando onboarding: $shouldShow');
+      
+      if (mounted) {
+        setState(() {
+          _showOnboarding = shouldShow;
+          _checkingOnboarding = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error verificando onboarding: $e');
+      if (mounted) {
+        setState(() {
+          _showOnboarding = false;
+          _checkingOnboarding = false;
+        });
+      }
+    }
+  }
+
+  void _onOnboardingComplete() {
+    debugPrint('✅ Onboarding completado');
+    setState(() {
+      _showOnboarding = false;
+    });
+    
+    // Recargar datos después del onboarding
+    _loadInitialData();
   }
 
   Future<void> _loadCategories() async {
@@ -356,71 +398,74 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _navigateToAddresses() {
-    Navigator.of(context).pushNamed('/addresses');
+    Navigator.of(context).pushNamed(AppRoutes.addresses);
   }
 
-  Widget _buildSimpleNotificationIcon(BuildContext context) {
-    return Stack(
-      children: [
-        IconButton(
-          icon: Icon(
-            Icons.notifications_outlined,
-            color: Colors.grey[600],
-            size: 20,
-          ),
-          onPressed: () {
-            // Notificaciones - funcionalidad pendiente
-          },
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
+  Widget _buildNotificationButton(BuildContext context) {
+    const primaryOrange = Color(0xFFF2843A);
+    const white = Color(0xFFFFFFFF);
+    const darkGray = Color(0xFF1A1A1A);
+
+    return IconButton(
+      icon: Badge(
+        isLabelVisible: true,
+        label: const Text('3'),
+        backgroundColor: primaryOrange,
+        textColor: white,
+        child: const Icon(
+          Icons.notifications_outlined,
+          color: darkGray,
+          size: 24,
         ),
-        Positioned(
-          right: 6,
-          top: 6,
-          child: Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              shape: BoxShape.circle,
-            ),
+      ),
+      onPressed: () {
+        // TODO: Navegar a notificaciones
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Notificaciones - Próximamente'),
+            duration: Duration(seconds: 2),
           ),
-        ),
-      ],
+        );
+      },
+      tooltip: 'Notificaciones',
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    if (_isLoading || _checkingOnboarding) {
       return const Scaffold(
         body: LoadingWidget(
-          message: 'Cargando restaurantes...',
+          message: 'Cargando...',
         ),
       );
     }
 
-    return Scaffold(
-      body: RefreshIndicator(
+    return Stack(
+      children: [
+        Scaffold(
+          body: RefreshIndicator(
         onRefresh: () => _loadRestaurants(),
         child: CustomScrollView(
           controller: _scrollController,
           slivers: [
             // Header con dirección y notificaciones
             SliverAppBar(
-              expandedHeight: 100.0,
+              expandedHeight: 115.0,
               floating: false,
               pinned: true,
-              backgroundColor: Colors.white,
+              backgroundColor: const Color(0xFFFFFFFF),
+              surfaceTintColor: const Color(0xFFFFFFFF),
               elevation: 0,
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
                   color: Colors.white,
                   child: SafeArea(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 6),
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           // Dirección y notificaciones (diseño limpio)
                           Row(
@@ -429,33 +474,42 @@ class _HomeScreenState extends State<HomeScreen> {
                               Expanded(
                                 child: Consumer<AddressProvider>(
                                   builder: (context, addressProvider, child) {
-                                    return GestureDetector(
+                                    return InkWell(
                                       onTap: () => _navigateToAddresses(),
+                                      borderRadius: BorderRadius.circular(12),
                                       child: Row(
                                         children: [
-                                          Icon(
-                                            Icons.location_on,
-                                            color: Theme.of(context).colorScheme.primary,
-                                            size: 20,
+                                          Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF2843A),
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: const Icon(
+                                              Icons.location_on_rounded,
+                                              color: Color(0xFFFFFFFF),
+                                              size: 20,
+                                            ),
                                           ),
-                                          const SizedBox(width: 8),
+                                          const SizedBox(width: 12),
                                           Expanded(
                                             child: Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
+                                              mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Text(
-                                                  'Entregando en',
-                                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                    color: Colors.grey[600],
-                                                    fontSize: 12,
+                                                  'Entregar en',
+                                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                    color: const Color(0xFF757575),
+                                                    fontWeight: FontWeight.w500,
                                                   ),
                                                 ),
                                                 const SizedBox(height: 2),
                                                 Text(
                                                   addressProvider.deliveryAddressText,
-                                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                                     fontWeight: FontWeight.bold,
-                                                    color: Colors.grey[900],
+                                                    color: const Color(0xFF1A1A1A),
                                                   ),
                                                   maxLines: 1,
                                                   overflow: TextOverflow.ellipsis,
@@ -463,10 +517,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                               ],
                                             ),
                                           ),
-                                          Icon(
-                                            Icons.arrow_drop_down,
-                                            color: Colors.grey[600],
-                                            size: 20,
+                                          const Icon(
+                                            Icons.keyboard_arrow_down_rounded,
+                                            color: Color(0xFFF2843A),
+                                            size: 24,
                                           ),
                                         ],
                                       ),
@@ -474,37 +528,55 @@ class _HomeScreenState extends State<HomeScreen> {
                                   },
                                 ),
                               ),
-                              // Ícono de notificaciones simple
-                              _buildSimpleNotificationIcon(context),
+                              // Botón de notificaciones con Material 3
+                              _buildNotificationButton(context),
                             ],
                           ),
                           const SizedBox(height: 8),
-                          // Barra de búsqueda
+                          // Barra de búsqueda con Material 3
                           Container(
-                            height: 36,
+                            height: 44,
                             decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(18),
+                              color: const Color(0xFFF5F5F5),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: const Color(0xFFE0E0E0),
+                                width: 1,
+                              ),
                             ),
                             child: TextField(
                               controller: _searchController,
                               onChanged: _onSearchChanged,
-                              style: const TextStyle(fontSize: 14),
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: const Color(0xFF1A1A1A),
+                              ),
                               decoration: InputDecoration(
-                                hintText: 'Buscar en Delixmi...',
-                                hintStyle: TextStyle(
-                                  color: Colors.grey[500],
-                                  fontSize: 14,
+                                hintText: 'Buscar restaurantes o platillos...',
+                                hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: const Color(0xFF757575),
                                 ),
-                                prefixIcon: Icon(
-                                  Icons.search,
-                                  color: Colors.grey[400],
-                                  size: 18,
+                                prefixIcon: const Icon(
+                                  Icons.search_rounded,
+                                  color: Color(0xFF757575),
+                                  size: 22,
                                 ),
+                                suffixIcon: _searchController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(
+                                          Icons.clear_rounded,
+                                          color: Color(0xFF757575),
+                                          size: 20,
+                                        ),
+                                        onPressed: () {
+                                          _searchController.clear();
+                                          _onSearchChanged('');
+                                        },
+                                      )
+                                    : null,
                                 border: InputBorder.none,
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 16,
-                                  vertical: 8,
+                                  vertical: 12,
                                 ),
                               ),
                             ),
@@ -517,43 +589,57 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             
-            // Filtros de categorías
+            // Filtros de categorías con Material 3
             SliverToBoxAdapter(
               child: Container(
-                height: 50,
-                margin: const EdgeInsets.symmetric(vertical: 8),
+                height: 52,
+                margin: const EdgeInsets.only(top: 12, bottom: 16),
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: _categories.length,
                   itemBuilder: (context, index) {
                     final category = _categories[index];
                     final isSelected = _selectedCategory?.id == category.id;
+                    const primaryOrange = Color(0xFFF2843A);
+                    const darkGray = Color(0xFF1A1A1A);
+                    const white = Color(0xFFFFFFFF);
                     
                     return Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.only(right: 10),
                       child: FilterChip(
                         label: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             if (category.emoji != null) ...[
-                              Text(category.emoji!),
-                              const SizedBox(width: 4),
+                              Text(
+                                category.emoji!,
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                              const SizedBox(width: 6),
                             ],
                             Text(category.name),
                           ],
                         ),
                         selected: isSelected,
                         onSelected: (selected) => _onCategorySelected(category),
-                        backgroundColor: Colors.grey[200],
-                        selectedColor: Theme.of(context).colorScheme.primary,
+                        backgroundColor: white,
+                        selectedColor: primaryOrange,
+                        checkmarkColor: white,
+                        side: BorderSide(
+                          color: isSelected ? primaryOrange : const Color(0xFFE0E0E0),
+                          width: 1.5,
+                        ),
                         labelStyle: TextStyle(
-                          color: isSelected ? Colors.white : Colors.grey[700],
-                          fontWeight: FontWeight.w500,
+                          color: isSelected ? white : darkGray,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
                         ),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
+                          borderRadius: BorderRadius.circular(12),
                         ),
+                        showCheckmark: false,
                       ),
                     );
                   },
@@ -569,7 +655,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+          bottomNavigationBar: _buildBottomNavigationBar(),
+        ),
+        
+        // Overlay de onboarding para usuarios nuevos
+        if (_showOnboarding)
+          OnboardingOverlay(
+            onComplete: _onOnboardingComplete,
+          ),
+      ],
     );
   }
 
@@ -741,153 +835,74 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBottomNavigationBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey[300]!,
-            width: 0.5,
-          ),
-        ),
-      ),
-      child: SafeArea(
-        child: Container(
-          height: 60,
-          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildSimpleNavItem(
-                icon: Icons.home_rounded,
-                label: 'Inicio',
-                isSelected: true,
-                onTap: () {},
-              ),
-              _buildSimpleCartItem(),
-              _buildSimpleNavItem(
-                icon: Icons.receipt_long_outlined,
-                label: 'Pedidos',
-                isSelected: false,
-                onTap: () {
-                  Navigator.of(context).pushNamed('/orders');
-                },
-              ),
-              _buildSimpleNavItem(
-                icon: Icons.person_outline_rounded,
-                label: 'Perfil',
-                isSelected: false,
-                onTap: () {
-                  Navigator.of(context).pushNamed('/profile');
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+    const primaryOrange = Color(0xFFF2843A);
 
-  Widget _buildSimpleNavItem({
-    required IconData icon,
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: isSelected 
-                ? Theme.of(context).colorScheme.primary
-                : Colors.grey[600],
-            size: 22,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isSelected 
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSimpleCartItem() {
     return Consumer<RestaurantCartProvider>(
       builder: (context, cartProvider, child) {
         final cartItemCount = cartProvider.totalItems;
-        final hasItems = cartItemCount > 0;
         
-        return GestureDetector(
-          onTap: () {
-            Navigator.of(context).pushNamed('/cart');
-          },
-          child: Stack(
-            children: [
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.shopping_cart_outlined,
-                    color: hasItems 
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.grey[600],
-                    size: 22,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Carrito',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: hasItems ? FontWeight.w600 : FontWeight.w500,
-                      color: hasItems 
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.grey[600],
-                    ),
-                  ),
-                ],
+        return NavigationBar(
+          backgroundColor: const Color(0xFFFFFFFF),
+          elevation: 0,
+          height: 70,
+          selectedIndex: 0, // Inicio siempre seleccionado en HomeScreen
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          indicatorColor: primaryOrange.withValues(alpha: 0.15),
+          destinations: [
+            // Inicio
+            const NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home_rounded),
+              label: 'Inicio',
+            ),
+            // Carrito con badge
+            NavigationDestination(
+              icon: Badge(
+                isLabelVisible: cartItemCount > 0,
+                label: Text('$cartItemCount'),
+                backgroundColor: primaryOrange,
+                child: const Icon(Icons.shopping_cart_outlined),
               ),
-              if (hasItems)
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: Text(
-                      cartItemCount > 99 ? '99+' : cartItemCount.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-            ],
-          ),
+              selectedIcon: Badge(
+                isLabelVisible: cartItemCount > 0,
+                label: Text('$cartItemCount'),
+                backgroundColor: primaryOrange,
+                child: const Icon(Icons.shopping_cart_rounded),
+              ),
+              label: 'Carrito',
+            ),
+            // Pedidos
+            const NavigationDestination(
+              icon: Icon(Icons.receipt_long_outlined),
+              selectedIcon: Icon(Icons.receipt_long_rounded),
+              label: 'Pedidos',
+            ),
+            // Perfil
+            const NavigationDestination(
+              icon: Icon(Icons.person_outline_rounded),
+              selectedIcon: Icon(Icons.person_rounded),
+              label: 'Perfil',
+            ),
+          ],
+          onDestinationSelected: (index) {
+            switch (index) {
+              case 0:
+                // Ya estamos en Inicio, no hacer nada
+                break;
+              case 1:
+                Navigator.of(context).pushNamed(AppRoutes.cart);
+                break;
+              case 2:
+                Navigator.of(context).pushNamed(AppRoutes.orders);
+                break;
+              case 3:
+                Navigator.of(context).pushNamed(AppRoutes.profile);
+                break;
+            }
+          },
         );
       },
     );
   }
-
 
 }

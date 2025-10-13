@@ -1,18 +1,19 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
+import '../../services/geocoding_service.dart';
 
 class LocationPickerScreen extends StatefulWidget {
   final double? initialLatitude;
   final double? initialLongitude;
-  final String? initialAddress;
+  final ReverseGeocodeResult? prefilledData;
 
   const LocationPickerScreen({
     super.key,
     this.initialLatitude,
     this.initialLongitude,
-    this.initialAddress,
+    this.prefilledData,
   });
 
   @override
@@ -21,11 +22,12 @@ class LocationPickerScreen extends StatefulWidget {
 
 class _LocationPickerScreenState extends State<LocationPickerScreen> {
   GoogleMapController? _mapController;
-  LatLng? _selectedLocation;
-  String? _selectedAddress;
-  bool _isLoading = false;
+  LatLng _centerLocation = const LatLng(20.488765, -99.234567); // Centro del mapa
+  ReverseGeocodeResult? _geocodeResult;
+  bool _isLoadingGeocode = false;
   bool _isGettingCurrentLocation = false;
   bool _hasMapError = false;
+  Timer? _debounceTimer;
 
   // Ubicación por defecto (Ixmiquilpan, Hidalgo)
   static const LatLng _defaultLocation = LatLng(20.488765, -99.234567);
@@ -35,6 +37,12 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     super.initState();
     _initializeLocation();
     _checkMapAvailability();
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
   }
 
   void _checkMapAvailability() {
@@ -50,229 +58,204 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
   void _initializeLocation() {
     if (widget.initialLatitude != null && widget.initialLongitude != null) {
-      _selectedLocation = LatLng(widget.initialLatitude!, widget.initialLongitude!);
-      _selectedAddress = widget.initialAddress;
+      _centerLocation = LatLng(widget.initialLatitude!, widget.initialLongitude!);
+      _geocodeResult = widget.prefilledData;
     } else {
-      _selectedLocation = _defaultLocation;
+      _centerLocation = _defaultLocation;
+      // Obtener ubicación actual automáticamente
+      _getCurrentLocation();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // debugPrint('🗺️ Construyendo LocationPickerScreen con Google Maps');
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    
+    // 🎨 COLORIMETRÍA UNIFICADA DE LA APP
+    const primaryOrange = Color(0xFFF2843A);     // Naranja principal (tema de la app)
+    const darkGray = Color(0xFF1A1A1A);          // Gris oscuro
+    const lightGray = Color(0xFFF5F5F5);         // Gris claro
+    const mediumGray = Color(0xFF757575);        // Gris medio
+    const white = Color(0xFFFFFFFF);             // Blanco puro
     
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: white,
+      // AppBar con título
       appBar: AppBar(
+        backgroundColor: white,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: darkGray, size: 24),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: Text(
           'Seleccionar Ubicación',
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
+            color: darkGray,
           ),
         ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: Colors.black,
-        centerTitle: true,
-        actions: [
-          if (_isLoading)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+      ),
+      body: Stack(
+        children: [
+          // Mapa a pantalla completa
+          _buildMapContent(),
+
+          // Botón de confirmar ubicación en la parte inferior
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                color: white,
+                border: Border(
+                  top: BorderSide(
+                    color: Color(0xFFE0E0E0),
+                    width: 1,
+                  ),
                 ),
               ),
-            ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Header con información elegante
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+              child: SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.location_on,
-                        color: colorScheme.primary,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Ubicación de Entrega',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[800],
+                    // Dirección detectada (solo si existe)
+                    if (_geocodeResult != null) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: lightGray,
+                          borderRadius: BorderRadius.circular(16),
                         ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: primaryOrange.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.location_on_rounded,
+                                color: primaryOrange,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Dirección detectada',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: mediumGray,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _geocodeResult!.formattedAddress,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: darkGray,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    // Botón de confirmar - siempre verde
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _geocodeResult != null && !_isLoadingGeocode 
+                            ? () async {
+                                debugPrint('🔘 Botón confirmar presionado');
+                                setState(() {
+                                  _isLoadingGeocode = true;
+                                });
+                                
+                                // Simular un pequeño delay para mostrar la animación
+                                await Future.delayed(const Duration(milliseconds: 500));
+                                
+                                if (mounted) {
+                                  _confirmLocation();
+                                  setState(() {
+                                    _isLoadingGeocode = false;
+                                  });
+                                }
+                              }
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryOrange,
+                          foregroundColor: white,
+                          disabledBackgroundColor: primaryOrange.withValues(alpha: 0.5),
+                          disabledForegroundColor: white.withValues(alpha: 0.7),
+                          elevation: 0,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: _isLoadingGeocode
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(white),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Confirmando...',
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: white,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.check_circle_rounded,
+                                    color: white,
+                                    size: 22,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Confirmar Ubicación',
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: white,
+                                    ),
+                                  ),
+                                ],
+                              ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  _selectedAddress ?? 'Selecciona una ubicación en el mapa',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: _selectedAddress != null ? Colors.grey[800] : Colors.grey[500],
-                    height: 1.4,
-                  ),
-                ),
-                if (_selectedLocation != null) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'Lat: ${_selectedLocation!.latitude.toStringAsFixed(6)}, '
-                      'Lng: ${_selectedLocation!.longitude.toStringAsFixed(6)}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                        fontFamily: 'monospace',
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-          // Mapa con manejo de errores
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: _buildMapContent(),
               ),
             ),
           ),
-
-          const SizedBox(height: 16),
-
-          // Botones de acción modernos
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: 52,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[300]!),
-                    ),
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide.none,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'Cancelar',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: Container(
-                    height: 52,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      gradient: _selectedLocation != null
-                          ? LinearGradient(
-                              colors: [colorScheme.primary, colorScheme.primary.withValues(alpha: 0.8)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            )
-                          : null,
-                      color: _selectedLocation == null ? Colors.grey[300] : null,
-                    ),
-                    child: ElevatedButton(
-                      onPressed: _selectedLocation != null ? _confirmLocation : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        foregroundColor: _selectedLocation != null ? Colors.white : Colors.grey[500],
-                        shadowColor: Colors.transparent,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.check_circle_outline,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Confirmar',
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
         ],
       ),
     );
@@ -285,288 +268,246 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
     return Stack(
       children: [
+        // Mapa de Google
         GoogleMap(
           initialCameraPosition: CameraPosition(
-            target: _selectedLocation ?? _defaultLocation,
-            zoom: 15.0,
+            target: _centerLocation,
+            zoom: 16.0,
           ),
           onMapCreated: (GoogleMapController controller) {
-            // debugPrint('🗺️ Google Maps cargado exitosamente!');
             _mapController = controller;
             setState(() {
               _hasMapError = false;
             });
+            // Obtener dirección inicial
+            _performReverseGeocode(_centerLocation);
           },
           onCameraMove: (CameraPosition position) {
-            // Actualizar ubicación mientras se mueve el mapa
-            if (_selectedLocation != null) {
-              setState(() {
-                _selectedLocation = position.target;
-              });
-            }
+            // Actualizar el centro del mapa mientras se mueve
+            _centerLocation = position.target;
           },
-          onTap: (LatLng location) {
-            _onLocationSelected(location);
+          onCameraIdle: () {
+            // Cuando el usuario deja de mover el mapa, hacer reverse geocoding
+            _performReverseGeocodeWithDebounce(_centerLocation);
           },
-          markers: _selectedLocation != null
-              ? {
-                  Marker(
-                    markerId: const MarkerId('selected_location'),
-                    position: _selectedLocation!,
-                    infoWindow: InfoWindow(
-                      title: 'Ubicación seleccionada',
-                      snippet: _selectedAddress ?? 'Dirección no disponible',
-                    ),
-                    icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-                  ),
-                }
-              : {},
           myLocationEnabled: true,
           myLocationButtonEnabled: false,
           zoomControlsEnabled: false,
           mapToolbarEnabled: false,
           compassEnabled: false,
+          markers: {}, // Sin marcadores, usamos el pin central fijo
         ),
 
-        // Botón flotante para ubicación actual
+        // 🎨 Pin central sin sombras
+        Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedScale(
+                scale: _isLoadingGeocode ? 1.2 : 1.0,
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.elasticOut,
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFFFFF),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.location_on_rounded,
+                    size: 32,
+                    color: const Color(0xFFF2843A),  // Naranja de la app
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Sombra del pin
+              Container(
+                width: 32,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // 🎯 Botón de ubicación actual sin sombras
         Positioned(
           top: 16,
           right: 16,
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              color: const Color(0xFFFFFFFF),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFE0E0E0),
+                width: 1,
+              ),
             ),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(12),
                 onTap: _isGettingCurrentLocation ? null : _getCurrentLocation,
-                child: SizedBox(
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
                   width: 48,
                   height: 48,
+                  padding: const EdgeInsets.all(12),
                   child: _isGettingCurrentLocation
-                      ? Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF2843A)),
                           ),
                         )
-                      : Icon(
-                          Icons.my_location,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 20,
+                      : const Icon(
+                          Icons.my_location_rounded,
+                          color: Color(0xFF1A1A1A),
+                          size: 22,
                         ),
                 ),
               ),
             ),
           ),
         ),
-
-        // Instrucciones flotantes
-        if (_selectedLocation == null)
-          Positioned(
-            bottom: 20,
-            left: 20,
-            right: 20,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.touch_app,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Selecciona tu ubicación',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Toca en el mapa para marcar tu ubicación de entrega',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
       ],
     );
   }
 
   Widget _buildMapError() {
+    final theme = Theme.of(context);
+    const primaryOrange = Color(0xFFF2843A);
+    const darkGray = Color(0xFF1A1A1A);
+    const mediumGray = Color(0xFF757575);
+    const white = Color(0xFFFFFFFF);
+    
     return Container(
-      color: Colors.grey[100],
+      color: const Color(0xFFF5F5F5),
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(50),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Icono minimalista
+              Container(
+                padding: const EdgeInsets.all(28),
+                decoration: BoxDecoration(
+                  color: primaryOrange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(32),
+                ),
+                child: const Icon(
+                  Icons.map_outlined,
+                  size: 64,
+                  color: primaryOrange,
+                ),
               ),
-              child: Icon(
-                Icons.map_outlined,
-                size: 48,
-                color: Colors.grey[400],
+              const SizedBox(height: 32),
+              // Título
+              Text(
+                'Mapa no disponible',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: darkGray,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Mapa no disponible',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Text(
+              const SizedBox(height: 12),
+              // Descripción
+              Text(
                 'No se pudo cargar el mapa. Verifica tu conexión a internet y la configuración de Google Maps.',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                  height: 1.4,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: mediumGray,
+                  height: 1.6,
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _hasMapError = false;
-                });
-              },
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reintentar'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+              const SizedBox(height: 40),
+              // Botón minimalista
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _hasMapError = false;
+                    });
+                  },
+                  icon: const Icon(Icons.refresh_rounded, size: 22),
+                  label: const Text('Reintentar'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryOrange,
+                    foregroundColor: white,
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  void _onLocationSelected(LatLng location) async {
+  /// Realizar reverse geocoding con debounce
+  void _performReverseGeocodeWithDebounce(LatLng location) {
+    // Cancelar el timer anterior si existe
+    _debounceTimer?.cancel();
+
+    // Crear un nuevo timer con delay de 500ms
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _performReverseGeocode(location);
+    });
+  }
+
+  /// Realizar reverse geocoding usando el backend
+  Future<void> _performReverseGeocode(LatLng location) async {
     setState(() {
-      _isLoading = true;
-      _selectedLocation = location;
+      _isLoadingGeocode = true;
     });
 
     try {
-      // Obtener dirección a partir de las coordenadas
-      final placemarks = await placemarkFromCoordinates(
-        location.latitude,
-        location.longitude,
+      final response = await GeocodingService.reverseGeocode(
+        latitude: location.latitude,
+        longitude: location.longitude,
       );
 
-      if (placemarks.isNotEmpty) {
-        final placemark = placemarks.first;
-        final address = _formatAddress(placemark);
-        
-        setState(() {
-          _selectedAddress = address;
-        });
-
-        // Actualizar el marcador en el mapa
-        _mapController?.animateCamera(
-          CameraUpdate.newLatLng(location),
-        );
+      if (mounted) {
+        if (response.isSuccess && response.data != null) {
+          setState(() {
+            _geocodeResult = response.data;
+            _isLoadingGeocode = false;
+          });
+        } else {
+          setState(() {
+            _geocodeResult = null;
+            _isLoadingGeocode = false;
+          });
+          
+          // Mostrar error solo si es crítico
+          if (response.code == 'SERVICE_UNAVAILABLE') {
+            _showErrorSnackBar('Servicio de geocodificación no disponible');
+          }
+        }
       }
     } catch (e) {
-      debugPrint('Error al obtener dirección: $e');
-      setState(() {
-        _selectedAddress = 'Dirección no disponible';
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      debugPrint('Error en reverse geocoding: $e');
+      if (mounted) {
+        setState(() {
+          _geocodeResult = null;
+          _isLoadingGeocode = false;
+        });
+      }
     }
-  }
-
-  String _formatAddress(Placemark placemark) {
-    final parts = <String>[];
-    
-    if (placemark.street != null && placemark.street!.isNotEmpty) {
-      parts.add(placemark.street!);
-    }
-    
-    if (placemark.locality != null && placemark.locality!.isNotEmpty) {
-      parts.add(placemark.locality!);
-    }
-    
-    if (placemark.administrativeArea != null && placemark.administrativeArea!.isNotEmpty) {
-      parts.add(placemark.administrativeArea!);
-    }
-    
-    if (placemark.country != null && placemark.country!.isNotEmpty) {
-      parts.add(placemark.country!);
-    }
-
-    return parts.join(', ');
   }
 
   Future<void> _getCurrentLocation() async {
@@ -580,13 +521,17 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          _showErrorSnackBar('Permisos de ubicación denegados');
+          if (mounted) {
+            _showErrorSnackBar('Permisos de ubicación denegados');
+          }
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        _showErrorSnackBar('Los permisos de ubicación están denegados permanentemente');
+        if (mounted) {
+          _showErrorSnackBar('Los permisos de ubicación están denegados permanentemente');
+        }
         return;
       }
 
@@ -598,31 +543,59 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       );
 
       final location = LatLng(position.latitude, position.longitude);
-      _onLocationSelected(location);
+      
+      if (mounted) {
+        setState(() {
+          _centerLocation = location;
+        });
 
-      // Centrar el mapa en la ubicación actual
-      _mapController?.animateCamera(
-        CameraUpdate.newLatLngZoom(location, 16.0),
-      );
+        // Centrar el mapa en la ubicación actual
+        _mapController?.animateCamera(
+          CameraUpdate.newLatLngZoom(location, 16.0),
+        );
 
+        // Realizar reverse geocoding
+        _performReverseGeocode(location);
+      }
     } catch (e) {
       debugPrint('Error al obtener ubicación actual: $e');
-      _showErrorSnackBar('Error al obtener ubicación actual: $e');
+      if (mounted) {
+        _showErrorSnackBar('Error al obtener ubicación actual');
+      }
     } finally {
-      setState(() {
-        _isGettingCurrentLocation = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isGettingCurrentLocation = false;
+        });
+      }
     }
   }
 
   void _confirmLocation() {
-    if (_selectedLocation != null) {
-      Navigator.of(context).pop({
-        'latitude': _selectedLocation!.latitude,
-        'longitude': _selectedLocation!.longitude,
-        'address': _selectedAddress,
-      });
+    debugPrint('🔍 _confirmLocation() ejecutado');
+    debugPrint('🔍 _geocodeResult: $_geocodeResult');
+    debugPrint('🔍 _geocodeResult == null: ${_geocodeResult == null}');
+    
+    if (_geocodeResult == null) {
+      debugPrint('❌ Error: geocodeResult es null');
+      _showErrorSnackBar('Por favor espera a que se obtenga la dirección');
+      return;
     }
+
+    debugPrint('🔍 _geocodeResult.isValid: ${_geocodeResult!.isValid}');
+    
+    if (!_geocodeResult!.isValid) {
+      debugPrint('❌ Error: geocodeResult no es válido');
+      _showErrorSnackBar('No se pudo obtener una dirección válida para esta ubicación');
+      return;
+    }
+
+    debugPrint('✅ Navegando de vuelta con geocodeResult: ${_geocodeResult!.formattedAddress}');
+    
+    // Retornar el resultado de geocodificación completo
+    Navigator.of(context).pop(_geocodeResult);
+    
+    debugPrint('✅ Navigator.pop ejecutado');
   }
 
   void _showErrorSnackBar(String message) {
