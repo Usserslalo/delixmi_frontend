@@ -15,6 +15,14 @@ class Restaurant {
   final bool? isOpen; // Indica si el restaurante está abierto según horarios
   final String? category; // Categoría del restaurante (Pizzas, Sushi, Tacos, etc.)
   final double? minDistance; // Distancia mínima a la sucursal más cercana (solo con coordenadas)
+  
+  // Nuevos campos opcionales del backend optimizado
+  final double? minDeliveryFee; // Tarifa mínima de envío (nuevo campo)
+  final bool? isPromoted; // Restaurante promocionado (nuevo campo)
+  final int? estimatedWaitTime; // Tiempo de preparación estimado en minutos (nuevo campo)
+  final double? minOrderAmount; // Monto mínimo de pedido (nuevo campo)
+  final List<String>? paymentMethods; // Métodos de pago aceptados (nuevo campo)
+  final List<String>? deliveryZones; // Zonas de entrega (nuevo campo)
 
   Restaurant({
     required this.id,
@@ -33,6 +41,13 @@ class Restaurant {
     this.isOpen,
     this.category,
     this.minDistance,
+    // Nuevos campos opcionales
+    this.minDeliveryFee,
+    this.isPromoted,
+    this.estimatedWaitTime,
+    this.minOrderAmount,
+    this.paymentMethods,
+    this.deliveryZones,
   });
 
   factory Restaurant.fromJson(Map<String, dynamic> json) {
@@ -60,6 +75,13 @@ class Restaurant {
       isOpen: isOpenValue,
       category: json['category'],
       minDistance: json['minDistance'] != null ? (json['minDistance'] as num).toDouble() : null,
+      // Nuevos campos opcionales (compatibles con backend optimizado)
+      minDeliveryFee: json['minDeliveryFee']?.toDouble(),
+      isPromoted: json['isPromoted'],
+      estimatedWaitTime: json['estimatedWaitTime'],
+      minOrderAmount: json['minOrderAmount']?.toDouble(),
+      paymentMethods: json['paymentMethods']?.cast<String>(),
+      deliveryZones: json['deliveryZones']?.cast<String>(),
     );
   }
 
@@ -80,6 +102,13 @@ class Restaurant {
       'delivery_fee': deliveryFee,
       'isOpen': isOpen,
       'category': category,
+      // Nuevos campos opcionales
+      'minDeliveryFee': minDeliveryFee,
+      'isPromoted': isPromoted,
+      'estimatedWaitTime': estimatedWaitTime,
+      'minOrderAmount': minOrderAmount,
+      'paymentMethods': paymentMethods,
+      'deliveryZones': deliveryZones,
     };
   }
 
@@ -99,6 +128,14 @@ class Restaurant {
     double? deliveryFee,
     bool? isOpen,
     String? category,
+    double? minDistance,
+    // Nuevos campos opcionales
+    double? minDeliveryFee,
+    bool? isPromoted,
+    int? estimatedWaitTime,
+    double? minOrderAmount,
+    List<String>? paymentMethods,
+    List<String>? deliveryZones,
   }) {
     return Restaurant(
       id: id ?? this.id,
@@ -116,6 +153,14 @@ class Restaurant {
       deliveryFee: deliveryFee ?? this.deliveryFee,
       isOpen: isOpen ?? this.isOpen,
       category: category ?? this.category,
+      minDistance: minDistance ?? this.minDistance,
+      // Nuevos campos opcionales
+      minDeliveryFee: minDeliveryFee ?? this.minDeliveryFee,
+      isPromoted: isPromoted ?? this.isPromoted,
+      estimatedWaitTime: estimatedWaitTime ?? this.estimatedWaitTime,
+      minOrderAmount: minOrderAmount ?? this.minOrderAmount,
+      paymentMethods: paymentMethods ?? this.paymentMethods,
+      deliveryZones: deliveryZones ?? this.deliveryZones,
     );
   }
 
@@ -141,4 +186,14 @@ class Restaurant {
   // Getter para verificar si el restaurante está abierto
   // Usa el campo isOpen real del backend
   bool get isCurrentlyOpen => isOpen ?? false;
+  
+  // Getters para nuevos campos opcionales
+  String get formattedMinDeliveryFee => minDeliveryFee != null ? '\$${minDeliveryFee!.toStringAsFixed(2)}' : formattedDeliveryFee;
+  String get formattedEstimatedWaitTime => estimatedWaitTime != null ? '$estimatedWaitTime min' : 'N/A';
+  String get formattedMinOrderAmount => minOrderAmount != null ? 'Mín. \$${minOrderAmount!.toStringAsFixed(2)}' : '';
+  String get formattedPaymentMethods => paymentMethods?.join(', ') ?? '';
+  String get formattedDeliveryZones => deliveryZones?.join(', ') ?? '';
+  
+  // Helper para verificar si es promocionado
+  bool get hasPromotion => isPromoted ?? false;
 }

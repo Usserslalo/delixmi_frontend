@@ -7,6 +7,10 @@ class Category {
   final bool isActive;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  
+  // Nuevos campos opcionales del backend optimizado
+  final String? displayName; // Nombre para mostrar (alias de name)
+  final int? restaurantCount; // Cantidad de restaurantes en esta categoría
 
   Category({
     required this.id,
@@ -17,6 +21,9 @@ class Category {
     required this.isActive,
     this.createdAt,
     this.updatedAt,
+    // Nuevos campos opcionales
+    this.displayName,
+    this.restaurantCount,
   });
 
   factory Category.fromJson(Map<String, dynamic> json) {
@@ -33,6 +40,9 @@ class Category {
       updatedAt: json['updatedAt'] != null 
           ? DateTime.parse(json['updatedAt']) 
           : null,
+      // Nuevos campos opcionales (compatibles con backend optimizado)
+      displayName: json['displayName'],
+      restaurantCount: json['restaurantCount'],
     );
   }
 
@@ -46,8 +56,20 @@ class Category {
       'isActive': isActive,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      // Nuevos campos opcionales
+      'displayName': displayName,
+      'restaurantCount': restaurantCount,
     };
   }
+  
+  // Getter para el nombre a mostrar (displayName o name como fallback)
+  String get displayNameOrName => displayName ?? name;
+  
+  // Getter para verificar si tiene restaurantes
+  bool get hasRestaurants => restaurantCount != null && restaurantCount! > 0;
+  
+  // Getter para el texto de cantidad de restaurantes
+  String get restaurantCountText => restaurantCount != null ? '(${restaurantCount!})' : '';
 
   // Categorías predefinidas para el diseño
   static List<Category> get defaultCategories => [

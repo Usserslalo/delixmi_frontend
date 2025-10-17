@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/restaurant.dart';
+import 'promoted_badge.dart';
 
 class RestaurantCard extends StatelessWidget {
   final Restaurant restaurant;
@@ -130,11 +131,22 @@ class RestaurantCard extends StatelessWidget {
           ),
         ),
         
-        // Badge de estado en la esquina superior derecha
+        // Badges en la esquina superior derecha
         Positioned(
           top: 16,
           right: 16,
-          child: _buildStatusBadge(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Badge de promoción (si está promocionado)
+              if (restaurant.hasPromotion) ...[
+                const CompactPromotedBadge(),
+                const SizedBox(height: 8),
+              ],
+              // Badge de estado
+              _buildStatusBadge(context),
+            ],
+          ),
         ),
       ],
     );
@@ -280,48 +292,73 @@ class RestaurantCard extends StatelessWidget {
   }
 
   Widget _buildKeyInfo(BuildContext context) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Distancia (si está disponible)
-        if (restaurant.minDistance != null) ...[
-          _buildInfoChip(
-            icon: Icons.location_on_rounded,
-            text: '${restaurant.minDistance!.toStringAsFixed(1)} km',
-            color: Colors.purple,
-            context: context,
-          ),
-          const SizedBox(width: 8),
-        ],
+        // Primera fila: información básica
+        Row(
+          children: [
+            // Distancia (si está disponible)
+            if (restaurant.minDistance != null) ...[
+              _buildInfoChip(
+                icon: Icons.location_on_rounded,
+                text: '${restaurant.minDistance!.toStringAsFixed(1)} km',
+                color: Colors.purple,
+                context: context,
+              ),
+              const SizedBox(width: 8),
+            ],
+            
+            // Rating
+            if (restaurant.rating != null && restaurant.rating! > 0) ...[
+              _buildInfoChip(
+                icon: Icons.star_rounded,
+                text: restaurant.formattedRating,
+                color: Colors.amber,
+                context: context,
+              ),
+              const SizedBox(width: 8),
+            ],
+            
+            // Tiempo de entrega (usar nuevo campo si está disponible)
+            if (restaurant.estimatedWaitTime != null || restaurant.deliveryTime != null) ...[
+              _buildInfoChip(
+                icon: Icons.access_time_rounded,
+                text: restaurant.estimatedWaitTime != null 
+                    ? restaurant.formattedEstimatedWaitTime 
+                    : restaurant.formattedDeliveryTime,
+                color: Colors.blue,
+                context: context,
+              ),
+              const SizedBox(width: 8),
+            ],
+            
+            // Precio de envío (usar nuevo campo si está disponible)
+            if (restaurant.minDeliveryFee != null || restaurant.deliveryFee != null) ...[
+              _buildInfoChip(
+                icon: Icons.local_shipping_rounded,
+                text: restaurant.minDeliveryFee != null 
+                    ? restaurant.formattedMinDeliveryFee 
+                    : restaurant.formattedDeliveryFee,
+                color: Colors.green,
+                context: context,
+              ),
+            ],
+          ],
+        ),
         
-        // Rating
-        if (restaurant.rating != null && restaurant.rating! > 0) ...[
-          _buildInfoChip(
-            icon: Icons.star_rounded,
-            text: restaurant.formattedRating,
-            color: Colors.amber,
-            context: context,
-          ),
-          const SizedBox(width: 8),
-        ],
-        
-        // Tiempo de entrega
-        if (restaurant.deliveryTime != null) ...[
-          _buildInfoChip(
-            icon: Icons.access_time_rounded,
-            text: restaurant.formattedDeliveryTime,
-            color: Colors.blue,
-            context: context,
-          ),
-          const SizedBox(width: 8),
-        ],
-        
-        // Precio de envío
-        if (restaurant.deliveryFee != null) ...[
-          _buildInfoChip(
-            icon: Icons.local_shipping_rounded,
-            text: restaurant.formattedDeliveryFee,
-            color: Colors.green,
-            context: context,
+        // Segunda fila: información adicional (si está disponible)
+        if (restaurant.minOrderAmount != null && restaurant.minOrderAmount! > 0) ...[
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              _buildInfoChip(
+                icon: Icons.shopping_bag_rounded,
+                text: restaurant.formattedMinOrderAmount,
+                color: Colors.orange,
+                context: context,
+              ),
+            ],
           ),
         ],
       ],

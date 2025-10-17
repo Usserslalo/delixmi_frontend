@@ -6,8 +6,10 @@ import '../../services/api_service.dart';
 import '../../services/error_handler.dart';
 import '../../services/coverage_service.dart';
 import '../../services/onboarding_service.dart';
+import '../../services/dashboard_service.dart';
 import '../../models/restaurant.dart';
 import '../../models/category.dart';
+import '../../models/address.dart';
 import '../../widgets/customer/restaurant_card.dart';
 import '../../widgets/shared/loading_widget.dart';
 import '../../widgets/onboarding/onboarding_overlay.dart';
@@ -25,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   List<Restaurant> _restaurants = [];
   List<Category> _categories = [];
+  List<Address> _addresses = [];
   bool _loadingRestaurants = false;
   String? _errorMessage;
   int _currentPage = 1;
@@ -45,6 +48,10 @@ class _HomeScreenState extends State<HomeScreen> {
   // Variables de onboarding
   bool _showOnboarding = false;
   bool _checkingOnboarding = true;
+  
+  // Variables para dashboard API optimizado
+  bool _loadingDashboard = false;
+  int? _lastAddressId; // Para evitar bucles infinitos en cambio de dirección
 
   @override
   void initState() {
@@ -66,8 +73,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onAddressChanged() {
-    // Re-verificar cobertura cuando cambia la dirección
-    debugPrint('📍 Dirección cambió, re-verificando cobertura...');
+    // Solo reaccionar si realmente cambió la dirección seleccionada
+    final currentAddress = _addressProvider?.currentDeliveryAddress;
+    if (currentAddress?.id == _lastAddressId) {
+      debugPrint('📍 Misma dirección, ignorando cambio...');
+      return;
+    }
+    
+    _lastAddressId = currentAddress?.id;
+    debugPrint('📍 Dirección cambió, recargando datos...');
     
     // Resetear estado de cobertura para forzar nueva verificación
     setState(() {
@@ -78,8 +92,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _hasMoreRestaurants = true;
     });
     
-    // Ejecutar verificación completa de cobertura y carga de restaurantes
-    _loadRestaurants();
+    // Cargar dashboard optimizado
+    _loadDashboardData();
   }
 
   @override
@@ -119,7 +133,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadAddresses() async {
     try {
       final addressProvider = context.read<AddressProvider>();
-      await addressProvider.loadAddresses();
+      
+      // Solo cargar si no están ya cargadas
+      if (addressProvider.addresses.isEmpty) {
+        await addressProvider.loadAddresses();
+      }
+      
+      setState(() {
+        _addresses = addressProvider.addresses;
+      });
     } catch (e) {
       ErrorHandler.logError('HomeScreen._loadAddresses', e);
     }
@@ -138,6 +160,82 @@ class _HomeScreenState extends State<HomeScreen> {
     // Verificar si debe mostrar onboarding para usuarios nuevos
     await _checkOnboardingStatus();
     
+    // Cargar dashboard optimizado
+    await _loadDashboardData();
+  }
+
+  /// Método optimizado: Una sola llamada API para todos los datos
+  Future<void> _loadDashboardData() async {
+    // Evitar múltiples llamadas simultáneas
+    if (_loadingDashboard) {
+      debugPrint('🔄 Dashboard ya está cargando, ignorando llamada...');
+      return;
+    }
+    
+    try {
+      setState(() {
+        _loadingDashboard = true;
+        _isLoading = true;
+      });
+
+      // Obtener coordenadas del usuario
+      final addressProvider = context.read<AddressProvider>();
+      final currentAddress = addressProvider.currentDeliveryAddress;
+      
+      double? latitude = currentAddress?.latitude;
+      double? longitude = currentAddress?.longitude;
+      int? addressId = currentAddress?.id;
+
+      debugPrint('🚀 Cargando dashboard...');
+
+      final response = await DashboardService.getDashboard(
+        latitude: latitude,
+        longitude: longitude,
+        addressId: addressId,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        // Parsear respuesta unificada
+        final dashboardData = DashboardService.parseDashboardResponse(response.data!);
+        
+        setState(() {
+          _categories = dashboardData['categories'] as List<Category>;
+          _restaurants = dashboardData['restaurants'] as List<Restaurant>;
+          _hasCoverage = true; // Dashboard incluye cobertura
+          _loadingDashboard = false;
+          _isLoading = false;
+        });
+
+        // Cargar direcciones por separado solo si no están cargadas
+        if (_addresses.isEmpty) {
+          await _loadAddresses();
+        }
+        
+        // Cargar carrito por separado
+        await _loadCartSummary();
+
+        debugPrint('✅ Dashboard cargado exitosamente');
+      } else {
+        debugPrint('❌ Error en dashboard API: ${response.message}');
+        // Fallback a métodos individuales
+        await _loadDataFallback();
+      }
+    } catch (e) {
+      debugPrint('❌ Error cargando dashboard: $e');
+      // Fallback a métodos individuales
+      await _loadDataFallback();
+    }
+  }
+
+  /// Método de fallback: Múltiples llamadas API individuales
+  Future<void> _loadDataFallback() async {
+    debugPrint('🔄 Usando métodos individuales...');
+    
+    setState(() {
+      _loadingDashboard = false;
+      _isLoading = true;
+    });
+    
     // Cargar carrito primero para que el badge se actualice inmediatamente
     await _loadCartSummary();
     
@@ -147,6 +245,10 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadRestaurants(),
       _loadAddresses(),
     ]);
+    
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   Future<void> _checkOnboardingStatus() async {
@@ -353,7 +455,9 @@ class _HomeScreenState extends State<HomeScreen> {
       _currentPage = 1;
       _hasMoreRestaurants = true;
     });
-    _loadRestaurants();
+    
+    // Cargar dashboard optimizado
+    _loadDashboardData();
   }
 
   void _onSearchChanged(String query) {
@@ -377,7 +481,8 @@ class _HomeScreenState extends State<HomeScreen> {
     // Debounce search
     Future.delayed(const Duration(milliseconds: 500), () {
       if (_searchQuery == formattedQuery && mounted) {
-        _loadRestaurants();
+        // Cargar dashboard optimizado
+        _loadDashboardData();
       }
     });
   }
@@ -434,8 +539,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading || _checkingOnboarding) {
-      return const Scaffold(
-        body: LoadingWidget(
+      return Scaffold(
+        body: const LoadingWidget(
           message: 'Cargando...',
         ),
       );
@@ -445,7 +550,7 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Scaffold(
           body: RefreshIndicator(
-        onRefresh: () => _loadRestaurants(),
+        onRefresh: () => _loadDashboardData(),
         child: CustomScrollView(
           controller: _scrollController,
           slivers: [
@@ -618,7 +723,17 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const SizedBox(width: 6),
                             ],
-                            Text(category.name),
+                            Text(category.displayNameOrName),
+                            if (category.hasRestaurants) ...[
+                              const SizedBox(width: 4),
+                              Text(
+                                category.restaurantCountText,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isSelected ? white : const Color(0xFF757575),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                         selected: isSelected,
@@ -663,6 +778,7 @@ class _HomeScreenState extends State<HomeScreen> {
           OnboardingOverlay(
             onComplete: _onOnboardingComplete,
           ),
+        
       ],
     );
   }
