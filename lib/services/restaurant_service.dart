@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:flutter/foundation.dart';
 import '../models/owner/restaurant_profile.dart';
 import '../models/api_response.dart';
@@ -51,10 +52,13 @@ class RestaurantService {
     }
   }
 
-  /// Actualiza la información del restaurante (nombre, descripción, URLs de imágenes)
+  /// Actualiza la información del restaurante (nombre, descripción, URLs de imágenes, contacto)
   static Future<ApiResponse<RestaurantProfile>> updateProfile({
     String? name,
     String? description,
+    String? phone,
+    String? email,
+    String? address,
     String? logoUrl,
     String? coverPhotoUrl,
   }) async {
@@ -65,6 +69,9 @@ class RestaurantService {
       final Map<String, dynamic> body = {};
       if (name != null) body['name'] = name;
       if (description != null) body['description'] = description;
+      if (phone != null) body['phone'] = phone;
+      if (email != null) body['email'] = email;
+      if (address != null) body['address'] = address;
       if (logoUrl != null) body['logoUrl'] = logoUrl;
       if (coverPhotoUrl != null) body['coverPhotoUrl'] = coverPhotoUrl;
 
@@ -121,6 +128,25 @@ class RestaurantService {
     try {
       debugPrint('📤 RestaurantService: Subiendo logo...');
       
+      // Debugging detallado del archivo
+      final fileSize = await imageFile.length();
+      final fileName = imageFile.path.split('/').last;
+      final fileExtension = fileName.split('.').last.toLowerCase();
+      
+      debugPrint('📁 Archivo: $fileName');
+      debugPrint('📏 Tamaño: ${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB');
+      debugPrint('🔤 Extensión: $fileExtension');
+      debugPrint('📂 Ruta completa: ${imageFile.path}');
+      
+      // Verificar que sea una imagen válida
+      if (!['jpg', 'jpeg', 'png'].contains(fileExtension)) {
+        debugPrint('❌ Extensión no válida: $fileExtension');
+        return ApiResponse<UploadImageResponse>(
+          status: 'error',
+          message: 'Formato de archivo no válido. Solo se permiten JPG, JPEG y PNG.',
+        );
+      }
+      
       final token = await TokenManager.getToken();
       
       // Crear MultipartRequest
@@ -130,11 +156,18 @@ class RestaurantService {
       // Agregar headers
       request.headers['Authorization'] = 'Bearer $token';
       
-      // Agregar archivo
+      // Agregar archivo con MIME type explícito
+      final mimeType = fileExtension == 'jpg' || fileExtension == 'jpeg' 
+          ? 'image/jpeg' 
+          : 'image/png';
+      
+      debugPrint('📤 Enviando archivo con MIME type: $mimeType');
+      
       request.files.add(
         await http.MultipartFile.fromPath(
           'image',
           imageFile.path,
+          contentType: MediaType.parse(mimeType),
         ),
       );
 
@@ -180,6 +213,25 @@ class RestaurantService {
     try {
       debugPrint('📤 RestaurantService: Subiendo foto de portada...');
       
+      // Debugging detallado del archivo
+      final fileSize = await imageFile.length();
+      final fileName = imageFile.path.split('/').last;
+      final fileExtension = fileName.split('.').last.toLowerCase();
+      
+      debugPrint('📁 Archivo: $fileName');
+      debugPrint('📏 Tamaño: ${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB');
+      debugPrint('🔤 Extensión: $fileExtension');
+      debugPrint('📂 Ruta completa: ${imageFile.path}');
+      
+      // Verificar que sea una imagen válida
+      if (!['jpg', 'jpeg', 'png'].contains(fileExtension)) {
+        debugPrint('❌ Extensión no válida: $fileExtension');
+        return ApiResponse<UploadImageResponse>(
+          status: 'error',
+          message: 'Formato de archivo no válido. Solo se permiten JPG, JPEG y PNG.',
+        );
+      }
+      
       final token = await TokenManager.getToken();
       
       // Crear MultipartRequest
@@ -189,11 +241,18 @@ class RestaurantService {
       // Agregar headers
       request.headers['Authorization'] = 'Bearer $token';
       
-      // Agregar archivo
+      // Agregar archivo con MIME type explícito
+      final mimeType = fileExtension == 'jpg' || fileExtension == 'jpeg' 
+          ? 'image/jpeg' 
+          : 'image/png';
+      
+      debugPrint('📤 Enviando archivo con MIME type: $mimeType');
+      
       request.files.add(
         await http.MultipartFile.fromPath(
           'image',
           imageFile.path,
+          contentType: MediaType.parse(mimeType),
         ),
       );
 

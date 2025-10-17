@@ -10,8 +10,8 @@ import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
 import 'screens/auth/unsupported_role_screen.dart';
 import 'screens/common/placeholder_screen.dart';
-import 'screens/owner/owner_dashboard_screen.dart';
-import 'screens/owner/edit_profile_screen.dart' as owner_screens;
+import 'screens/owner/modern_owner_dashboard_screen.dart';
+import 'screens/owner/modern_edit_profile_screen.dart' as owner_screens;
 import 'screens/owner/menu_management_screen.dart';
 import 'screens/owner/modifier_groups_management_screen.dart';
 import 'screens/driver/driver_dashboard_screen.dart';
@@ -368,8 +368,8 @@ class _DelixmiAppState extends State<DelixmiApp> {
         AppRoutes.customerHome: (context) => const HomeScreen(),
         
         // ===== RUTAS DE OWNER =====
-        AppRoutes.ownerDashboard: (context) => const OwnerDashboardScreen(),
-        AppRoutes.ownerProfileEdit: (context) => const owner_screens.EditProfileScreen(),
+        AppRoutes.ownerDashboard: (context) => const ModernOwnerDashboardScreen(),
+        AppRoutes.ownerProfileEdit: (context) => const owner_screens.ModernEditProfileScreen(),
         AppRoutes.ownerMenu: (context) => const MenuManagementScreen(),
         AppRoutes.ownerModifierGroups: (context) => const ModifierGroupsManagementScreen(),
         
