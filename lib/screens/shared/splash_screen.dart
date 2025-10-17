@@ -40,14 +40,14 @@ class _SplashScreenState extends State<SplashScreen> {
         } else {
           // No hay token, ir a login
           if (mounted) {
-            Navigator.of(context).pushReplacementNamed('/login');
+            Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
           }
         }
       }
     } catch (e) {
       if (mounted) {
         // En caso de error, ir a login
-        Navigator.of(context).pushReplacementNamed('/login');
+        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
       }
     }
   }
@@ -75,14 +75,14 @@ class _SplashScreenState extends State<SplashScreen> {
       } else {
         // Si no se puede obtener el usuario, ir a login
         if (mounted) {
-          Navigator.of(context).pushReplacementNamed('/login');
+          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
         }
       }
     } catch (e) {
       debugPrint('❌ SplashScreen: Error al obtener datos del usuario: $e');
       // En caso de error, ir a login
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/login');
+        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
       }
     }
   }
@@ -92,22 +92,23 @@ class _SplashScreenState extends State<SplashScreen> {
     switch (roleName) {
       // ===== ROLES DE PLATAFORMA =====
       case 'super_admin':
-        Navigator.pushReplacementNamed(context, '/admin_dashboard');
+        Navigator.pushNamedAndRemoveUntil(context, '/admin_dashboard', (route) => false);
         break;
         
       case 'platform_manager':
-        Navigator.pushReplacementNamed(context, '/platform_dashboard');
+        Navigator.pushNamedAndRemoveUntil(context, '/platform_dashboard', (route) => false);
         break;
         
       case 'support_agent':
-        Navigator.pushReplacementNamed(context, '/support_dashboard');
+        Navigator.pushNamedAndRemoveUntil(context, '/support_dashboard', (route) => false);
         break;
       
       // ===== ROLES DE RESTAURANTE =====
       case 'owner':
-        Navigator.pushReplacementNamed(
+        Navigator.pushNamedAndRemoveUntil(
           context,
           '/owner_dashboard',
+          (route) => false,
           arguments: {
             'restaurantId': user.roles.first.restaurantId,
           },
@@ -115,9 +116,10 @@ class _SplashScreenState extends State<SplashScreen> {
         break;
         
       case 'branch_manager':
-        Navigator.pushReplacementNamed(
+        Navigator.pushNamedAndRemoveUntil(
           context,
           '/branch_manager_dashboard',
+          (route) => false,
           arguments: {
             'restaurantId': user.roles.first.restaurantId,
           },
@@ -126,9 +128,10 @@ class _SplashScreenState extends State<SplashScreen> {
       
       // ===== ROLES DE REPARTIDOR =====
       case 'driver':
-        Navigator.pushReplacementNamed(
+        Navigator.pushNamedAndRemoveUntil(
           context,
           '/driver_dashboard',
+          (route) => false,
           arguments: {
             'driverId': user.id,
           },
@@ -137,15 +140,16 @@ class _SplashScreenState extends State<SplashScreen> {
       
       // ===== ROLES DE CLIENTE =====
       case 'customer':
-        Navigator.pushReplacementNamed(context, '/customer_home');
+        Navigator.pushNamedAndRemoveUntil(context, '/customer_home', (route) => false);
         break;
       
       // ===== ROL NO SOPORTADO =====
       default:
         debugPrint('⚠️ SplashScreen: Rol no soportado: $roleName');
-        Navigator.pushReplacementNamed(
+        Navigator.pushNamedAndRemoveUntil(
           context,
           '/unsupported_role',
+          (route) => false,
           arguments: {'role': roleName},
         );
         break;

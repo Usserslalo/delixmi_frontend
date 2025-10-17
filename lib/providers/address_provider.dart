@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import '../models/address.dart';
 import '../services/address_service.dart';
+import '../services/onboarding_service.dart';
 
 class AddressProvider extends ChangeNotifier {
   List<Address> _addresses = [];
@@ -112,6 +113,13 @@ class AddressProvider extends ChangeNotifier {
         
         final newAddress = Address.fromJson(addressData);
         _addresses.add(newAddress);
+        
+        // Actualizar el estado del onboarding cuando se agrega la primera dirección
+        if (_addresses.length == 1) {
+          await OnboardingService.instance.markAddressAdded();
+          debugPrint('🎉 AddressProvider: Primera dirección agregada - Onboarding marcado como completado');
+        }
+        
         debugPrint('✅ AddressProvider: Dirección creada exitosamente');
         return true;
       } else {

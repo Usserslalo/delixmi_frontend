@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
+import '../../utils/auth_error_handler.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -73,12 +74,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error inesperado: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
+        AuthErrorHandler.showAuthErrorSnackBar(
+          context, 
+          null, 
+          'Error inesperado: ${e.toString()}'
         );
       }
     } finally {
@@ -91,24 +90,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   void _handleForgotPasswordError(dynamic response) {
-    String message = response.message;
-    
-    switch (response.code) {
-      case 'USER_NOT_FOUND':
-        message = 'No existe una cuenta con este email.';
-        break;
-      case 'RATE_LIMIT_EXCEEDED':
-        message = 'Demasiados intentos. Intenta más tarde.';
-        break;
+    if (mounted) {
+      AuthErrorHandler.showAuthErrorSnackBar(
+        context, 
+        response.code, 
+        response.message
+      );
     }
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 4),
-      ),
-    );
   }
 
   String? _validateEmail(String? value) {

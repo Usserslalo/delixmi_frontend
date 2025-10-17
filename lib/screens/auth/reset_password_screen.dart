@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
+import '../../utils/auth_error_handler.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String token;
@@ -130,12 +131,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error inesperado: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
+        AuthErrorHandler.showAuthErrorSnackBar(
+          context, 
+          null, 
+          'Error inesperado: ${e.toString()}'
         );
       }
     } finally {
@@ -148,27 +147,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   }
 
   void _handleResetPasswordError(dynamic response) {
-    String message = response.message;
-    
-    switch (response.code) {
-      case 'INVALID_TOKEN':
-        message = 'El enlace de restablecimiento no es válido o ha expirado.';
-        break;
-      case 'TOKEN_EXPIRED':
-        message = 'El enlace de restablecimiento ha expirado. Solicita uno nuevo.';
-        break;
-      case 'WEAK_PASSWORD':
-        message = 'La contraseña debe tener al menos 8 caracteres con: 1 mayúscula, 1 minúscula, 1 número y 1 carácter especial.';
-        break;
+    if (mounted) {
+      AuthErrorHandler.showAuthErrorSnackBar(
+        context, 
+        response.code, 
+        response.message
+      );
     }
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 4),
-      ),
-    );
   }
 
   String? _validatePassword(String? value) {

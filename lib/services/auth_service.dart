@@ -4,8 +4,10 @@ import '../models/api_response.dart';
 import '../models/auth/user.dart';
 import '../models/auth/login_response.dart';
 import '../models/auth/register_response.dart';
+import '../models/auth/refresh_response.dart';
 import 'api_service.dart';
 import 'token_manager.dart';
+import 'onboarding_service.dart';
 
 class AuthService {
   /// Realiza el registro de un nuevo usuario
@@ -34,6 +36,11 @@ class AuthService {
     if (response.isSuccess && response.data != null) {
       final userData = response.data!['user'];
       final user = User.fromJson(userData);
+      
+      // Resetear el onboarding para el nuevo usuario
+      await OnboardingService.instance.resetForNewUser();
+      debugPrint('🎉 AuthService: Onboarding reseteado para nuevo usuario');
+      
       return RegisterResponse.success(
         message: response.message,
         user: user,
@@ -71,6 +78,10 @@ class AuthService {
               updatedAt: DateTime.now(),
               roles: [], // Se llenará cuando el usuario complete la verificación
             );
+            
+            // Resetear el onboarding para el nuevo usuario (aunque haya error de email)
+            await OnboardingService.instance.resetForNewUser();
+            debugPrint('🎉 AuthService: Onboarding reseteado para nuevo usuario (con EMAIL_SEND_ERROR)');
             
             return RegisterResponse.emailSendError(
               message: 'Tu cuenta fue creada, pero tuvimos un problema al enviar el correo de verificación. Puedes solicitar un reenvío.',
@@ -146,8 +157,11 @@ class AuthService {
         'data': response.data!,
       });
       
-      // Guardar token en almacenamiento seguro
-      await TokenManager.saveToken(loginResponse.data.token);
+      // Guardar tokens en almacenamiento seguro
+      await TokenManager.saveTokens(
+        accessToken: loginResponse.data.accessToken,
+        refreshToken: loginResponse.data.refreshToken,
+      );
       
       // Guardar información del usuario
       await TokenManager.saveUserData(loginResponse.data.user.toJson());
@@ -176,25 +190,71 @@ class AuthService {
     }
   }
   
+  /// Renueva el access token usando el refresh token
+  static Future<RefreshResponse> refreshToken() async {
+    try {
+      final refreshToken = await TokenManager.getRefreshToken();
+      if (refreshToken == null) {
+        throw Exception('No hay refresh token disponible');
+      }
+
+      final response = await ApiService.makeRequest<Map<String, dynamic>>(
+        'POST',
+        '/auth/refresh-token',
+        ApiService.defaultHeaders,
+        {
+          'refreshToken': refreshToken,
+        },
+        null,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final refreshResponse = RefreshResponse.fromJson({
+          'status': response.status,
+          'message': response.message,
+          'data': response.data!,
+        });
+
+        // Guardar los nuevos tokens
+        await TokenManager.saveTokens(
+          accessToken: refreshResponse.data.accessToken,
+          refreshToken: refreshResponse.data.refreshToken,
+        );
+
+        return refreshResponse;
+      } else {
+        throw Exception(response.message);
+      }
+    } catch (e) {
+      // Si falla el refresh, limpiar tokens
+      await TokenManager.deleteTokens();
+      await TokenManager.clearUserData();
+      rethrow;
+    }
+  }
+
   /// Cierra sesión
   static Future<void> logout() async {
     try {
-      // Obtener headers con autenticación
-      final headers = await TokenManager.getAuthHeaders();
+      final refreshToken = await TokenManager.getRefreshToken();
       
-      // Llamar al endpoint de logout
-      await ApiService.makeRequest<Map<String, dynamic>>(
-        'POST',
-        '/auth/logout',
-        headers,
-        null,
-        null,
-      );
+      if (refreshToken != null) {
+        // Llamar al endpoint de logout con refresh token
+        await ApiService.makeRequest<Map<String, dynamic>>(
+          'POST',
+          '/auth/logout',
+          ApiService.defaultHeaders,
+          {
+            'refreshToken': refreshToken,
+          },
+          null,
+        );
+      }
     } catch (e) {
       // debugPrint('Error en logout del servidor: $e');
     } finally {
       // Limpiar almacenamiento local
-      await TokenManager.clearToken();
+      await TokenManager.deleteTokens();
       await TokenManager.clearUserData();
     }
   }
@@ -450,6 +510,51 @@ class AuthService {
     return await resendVerificationEmail(email: email);
   }
 
+  /// Verifica el email con token
+  static Future<ApiResponse<Map<String, dynamic>>> verifyEmail({
+    required String token,
+  }) async {
+    final response = await ApiService.makeRequest<Map<String, dynamic>>(
+      'GET',
+      '/auth/verify-email?token=$token',
+      ApiService.defaultHeaders,
+      null,
+      null,
+    );
+
+    // Manejo de errores específicos según la documentación de la API
+    if (!response.isSuccess) {
+      String errorMessage = response.message;
+      
+      switch (response.code) {
+        case 'INVALID_TOKEN':
+          errorMessage = 'El token de verificación no es válido';
+          break;
+        case 'TOKEN_EXPIRED':
+          errorMessage = 'El token de verificación ha expirado';
+          break;
+        case 'ALREADY_VERIFIED':
+          errorMessage = 'La cuenta ya está verificada';
+          break;
+        case 'USER_NOT_FOUND':
+          errorMessage = 'Usuario no encontrado';
+          break;
+        case 'VALIDATION_ERROR':
+          errorMessage = response.message; // Usar el mensaje detallado de validación
+          break;
+      }
+
+      return ApiResponse<Map<String, dynamic>>(
+        status: response.status,
+        message: errorMessage,
+        code: response.code,
+        errors: response.errors,
+      );
+    }
+
+    return response;
+  }
+
   /// Solicita restablecimiento de contraseña
   static Future<ApiResponse<Map<String, dynamic>>> forgotPassword({
     required String email,
@@ -535,7 +640,30 @@ class AuthService {
 
   /// Verifica si el usuario está autenticado
   static Future<bool> isAuthenticated() async {
-    return await TokenManager.hasValidToken();
+    try {
+      // Verificar si hay tokens válidos
+      final hasTokens = await TokenManager.hasValidTokens();
+      if (!hasTokens) {
+        return false;
+      }
+      
+      // Verificar si el access token es válido
+      final response = await verifyToken();
+      if (response.isSuccess) {
+        return true;
+      }
+      
+      // Si el access token expiró, intentar renovar con refresh token
+      try {
+        await refreshToken();
+        return true;
+      } catch (e) {
+        // Si falla el refresh, el usuario no está autenticado
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Obtiene los datos del usuario guardados

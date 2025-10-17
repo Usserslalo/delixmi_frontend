@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../config/app_routes.dart';
 import '../../services/auth_service.dart';
 import '../../models/auth/register_response.dart';
+import '../../utils/auth_error_handler.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -110,12 +111,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error inesperado: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
+        AuthErrorHandler.showAuthErrorSnackBar(
+          context, 
+          null, 
+          'Error inesperado: ${e.toString()}'
         );
       }
     } finally {
@@ -128,36 +127,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _handleRegisterError(RegisterResponse response) {
-    String message = response.message;
-    
     // Manejar el caso específico de EMAIL_SEND_ERROR
     if (response.needsEmailResend) {
       _showEmailResendDialog(response);
       return;
     }
     
-    // Manejar otros errores específicos
-    switch (response.errorCode) {
-      case 'USER_EXISTS':
-        message = 'Ya existe una cuenta con este email o teléfono.';
-        break;
-      case 'VALIDATION_ERROR':
-        message = response.message; // Usar el mensaje detallado del backend
-        break;
-      case 'INTERNAL_ERROR':
-        message = 'Error interno del servidor. Por favor, intenta más tarde.';
-        break;
-      default:
-        message = response.message; // Usar el mensaje por defecto
+    // Usar el nuevo manejador de errores
+    if (mounted) {
+      AuthErrorHandler.showAuthErrorSnackBar(
+        context, 
+        response.errorCode, 
+        response.message
+      );
     }
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 4),
-      ),
-    );
   }
 
   void _showEmailResendDialog(RegisterResponse response) {
@@ -240,12 +223,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al reenviar el correo: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
+        AuthErrorHandler.showAuthErrorSnackBar(
+          context, 
+          null, 
+          'Error al reenviar el correo: ${e.toString()}'
         );
       }
     } finally {

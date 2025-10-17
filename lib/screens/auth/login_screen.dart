@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../config/app_routes.dart';
 import '../../services/auth_service.dart';
 import '../../models/auth/user.dart' as auth_user;
+import '../../utils/auth_error_handler.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -63,11 +64,11 @@ class _LoginScreenState extends State<LoginScreen> {
       
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
+        // Usar el nuevo manejador de errores
+        AuthErrorHandler.showAuthErrorSnackBar(
+          context, 
+          null, // El error no viene con código específico desde el catch
+          e.toString()
         );
       }
     } finally {
@@ -85,22 +86,23 @@ class _LoginScreenState extends State<LoginScreen> {
     switch (roleName) {
       // ===== ROLES DE PLATAFORMA =====
       case 'super_admin':
-        Navigator.pushReplacementNamed(context, AppRoutes.adminDashboard);
+        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.adminDashboard, (route) => false);
         break;
         
       case 'platform_manager':
-        Navigator.pushReplacementNamed(context, AppRoutes.platformDashboard);
+        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.platformDashboard, (route) => false);
         break;
         
       case 'support_agent':
-        Navigator.pushReplacementNamed(context, AppRoutes.supportDashboard);
+        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.supportDashboard, (route) => false);
         break;
       
       // ===== ROLES DE RESTAURANTE =====
       case 'owner':
-        Navigator.pushReplacementNamed(
+        Navigator.pushNamedAndRemoveUntil(
           context,
           AppRoutes.ownerDashboard,
+          (route) => false,
           arguments: {
             'restaurantId': user.roles.first.restaurantId,
           },
@@ -108,9 +110,10 @@ class _LoginScreenState extends State<LoginScreen> {
         break;
         
       case 'branch_manager':
-        Navigator.pushReplacementNamed(
+        Navigator.pushNamedAndRemoveUntil(
           context,
           AppRoutes.branchDashboard,
+          (route) => false,
           arguments: {
             'restaurantId': user.roles.first.restaurantId,
             'branchId': user.roles.first.branchId,
@@ -119,9 +122,10 @@ class _LoginScreenState extends State<LoginScreen> {
         break;
         
       case 'order_manager':
-        Navigator.pushReplacementNamed(
+        Navigator.pushNamedAndRemoveUntil(
           context,
           AppRoutes.ordersDashboard,
+          (route) => false,
           arguments: {
             'restaurantId': user.roles.first.restaurantId,
             'branchId': user.roles.first.branchId,
@@ -130,9 +134,10 @@ class _LoginScreenState extends State<LoginScreen> {
         break;
         
       case 'kitchen_staff':
-        Navigator.pushReplacementNamed(
+        Navigator.pushNamedAndRemoveUntil(
           context,
           AppRoutes.kitchenDashboard,
+          (route) => false,
           arguments: {
             'branchId': user.roles.first.branchId,
           },
@@ -142,18 +147,18 @@ class _LoginScreenState extends State<LoginScreen> {
       // ===== ROLES DE REPARTIDORES =====
       case 'driver_platform':
       case 'driver_restaurant':
-        Navigator.pushReplacementNamed(context, AppRoutes.driverDashboard);
+        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.driverDashboard, (route) => false);
         break;
       
       // ===== ROL DE CLIENTE =====
       case 'customer':
-        Navigator.pushReplacementNamed(context, AppRoutes.customerHome);
+        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.customerHome, (route) => false);
         break;
       
       // ===== ROL NO RECONOCIDO =====
       default:
         // debugPrint('⚠️ Rol no reconocido: $roleName');
-        Navigator.pushReplacementNamed(context, AppRoutes.unsupportedRole);
+        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.unsupportedRole, (route) => false);
         break;
     }
   }

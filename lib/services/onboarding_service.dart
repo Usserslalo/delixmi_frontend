@@ -72,6 +72,14 @@ class OnboardingService {
     await prefs.remove(_firstLoginKey);
   }
 
+  /// Resetea el onboarding para un nuevo usuario (después del registro)
+  Future<void> resetForNewUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_firstLoginKey, true);
+    await prefs.setBool(_onboardingCompletedKey, false);
+    await prefs.setBool(_hasAddressKey, false);
+  }
+
   /// Obtiene el progreso actual del onboarding
   Future<Map<String, bool>> getOnboardingProgress() async {
     return {

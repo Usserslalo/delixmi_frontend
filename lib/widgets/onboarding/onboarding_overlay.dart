@@ -26,8 +26,8 @@ class _OnboardingOverlayState extends State<OnboardingOverlay>
   int _currentStep = 0;
   final List<OnboardingStep> _steps = [
     OnboardingStep(
-      title: '¡Bienvenido a Delixmi!',
-      description: 'Para comenzar a disfrutar de tus comidas favoritas, necesitamos que configures una dirección de entrega.',
+      title: '¡Bienvenido a Delixmi! 🎉',
+      description: 'Para comenzar a disfrutar de tus comidas favoritas, necesitamos que configures una dirección de entrega. Esto nos permitirá mostrarte los restaurantes disponibles en tu zona.',
       icon: Icons.location_on_rounded,
       primaryColor: const Color(0xFFF2843A),
       secondaryColor: const Color(0xFFFFF3E0),
@@ -154,10 +154,11 @@ class _OnboardingOverlayState extends State<OnboardingOverlay>
   @override
   Widget build(BuildContext context) {
     final currentStepData = _steps[_currentStep];
+    final theme = Theme.of(context);
     
-    return WillPopScope(
+    return PopScope(
       // Bloquear el botón de atrás
-      onWillPop: () async => false,
+      canPop: false,
       child: AnimatedBuilder(
         animation: _fadeAnimation,
         builder: (context, child) {
@@ -173,103 +174,115 @@ class _OnboardingOverlayState extends State<OnboardingOverlay>
                     scale: _scaleAnimation.value,
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 24),
-                      padding: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(32),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(20),
+                        color: theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
+                            color: theme.colorScheme.shadow.withOpacity(0.1),
+                            blurRadius: 32,
+                            offset: const Offset(0, 16),
+                          ),
+                          BoxShadow(
+                            color: theme.colorScheme.shadow.withOpacity(0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Ícono del paso
+                          // Ícono del paso con Material 3
                           Container(
-                            width: 80,
-                            height: 80,
+                            width: 96,
+                            height: 96,
                             decoration: BoxDecoration(
                               color: currentStepData.secondaryColor,
-                              borderRadius: BorderRadius.circular(40),
+                              borderRadius: BorderRadius.circular(48),
                               border: Border.all(
-                                color: currentStepData.primaryColor.withOpacity(0.3),
-                                width: 2,
+                                color: currentStepData.primaryColor.withOpacity(0.2),
+                                width: 1,
                               ),
                             ),
                             child: Icon(
                               currentStepData.icon,
-                              size: 40,
+                              size: 48,
                               color: currentStepData.primaryColor,
                             ),
                           ),
                           
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 32),
                           
-                          // Título
+                          // Título con Material 3
                           Text(
                             currentStepData.title,
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onSurface,
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurface,
+                              letterSpacing: -0.5,
                             ),
                             textAlign: TextAlign.center,
                           ),
                           
                           const SizedBox(height: 16),
                           
-                          // Descripción
+                          // Descripción con Material 3
                           Text(
                             currentStepData.description,
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              height: 1.5,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              height: 1.6,
+                              letterSpacing: 0.1,
                             ),
                             textAlign: TextAlign.center,
                           ),
                           
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 40),
                           
-                          // Botón principal
+                          // Botón principal con Material 3
                           SizedBox(
                             width: double.infinity,
-                            height: 48,
+                            height: 56,
                             child: FilledButton(
                               onPressed: _nextStep,
                               style: FilledButton.styleFrom(
                                 backgroundColor: currentStepData.primaryColor,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shadowColor: Colors.transparent,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(20),
                                 ),
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                               ),
                               child: Text(
                                 currentStepData.buttonText,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
                                   color: Colors.white,
+                                  letterSpacing: 0.1,
                                 ),
                               ),
                             ),
                           ),
                           
-                          // Indicadores de progreso
-                          const SizedBox(height: 24),
+                          // Indicadores de progreso con Material 3
+                          const SizedBox(height: 32),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: List.generate(
                               _steps.length,
                               (index) => Container(
-                                width: 8,
-                                height: 8,
-                                margin: const EdgeInsets.symmetric(horizontal: 4),
+                                width: 12,
+                                height: 12,
+                                margin: const EdgeInsets.symmetric(horizontal: 6),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: index <= _currentStep
                                       ? currentStepData.primaryColor
-                                      : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                                      : theme.colorScheme.outline.withOpacity(0.3),
                                 ),
                               ),
                             ),

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/api_response.dart';
+import 'token_interceptor.dart';
 import '../core/constants/api_constants.dart';
 
 class ApiService {
@@ -213,6 +214,9 @@ class ApiService {
         default:
           throw Exception('Método HTTP no soportado: $method');
       }
+
+      // Interceptar respuesta para manejo de tokens
+      response = await TokenInterceptor.interceptResponse(response);
 
       // Debug: Imprimir respuesta del servidor (solo en desarrollo)
       // debugPrint('=== RESPUESTA DEL SERVIDOR ===');

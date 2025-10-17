@@ -21,21 +21,27 @@ class LoginResponse {
 }
 
 class LoginData {
-  final String token;
+  final String accessToken;
+  final String refreshToken;
   final User user;
   final String expiresIn;
   
   LoginData({
-    required this.token,
+    required this.accessToken,
+    required this.refreshToken,
     required this.user,
     required this.expiresIn,
   });
   
   factory LoginData.fromJson(Map<String, dynamic> json) {
     return LoginData(
-      token: json['token'],
+      accessToken: json['accessToken'] ?? json['token'] ?? '', // Compatibilidad con versión anterior
+      refreshToken: json['refreshToken'] ?? '',
       user: User.fromJson(json['user']),
       expiresIn: json['expiresIn'],
     );
   }
+  
+  // Getter para compatibilidad con código existente
+  String get token => accessToken;
 }

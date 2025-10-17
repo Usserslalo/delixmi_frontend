@@ -3,39 +3,68 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class TokenManager {
   static const _storage = FlutterSecureStorage();
-  static const String _tokenKey = 'auth_token';
+  static const String _accessTokenKey = 'access_token';
+  static const String _refreshTokenKey = 'refresh_token';
   static const String _userKey = 'user_data';
 
-  /// Guarda el token JWT de forma segura
+  /// Guarda los tokens JWT de forma segura
+  static Future<void> saveTokens({
+    required String accessToken,
+    required String refreshToken,
+  }) async {
+    try {
+      await _storage.write(key: _accessTokenKey, value: accessToken);
+      await _storage.write(key: _refreshTokenKey, value: refreshToken);
+    } catch (e) {
+      throw Exception('Error al guardar los tokens: ${e.toString()}');
+    }
+  }
+
+  /// Guarda solo el access token (compatibilidad con código existente)
   static Future<void> saveToken(String token) async {
     try {
-      await _storage.write(key: _tokenKey, value: token);
+      await _storage.write(key: _accessTokenKey, value: token);
     } catch (e) {
       throw Exception('Error al guardar el token: ${e.toString()}');
     }
   }
 
-  /// Obtiene el token JWT guardado
-  static Future<String?> getToken() async {
+  /// Obtiene el access token guardado
+  static Future<String?> getAccessToken() async {
     try {
-      return await _storage.read(key: _tokenKey);
+      return await _storage.read(key: _accessTokenKey);
     } catch (e) {
       return null;
     }
   }
 
-  /// Elimina el token JWT
-  static Future<void> deleteToken() async {
+  /// Obtiene el refresh token guardado
+  static Future<String?> getRefreshToken() async {
     try {
-      await _storage.delete(key: _tokenKey);
+      return await _storage.read(key: _refreshTokenKey);
     } catch (e) {
-      // Ignorar errores al eliminar token
+      return null;
     }
   }
 
-  /// Alias para deleteToken (compatibilidad con AuthService)
+  /// Obtiene el token JWT guardado (compatibilidad con código existente)
+  static Future<String?> getToken() async {
+    return await getAccessToken();
+  }
+
+  /// Elimina todos los tokens
+  static Future<void> deleteTokens() async {
+    try {
+      await _storage.delete(key: _accessTokenKey);
+      await _storage.delete(key: _refreshTokenKey);
+    } catch (e) {
+      // Ignorar errores al eliminar tokens
+    }
+  }
+
+  /// Alias para deleteTokens (compatibilidad con AuthService)
   static Future<void> clearToken() async {
-    await deleteToken();
+    await deleteTokens();
   }
 
   /// Verifica si hay un token válido guardado
@@ -99,7 +128,7 @@ class TokenManager {
 
   /// Obtiene los headers de autenticación
   static Future<Map<String, String>> getAuthHeaders() async {
-    final token = await getToken();
+    final token = await getAccessToken();
     if (token == null) {
       throw Exception('No hay token de autenticación disponible');
     }
@@ -108,5 +137,17 @@ class TokenManager {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
     };
+  }
+
+  /// Verifica si hay tokens válidos guardados
+  static Future<bool> hasValidTokens() async {
+    try {
+      final accessToken = await getAccessToken();
+      final refreshToken = await getRefreshToken();
+      return accessToken != null && accessToken.isNotEmpty && 
+             refreshToken != null && refreshToken.isNotEmpty;
+    } catch (e) {
+      return false;
+    }
   }
 }
