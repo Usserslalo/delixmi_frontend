@@ -26,7 +26,15 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     _loadOrderDetails();
   }
 
+  @override
+  void dispose() {
+    // Limpiar cualquier recurso si es necesario
+    super.dispose();
+  }
+
   Future<void> _loadOrderDetails() async {
+    if (!mounted) return;
+    
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -50,30 +58,38 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           final order = Order.fromJson(response.data!);
           debugPrint('🔍 OrderDetailsScreen: Order parseado exitosamente - ID: ${order.id}');
           
-          setState(() {
-            _order = order;
-            _isLoading = false;
-          });
+          if (mounted) {
+            setState(() {
+              _order = order;
+              _isLoading = false;
+            });
+          }
         } catch (parseError) {
           debugPrint('❌ OrderDetailsScreen: Error parseando Order: $parseError');
-          setState(() {
-            _errorMessage = 'Error al procesar datos del pedido: $parseError';
-            _isLoading = false;
-          });
+          if (mounted) {
+            setState(() {
+              _errorMessage = 'Error al procesar datos del pedido: $parseError';
+              _isLoading = false;
+            });
+          }
         }
       } else {
         debugPrint('❌ OrderDetailsScreen: Error en respuesta - ${response.message}');
-        setState(() {
-          _errorMessage = response.message;
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _errorMessage = response.message;
+            _isLoading = false;
+          });
+        }
       }
     } catch (e) {
       debugPrint('❌ OrderDetailsScreen: Excepción general: $e');
-      setState(() {
-        _errorMessage = 'Error al cargar detalles del pedido: $e';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error al cargar detalles del pedido: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 
