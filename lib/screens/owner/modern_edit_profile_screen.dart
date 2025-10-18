@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../../models/owner/restaurant_profile.dart';
 import '../../services/restaurant_service.dart';
@@ -30,6 +31,8 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
   RestaurantProfile? _restaurantProfile;
   String? _newLogoUrl;
   String? _newCoverPhotoUrl;
+  String? _lastKnownLogoUrl; // Conservar última URL válida conocida
+  String? _lastKnownCoverUrl; // Conservar última URL válida conocida
   File? _selectedLogoFile;
   File? _selectedCoverFile;
   
@@ -83,6 +86,66 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
     });
   }
 
+  /// Valida si una URL de imagen es válida y no está vacía
+  bool _isValidImageUrl(String? url) {
+    if (url == null || url.trim().isEmpty || url.trim() == 'null') {
+      debugPrint('🖼️ URL inválida: null, vacía o string "null"');
+      return false;
+    }
+    
+    // Verificar que sea una URL válida
+    try {
+      final uri = Uri.parse(url.trim());
+      final isValid = uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https');
+      debugPrint('🖼️ Validando URL: "$url" -> $isValid');
+      return isValid;
+    } catch (e) {
+      debugPrint('🖼️ Error parseando URL: "$url" - $e');
+      return false;
+    }
+  }
+
+  /// Valida si las URLs de las imágenes son accesibles (solo para debug)
+  void _validateImageUrls(String? logoUrl, String? coverUrl) async {
+    if (logoUrl != null && _isValidImageUrl(logoUrl)) {
+      _testImageUrl(logoUrl, 'Logo');
+    }
+    if (coverUrl != null && _isValidImageUrl(coverUrl)) {
+      _testImageUrl(coverUrl, 'Cover');
+    }
+  }
+
+  /// Prueba una URL de imagen para verificar su accesibilidad
+  /// NOTA: El backend ahora verifica que los archivos existan antes de devolver URLs
+  /// y solo devuelve URLs válidas. Esta función es solo para debugging adicional.
+  Future<void> _testImageUrl(String url, String type) async {
+    try {
+      final uri = Uri.parse(url);
+      final response = await http.head(uri);
+      if (response.statusCode == 200) {
+        debugPrint('✅ $type URL verificada - accesible: $url');
+      } else {
+        debugPrint('❌ $type URL no accesible (${response.statusCode}): $url');
+        debugPrint('ℹ️ Esto no debería pasar - el backend debería solo devolver URLs válidas');
+      }
+    } catch (e) {
+      debugPrint('❌ Error verificando $type URL: $url - $e');
+    }
+  }
+
+  /// Obtiene mensaje de error específico para problemas con Render
+  String _getErrorMessageForRender(String errorString) {
+    if (errorString.contains('404')) {
+      return 'Error temporal - Auto-limpieza activa';
+    } else if (errorString.contains('timeout')) {
+      return 'Tiempo de espera agotado';
+    } else if (errorString.contains('network') || errorString.contains('socket')) {
+      return 'Error de conexión';
+    } else {
+      return 'Error al cargar';
+    }
+  }
+
   bool _hasActualChanges() {
     if (_restaurantProfile == null) return false;
     
@@ -103,6 +166,31 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
       final response = await RestaurantService.getProfile();
       
       if (response.isSuccess && response.data != null) {
+        // Debug: Mostrar información de las URLs de las imágenes
+        debugPrint('🖼️ Cargando imágenes del perfil:');
+        debugPrint('🖼️ Logo URL desde backend (raw): "${response.data!.logoUrl}" (tipo: ${response.data!.logoUrl.runtimeType})');
+        debugPrint('🖼️ Cover URL desde backend (raw): "${response.data!.coverPhotoUrl}" (tipo: ${response.data!.coverPhotoUrl.runtimeType})');
+        
+        // ✅ Backend implementó limpieza automática - verifica archivos físicamente
+        // El modelo RestaurantProfile ya normaliza strings "null" a null real
+        if (response.data!.logoUrl == null) {
+          debugPrint('✅ Logo URL limpiada automáticamente por backend - archivo no existía');
+        }
+        if (response.data!.coverPhotoUrl == null) {
+          debugPrint('✅ Cover URL limpiada automáticamente por backend - archivo no existía');
+        }
+        
+        // Log de éxito cuando URLs son válidas
+        if (response.data!.logoUrl != null) {
+          debugPrint('✅ Logo URL disponible - backend verificó existencia física');
+        }
+        if (response.data!.coverPhotoUrl != null) {
+          debugPrint('✅ Cover URL disponible - backend verificó existencia física');
+        }
+        
+        // Verificar si las URLs son accesibles (solo para debug)
+        _validateImageUrls(response.data!.logoUrl, response.data!.coverPhotoUrl);
+        
         setState(() {
           _restaurantProfile = response.data;
           _nameController.text = response.data!.name;
@@ -110,9 +198,46 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
           _phoneController.text = response.data!.phone ?? '';
           _emailController.text = response.data!.email ?? '';
           _addressController.text = response.data!.address ?? '';
-          _newLogoUrl = response.data!.logoUrl;
-          _newCoverPhotoUrl = response.data!.coverPhotoUrl;
+          
+          // Usar URLs del backend (ya normalizadas por el modelo RestaurantProfile)
+          final backendLogoUrl = response.data!.logoUrl;
+          final backendCoverUrl = response.data!.coverPhotoUrl;
+          
+          // Backend ahora verifica físicamente y limpia URLs automáticamente
+          if (_isValidImageUrl(backendLogoUrl)) {
+            _newLogoUrl = backendLogoUrl;
+            _lastKnownLogoUrl = backendLogoUrl; // Conservar para uso futuro
+            debugPrint('✅ Logo URL válida desde backend (verificada físicamente), conservada');
+          } else if (backendLogoUrl == null && _lastKnownLogoUrl != null && _isValidImageUrl(_lastKnownLogoUrl)) {
+            // Sistema de respaldo: si backend limpió URL pero tenemos una válida previa
+            _newLogoUrl = _lastKnownLogoUrl;
+            debugPrint('⚠️ Backend limpió URL obsoleta, usando última URL válida conocida: $_lastKnownLogoUrl');
+          } else {
+            _newLogoUrl = null;
+            debugPrint('✅ Logo URL null - backend confirmó que archivo no existe físicamente');
+          }
+          
+          if (_isValidImageUrl(backendCoverUrl)) {
+            _newCoverPhotoUrl = backendCoverUrl;
+            _lastKnownCoverUrl = backendCoverUrl; // Conservar para uso futuro
+            debugPrint('✅ Cover URL válida desde backend (verificada físicamente), conservada');
+          } else if (backendCoverUrl == null && _lastKnownCoverUrl != null && _isValidImageUrl(_lastKnownCoverUrl)) {
+            // Sistema de respaldo: si backend limpió URL pero tenemos una válida previa
+            _newCoverPhotoUrl = _lastKnownCoverUrl;
+            debugPrint('⚠️ Backend limpió URL obsoleta, usando última URL válida conocida: $_lastKnownCoverUrl');
+          } else {
+            _newCoverPhotoUrl = null;
+            debugPrint('✅ Cover URL null - backend confirmó que archivo no existe físicamente');
+          }
         });
+        
+        // Las URLs ya se procesaron arriba con la nueva lógica
+        
+        // Debug: Mostrar URLs finales después de validación
+        debugPrint('🖼️ Logo URL final: $_newLogoUrl');
+        debugPrint('🖼️ Cover URL final: $_newCoverPhotoUrl');
+        debugPrint('🖼️ _restaurantProfile.logoUrl: ${_restaurantProfile?.logoUrl}');
+        debugPrint('🖼️ _restaurantProfile.coverPhotoUrl: ${_restaurantProfile?.coverPhotoUrl}');
         
         _animationController.forward();
       } else {
@@ -158,10 +283,11 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
       if (uploadResponse.isSuccess && uploadResponse.data != null) {
         setState(() {
           _newLogoUrl = uploadResponse.data!.logoUrl;
+          _lastKnownLogoUrl = uploadResponse.data!.logoUrl; // Conservar para uso futuro
         });
         
-        // Actualizar el perfil con la nueva URL
-        await _updateProfileImages(logoUrl: _newLogoUrl);
+        // ✅ Backend ahora actualiza automáticamente la BD tras subir
+        // No es necesario llamar a _updateProfileImages() adicionalmente
         
         _showSuccessSnackBar('Logo actualizado exitosamente');
       } else {
@@ -207,10 +333,11 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
       if (uploadResponse.isSuccess && uploadResponse.data != null) {
         setState(() {
           _newCoverPhotoUrl = uploadResponse.data!.coverPhotoUrl;
+          _lastKnownCoverUrl = uploadResponse.data!.coverPhotoUrl; // Conservar para uso futuro
         });
         
-        // Actualizar el perfil con la nueva URL
-        await _updateProfileImages(coverPhotoUrl: _newCoverPhotoUrl);
+        // ✅ Backend ahora actualiza automáticamente la BD tras subir
+        // No es necesario llamar a _updateProfileImages() adicionalmente
         
         _showSuccessSnackBar('Portada actualizada exitosamente');
       } else {
@@ -223,23 +350,6 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
     }
   }
 
-  /// Actualiza el perfil con las nuevas URLs de imágenes
-  Future<void> _updateProfileImages({String? logoUrl, String? coverPhotoUrl}) async {
-    try {
-      final response = await RestaurantService.updateProfile(
-        logoUrl: logoUrl,
-        coverPhotoUrl: coverPhotoUrl,
-      );
-      
-      if (response.isSuccess && response.data != null) {
-        setState(() {
-          _restaurantProfile = response.data;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error al actualizar URLs de imágenes: $e');
-    }
-  }
 
   /// Guarda los cambios en nombre y descripción
   Future<void> _saveChanges() async {
@@ -419,8 +529,10 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
   }
 
   Widget _buildModernBody(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
+    return RefreshIndicator(
+      onRefresh: _loadRestaurantProfile,
+      child: CustomScrollView(
+        slivers: [
         SliverToBoxAdapter(
           child: _buildHeaderSection(context),
         ),
@@ -436,7 +548,8 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
         const SliverToBoxAdapter(
           child: SizedBox(height: 100), // Espacio para el botón flotante
         ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -632,18 +745,7 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
                 child: Stack(
                   children: [
                     // Image or placeholder
-                    if (selectedFile != null)
-                      Image.file(selectedFile, fit: BoxFit.cover)
-                    else if (imageUrl != null)
-                      Image.network(
-                        imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildImagePlaceholder(icon);
-                        },
-                      )
-                    else
-                      _buildImagePlaceholder(icon),
+                    _buildImageWidget(imageUrl, selectedFile, icon),
                     
                     // Upload overlay
                     if (isUploading)
@@ -694,6 +796,103 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
     );
   }
 
+  Widget _buildImageWidget(String? imageUrl, File? selectedFile, IconData icon) {
+    // Normalizar imageUrl para manejar casos edge (string "null", vacíos, etc.)
+    String? normalizedImageUrl;
+    if (imageUrl == null || imageUrl.trim().isEmpty || imageUrl.trim() == 'null') {
+      normalizedImageUrl = null;
+    } else {
+      normalizedImageUrl = imageUrl.trim();
+    }
+    
+    // Debug: informar sobre el estado actual
+    debugPrint('🖼️ _buildImageWidget llamado:');
+    debugPrint('🖼️ selectedFile: ${selectedFile != null ? "Archivo seleccionado" : "null"}');
+    debugPrint('🖼️ imageUrl original: "$imageUrl"');
+    debugPrint('🖼️ imageUrl normalizado: "$normalizedImageUrl"');
+    debugPrint('🖼️ _isValidImageUrl(normalizedUrl): ${normalizedImageUrl != null ? _isValidImageUrl(normalizedImageUrl) : "N/A"}');
+    
+    if (selectedFile != null) {
+      debugPrint('🖼️ Mostrando archivo seleccionado');
+      return Image.file(selectedFile, fit: BoxFit.cover);
+    } 
+    
+    if (normalizedImageUrl != null && _isValidImageUrl(normalizedImageUrl)) {
+      debugPrint('🖼️ Mostrando imagen de red con URL: $normalizedImageUrl');
+      
+      return Image.network(
+        normalizedImageUrl,
+        fit: BoxFit.cover,
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'If-None-Match': DateTime.now().millisecondsSinceEpoch.toString(),
+        },
+        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+          if (wasSynchronouslyLoaded || frame != null) {
+            return child;
+          }
+          return Container(
+            color: surfaceVariantColor,
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: primaryOrange,
+              ),
+            ),
+          );
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) {
+            debugPrint('✅ Imagen cargada exitosamente - Problema de Render RESUELTO');
+            debugPrint('✅ URL funcionando correctamente: $normalizedImageUrl');
+            return child;
+          }
+          debugPrint('🖼️ Cargando imagen... ${loadingProgress.cumulativeBytesLoaded}/${loadingProgress.expectedTotalBytes}');
+          return Container(
+            color: surfaceVariantColor,
+            child: Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                    : null,
+                color: primaryOrange,
+              ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          // Detectar tipo específico de error
+          final errorString = error.toString().toLowerCase();
+          debugPrint('🚨 Error cargando imagen que debería ser válida: $errorString');
+          debugPrint('🚨 URL que falló: $normalizedImageUrl');
+          
+          // Problema específico con Render: archivos estáticos pueden no estar disponibles
+          if (errorString.contains('404')) {
+            debugPrint('🚨 ERROR 404 INESPERADO: El backend ya implementó limpieza automática');
+            debugPrint('🚨 URL que falló: $normalizedImageUrl');
+            debugPrint('🚨 ⚠️ SITUACIÓN INESPERADA:');
+            debugPrint('   ✅ Backend implementó verificación física de archivos');
+            debugPrint('   ✅ Backend limpia URLs obsoletas automáticamente en la BD');
+            debugPrint('   ✅ Backend actualiza BD cuando detecta archivos inexistentes');
+            debugPrint('🚨 ESTE ERROR NO DEBERÍA OCURRIR - posible problema temporal o nuevo archivo');
+            debugPrint('🚨 Verificar si este error persiste después del próximo request');
+          } else if (errorString.contains('network') || errorString.contains('socket')) {
+            debugPrint('🚨 ERROR DE RED: Problema de conectividad temporal con Render');
+          } else if (errorString.contains('timeout')) {
+            debugPrint('🚨 TIMEOUT: Render tardó demasiado en responder');
+          } else {
+            debugPrint('🚨 ERROR DESCONOCIDO CON RENDER: $error');
+          }
+          
+          return _buildImageErrorPlaceholder(icon, _getErrorMessageForRender(errorString));
+        },
+      );
+    } else {
+      debugPrint('🖼️ Mostrando placeholder - URL inválida o null');
+      return _buildImagePlaceholder(icon);
+    }
+  }
+
   Widget _buildImagePlaceholder(IconData icon) {
     return Container(
       color: surfaceVariantColor,
@@ -714,6 +913,54 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageErrorPlaceholder(IconData icon, String errorMessage) {
+    return Container(
+      color: surfaceVariantColor,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                size: 36,
+                color: Colors.orange.withValues(alpha: 0.7),
+              ),
+              const SizedBox(height: 6),
+              Flexible(
+                child: Text(
+                  errorMessage.isNotEmpty ? errorMessage : 'Imagen no disponible',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.orange.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Flexible(
+                child: Text(
+                  'Toca para subir',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: outlineColor.withValues(alpha: 0.7),
+                    fontSize: 10,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -767,6 +1014,9 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
                     if (value == null || value.trim().isEmpty) {
                       return 'El nombre es requerido';
                     }
+                    if (value.trim().length < 3) {
+                      return 'El nombre debe tener al menos 3 caracteres';
+                    }
                     if (value.trim().length > 150) {
                       return 'El nombre debe tener máximo 150 caracteres';
                     }
@@ -784,8 +1034,13 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
                   maxLines: 4,
                   maxLength: 1000,
                   validator: (value) {
-                    if (value != null && value.trim().length > 1000) {
-                      return 'La descripción debe tener máximo 1000 caracteres';
+                    if (value != null && value.trim().isNotEmpty) {
+                      if (value.trim().length < 10) {
+                        return 'La descripción debe tener al menos 10 caracteres';
+                      }
+                      if (value.trim().length > 1000) {
+                        return 'La descripción debe tener máximo 1000 caracteres';
+                      }
                     }
                     return null;
                   },
@@ -803,6 +1058,10 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
                     if (value != null && value.trim().isNotEmpty) {
                       if (value.trim().length < 10 || value.trim().length > 20) {
                         return 'El teléfono debe tener entre 10 y 20 caracteres';
+                      }
+                      // Validar formato según regex del backend: /^[\+]?[\d\s\-\(\)]+$/
+                      if (!RegExp(r'^[\+]?[\d\s\-\(\)]+$').hasMatch(value.trim())) {
+                        return 'El formato del teléfono no es válido';
                       }
                     }
                     return null;
@@ -840,8 +1099,13 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
                   maxLines: 2,
                   maxLength: 500,
                   validator: (value) {
-                    if (value != null && value.trim().length > 500) {
-                      return 'La dirección debe tener máximo 500 caracteres';
+                    if (value != null && value.trim().isNotEmpty) {
+                      if (value.trim().length < 5) {
+                        return 'La dirección debe tener al menos 5 caracteres';
+                      }
+                      if (value.trim().length > 500) {
+                        return 'La dirección debe tener máximo 500 caracteres';
+                      }
                     }
                     return null;
                   },

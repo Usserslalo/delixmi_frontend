@@ -32,12 +32,24 @@ class RestaurantProfile {
   });
 
   factory RestaurantProfile.fromJson(Map<String, dynamic> json) {
+    // Manejar URLs vacías, nulas o con string "null"
+    String? logoUrl = json['logoUrl'];
+    String? coverPhotoUrl = json['coverPhotoUrl'];
+    
+    // Convertir strings vacíos o "null" a null real
+    if (logoUrl != null && (logoUrl.trim().isEmpty || logoUrl.trim() == 'null')) {
+      logoUrl = null;
+    }
+    if (coverPhotoUrl != null && (coverPhotoUrl.trim().isEmpty || coverPhotoUrl.trim() == 'null')) {
+      coverPhotoUrl = null;
+    }
+    
     return RestaurantProfile(
       id: json['id'],
       name: json['name'],
       description: json['description'],
-      logoUrl: json['logoUrl'],
-      coverPhotoUrl: json['coverPhotoUrl'],
+      logoUrl: logoUrl,
+      coverPhotoUrl: coverPhotoUrl,
       phone: json['phone'],
       email: json['email'],
       address: json['address'],

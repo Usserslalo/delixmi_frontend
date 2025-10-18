@@ -150,7 +150,7 @@ class RestaurantService {
       final token = await TokenManager.getToken();
       
       // Crear MultipartRequest
-      final uri = Uri.parse('${ApiService.fullUrl}/restaurant/uploads/logo');
+      final uri = Uri.parse('${ApiService.fullUrl}/restaurant/upload-logo');
       final request = http.MultipartRequest('POST', uri);
       
       // Agregar headers
@@ -165,7 +165,7 @@ class RestaurantService {
       
       request.files.add(
         await http.MultipartFile.fromPath(
-          'image',
+          'logo',
           imageFile.path,
           contentType: MediaType.parse(mimeType),
         ),
@@ -235,7 +235,7 @@ class RestaurantService {
       final token = await TokenManager.getToken();
       
       // Crear MultipartRequest
-      final uri = Uri.parse('${ApiService.fullUrl}/restaurant/uploads/cover');
+      final uri = Uri.parse('${ApiService.fullUrl}/restaurant/upload-cover');
       final request = http.MultipartRequest('POST', uri);
       
       // Agregar headers
@@ -250,7 +250,7 @@ class RestaurantService {
       
       request.files.add(
         await http.MultipartFile.fromPath(
-          'image',
+          'cover',
           imageFile.path,
           contentType: MediaType.parse(mimeType),
         ),
