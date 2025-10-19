@@ -292,4 +292,141 @@ class RestaurantService {
       );
     }
   }
+
+  /// Verifica si la ubicación del restaurante está configurada
+  static Future<ApiResponse<Map<String, dynamic>>> getLocationStatus() async {
+    try {
+      debugPrint('🏪 RestaurantService: Verificando estado de ubicación...');
+      
+      final headers = await TokenManager.getAuthHeaders();
+      
+      final response = await ApiService.makeRequest<Map<String, dynamic>>(
+        'GET',
+        '/restaurant/location-status',
+        headers,
+        null,
+        null,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        debugPrint('✅ Estado de ubicación obtenido: ${response.data}');
+        
+        return ApiResponse<Map<String, dynamic>>(
+          status: 'success',
+          message: response.message,
+          data: response.data!,
+        );
+      } else {
+        debugPrint('❌ Error al obtener estado de ubicación: ${response.message}');
+        return ApiResponse<Map<String, dynamic>>(
+          status: response.status,
+          message: response.message,
+          code: response.code,
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ RestaurantService.getLocationStatus: Error inesperado: $e');
+      return ApiResponse<Map<String, dynamic>>(
+        status: 'error',
+        message: 'Error al verificar el estado de ubicación: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Actualiza la ubicación del restaurante
+  static Future<ApiResponse<Map<String, dynamic>>> updateLocation({
+    required double latitude,
+    required double longitude,
+    String? address,
+  }) async {
+    try {
+      debugPrint('🏪 RestaurantService: Actualizando ubicación del restaurante...');
+      debugPrint('📍 Latitud: $latitude, Longitud: $longitude');
+      debugPrint('📍 Dirección: $address');
+      
+      final headers = await TokenManager.getAuthHeaders();
+      
+      final Map<String, dynamic> body = {
+        'latitude': latitude,
+        'longitude': longitude,
+      };
+      
+      if (address != null && address.isNotEmpty) {
+        body['address'] = address;
+      }
+      
+      final response = await ApiService.makeRequest<Map<String, dynamic>>(
+        'PATCH',
+        '/restaurant/location',
+        headers,
+        body,
+        null,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        debugPrint('✅ Ubicación actualizada exitosamente');
+        
+        return ApiResponse<Map<String, dynamic>>(
+          status: 'success',
+          message: response.message,
+          data: response.data!,
+        );
+      } else {
+        debugPrint('❌ Error al actualizar ubicación: ${response.message}');
+        return ApiResponse<Map<String, dynamic>>(
+          status: response.status,
+          message: response.message,
+          code: response.code,
+          errors: response.errors,
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ RestaurantService.updateLocation: Error inesperado: $e');
+      return ApiResponse<Map<String, dynamic>>(
+        status: 'error',
+        message: 'Error al actualizar la ubicación: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Obtiene los datos completos de ubicación del restaurante (incluyendo latitud, longitud y dirección)
+  /// Ahora el endpoint getLocationStatus devuelve tanto el estado como los datos completos
+  static Future<ApiResponse<Map<String, dynamic>>> getRestaurantLocation() async {
+    try {
+      debugPrint('🏪 RestaurantService: Obteniendo ubicación completa del restaurante...');
+      
+      final headers = await TokenManager.getAuthHeaders();
+      
+      final response = await ApiService.makeRequest<Map<String, dynamic>>(
+        'GET',
+        '/restaurant/location-status', // Este endpoint ahora devuelve isLocationSet + location data
+        headers,
+        null,
+        null,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        debugPrint('✅ Ubicación del restaurante obtenida: ${response.data}');
+        
+        return ApiResponse<Map<String, dynamic>>(
+          status: 'success',
+          message: response.message,
+          data: response.data!,
+        );
+      } else {
+        debugPrint('❌ Error al obtener ubicación: ${response.message}');
+        return ApiResponse<Map<String, dynamic>>(
+          status: response.status,
+          message: response.message,
+          code: response.code,
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ RestaurantService.getRestaurantLocation: Error inesperado: $e');
+      return ApiResponse<Map<String, dynamic>>(
+        status: 'error',
+        message: 'Error al obtener la ubicación del restaurante: ${e.toString()}',
+      );
+    }
+  }
 }

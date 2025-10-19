@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
-// import 'package:image_picker/image_picker.dart'; // Funcionalidad próximamente
+import 'package:image_picker/image_picker.dart';
 import '../../models/menu/menu_models.dart';
 import '../../models/api_response.dart';
 import '../../services/menu_service.dart';
@@ -35,6 +35,8 @@ class _AddProductFormState extends State<AddProductForm> {
   
   // Variables para manejo de imagen
   File? _selectedImage;
+  String? _uploadedImageUrl;
+  bool _isUploadingImage = false;
 
   @override
   void initState() {
@@ -107,15 +109,125 @@ class _AddProductFormState extends State<AddProductForm> {
     }
   }
 
-  /// Selecciona imagen del producto (funcionalidad próximamente)
-  // Future<void> _selectImage() async {
-  //   // Implementación próxima
-  // }
+  /// Selecciona imagen del producto
+  Future<void> _selectImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      
+      // Mostrar opciones de selección
+      final ImageSource? source = await showModalBottomSheet<ImageSource>(
+        context: context,
+        builder: (context) => Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Tomar foto'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Elegir de galería'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      );
 
-  /// Remueve la imagen seleccionada (funcionalidad próximamente)
-  // void _removeImage() {
-  //   // Implementación próxima
-  // }
+      if (source != null) {
+        final XFile? image = await picker.pickImage(
+          source: source,
+          maxWidth: 1024,
+          maxHeight: 1024,
+          imageQuality: 85,
+        );
+
+        if (image != null) {
+          setState(() {
+            _selectedImage = File(image.path);
+            _uploadedImageUrl = null; // Reset uploaded URL when new image selected
+          });
+          
+          // Subir imagen automáticamente
+          await _uploadImage();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al seleccionar imagen: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Sube la imagen seleccionada al servidor
+  Future<void> _uploadImage() async {
+    if (_selectedImage == null) return;
+
+    setState(() => _isUploadingImage = true);
+
+    try {
+      final response = await MenuService.uploadProductImage(_selectedImage!);
+      
+      if (response.isSuccess && response.data != null) {
+        setState(() {
+          _uploadedImageUrl = response.data!.imageUrl;
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Imagen subida exitosamente'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al subir imagen: ${response.message}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        // Reset image selection on upload failure
+        setState(() {
+          _selectedImage = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al subir imagen: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      setState(() {
+        _selectedImage = null;
+      });
+    } finally {
+      setState(() => _isUploadingImage = false);
+    }
+  }
+
+  /// Remueve la imagen seleccionada
+  void _removeImage() {
+    setState(() {
+      _selectedImage = null;
+      _uploadedImageUrl = null;
+    });
+  }
 
   /// Guarda el nuevo producto
   Future<void> _saveProduct() async {
@@ -127,6 +239,27 @@ class _AddProductFormState extends State<AddProductForm> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor selecciona una subcategoría'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Validar que si hay imagen seleccionada, esté subida
+    if (_selectedImage != null && _uploadedImageUrl == null && !_isUploadingImage) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Espera a que termine de subirse la imagen'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (_isUploadingImage) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Espera a que termine de subirse la imagen'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -155,6 +288,7 @@ class _AddProductFormState extends State<AddProductForm> {
         description: _descriptionController.text.trim().isNotEmpty 
             ? _descriptionController.text.trim() 
             : null,
+        imageUrl: _uploadedImageUrl, // Incluir URL de imagen subida
         price: price,
         isAvailable: true,
         modifierGroupIds: _selectedModifierGroupIds.toList(),
@@ -418,111 +552,141 @@ class _AddProductFormState extends State<AddProductForm> {
                         color: Colors.grey[600],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.blue[50],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue[200]!),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Colors.blue[600],
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'La funcionalidad de subida de imágenes estará disponible próximamente',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.blue[700],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    
                     // Widget de selección de imagen
-                    Container(
-                      height: 120,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Colors.grey[300]!,
-                          width: 2,
-                          style: BorderStyle.solid,
+                    InkWell(
+                      onTap: _selectedImage == null && !_isUploadingImage ? _selectImage : null,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        height: 120,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: _uploadedImageUrl != null 
+                                ? Colors.green[300]! 
+                                : Colors.grey[300]!,
+                            width: 2,
+                            style: BorderStyle.solid,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: _selectedImage == null
-                          ? Container(
-                              decoration: BoxDecoration(
-                                color: Colors.grey[100],
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                        child: _selectedImage == null
+                            ? Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    if (_isUploadingImage) ...[
+                                      const CircularProgressIndicator(),
+                                      const SizedBox(height: 8),
+                                      const Text(
+                                        'Subiendo imagen...',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                    ] else ...[
+                                      Icon(
+                                        Icons.add_photo_alternate,
+                                        size: 40,
+                                        color: Colors.grey[400],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Toca para seleccionar imagen',
+                                        style: TextStyle(
+                                          color: Colors.grey[500],
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      Text(
+                                        'JPG, PNG (máx. 5MB)',
+                                        style: TextStyle(
+                                          color: Colors.grey[400],
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              )
+                            : Stack(
                                 children: [
-                                  Icon(
-                                    Icons.add_photo_alternate,
-                                    size: 40,
-                                    color: Colors.grey[400],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Funcionalidad próximamente',
-                                    style: TextStyle(
-                                      color: Colors.grey[500],
-                                      fontSize: 14,
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Image.file(
+                                      _selectedImage!,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                      fit: BoxFit.cover,
                                     ),
                                   ),
-                                  Text(
-                                    'JPG, PNG (máx. 2MB)',
-                                    style: TextStyle(
-                                      color: Colors.grey[400],
-                                      fontSize: 12,
+                                  // Overlay para mostrar estado de subida
+                                  if (_isUploadingImage)
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.black54,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: const Center(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            CircularProgressIndicator(
+                                              color: Colors.white,
+                                            ),
+                                            SizedBox(height: 8),
+                                            Text(
+                                              'Subiendo...',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  // Indicador de éxito
+                                  if (_uploadedImageUrl != null && !_isUploadingImage)
+                                    Positioned(
+                                      top: 8,
+                                      left: 8,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.green,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.check,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
+                                      ),
+                                    ),
+                                  // Botón para eliminar
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: Container(
+                                      decoration: const BoxDecoration(
+                                        color: Colors.black54,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          Icons.close,
+                                          color: Colors.white,
+                                          size: 20,
+                                        ),
+                                        onPressed: _isUploadingImage ? null : _removeImage,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
-                            )
-                          : Stack(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Image.file(
-                                    _selectedImage!,
-                                    width: double.infinity,
-                                    height: double.infinity,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 8,
-                                  right: 8,
-                                  child: Container(
-                                    decoration: const BoxDecoration(
-                                      color: Colors.black54,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: IconButton(
-                                      icon: const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                        size: 20,
-                                      ),
-                                      onPressed: () {}, // _removeImage - funcionalidad próximamente
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                      ),
                     ),
                     const SizedBox(height: 24),
 

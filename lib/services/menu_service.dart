@@ -1,6 +1,11 @@
 import 'package:flutter/foundation.dart' hide Category;
+import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../models/menu/menu_models.dart';
 import '../models/api_response.dart';
+import '../models/owner/restaurant_profile.dart';
 import 'api_service.dart';
 import 'token_manager.dart';
 
@@ -49,7 +54,7 @@ class MenuService {
   static Future<ApiResponse<List<Subcategory>>> getSubcategories({
     int? categoryId,
     int page = 1,
-    int pageSize = 20,
+    int pageSize = 10,
   }) async {
     try {
       debugPrint('📋 MenuService: Obteniendo subcategorías...');
@@ -103,7 +108,7 @@ class MenuService {
     int? subcategoryId,
     bool? isAvailable,
     int page = 1,
-    int pageSize = 100,
+    int pageSize = 20, // Alineado con backend: default 20, max 100
   }) async {
     try {
       debugPrint('🍕 MenuService: Obteniendo productos...');
@@ -801,6 +806,99 @@ class MenuService {
         status: 'error',
         message: 'Error al eliminar opción de modificador: ${e.toString()}',
       );
+    }
+  }
+
+  // ========== SUBIDA DE IMÁGENES ==========
+
+  /// Sube una imagen para un producto
+  static Future<ApiResponse<ProductImageUploadResponse>> uploadProductImage(File imageFile) async {
+    try {
+      debugPrint('📸 MenuService: Subiendo imagen de producto...');
+      
+      final headers = await TokenManager.getAuthHeaders();
+      // Remover Content-Type para que se establezca automáticamente en multipart
+      headers.remove('Content-Type');
+      
+      final uri = Uri.parse('${ApiService.fullUrl}/restaurant/products/upload-image');
+      final request = http.MultipartRequest('POST', uri);
+      
+      // Agregar headers de autenticación
+      request.headers.addAll(headers);
+      
+      // Agregar el archivo de imagen
+      final mimeType = _getMimeType(imageFile.path);
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'image', // Nombre del campo según la documentación del backend
+          imageFile.path,
+          contentType: mimeType != null ? MediaType.parse(mimeType) : null,
+        ),
+      );
+      
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      debugPrint('📸 Respuesta del servidor: ${response.statusCode}');
+      debugPrint('📸 Body: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+        
+        if (responseData['status'] == 'success') {
+          final uploadResponse = ProductImageUploadResponse.fromJson(responseData['data']);
+          
+          debugPrint('✅ Imagen de producto subida: ${uploadResponse.imageUrl}');
+          
+          return ApiResponse<ProductImageUploadResponse>(
+            status: 'success',
+            message: responseData['message'] ?? 'Imagen subida exitosamente',
+            data: uploadResponse,
+          );
+        } else {
+          return ApiResponse<ProductImageUploadResponse>(
+            status: 'error',
+            message: responseData['message'] ?? 'Error al subir imagen',
+            code: responseData['code'],
+          );
+        }
+      } else {
+        // Manejo de errores HTTP
+        try {
+          final errorData = jsonDecode(response.body) as Map<String, dynamic>;
+          return ApiResponse<ProductImageUploadResponse>(
+            status: 'error',
+            message: errorData['message'] ?? 'Error ${response.statusCode}',
+            code: errorData['code'],
+          );
+        } catch (e) {
+          return ApiResponse<ProductImageUploadResponse>(
+            status: 'error',
+            message: 'Error ${response.statusCode}: ${response.body}',
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ MenuService.uploadProductImage: Error: $e');
+      return ApiResponse<ProductImageUploadResponse>(
+        status: 'error',
+        message: 'Error al subir imagen de producto: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Obtiene el MIME type del archivo según su extensión
+  /// Solo permite: JPG, JPEG, PNG (según documentación del backend)
+  static String? _getMimeType(String filePath) {
+    final extension = filePath.split('.').last.toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      default:
+        return null;
     }
   }
 }

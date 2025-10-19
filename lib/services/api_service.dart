@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/api_response.dart';
 import 'token_interceptor.dart';
+import 'navigation_service.dart';
+import '../config/app_routes.dart';
 import '../core/constants/api_constants.dart';
 
 class ApiService {
@@ -57,7 +59,13 @@ class ApiService {
         break;
       case 403:
         message = responseData['message'] ?? 'Cuenta no verificada';
-        code = 'ACCOUNT_NOT_VERIFIED';
+        code = responseData['code'];
+        
+        // Manejo específico para LOCATION_REQUIRED
+        if (code == 'LOCATION_REQUIRED') {
+          // Navegar automáticamente a la pantalla de configuración de ubicación
+          _navigateToLocationSetup();
+        }
         break;
       case 404:
         message = responseData['message'] ?? 'Usuario no encontrado';
@@ -259,6 +267,22 @@ class ApiService {
         status: 'error',
         message: 'Error inesperado: ${e.toString()}',
       );
+    }
+  }
+
+  /// Navega a la pantalla de configuración de ubicación cuando se recibe el error LOCATION_REQUIRED
+  static void _navigateToLocationSetup() {
+    try {
+      // Verificar que tenemos un contexto de navegación disponible
+      final context = NavigationService.currentContext;
+      if (context != null) {
+        // Navegar a la pantalla de configuración de ubicación del restaurante
+        NavigationService.pushNamedAndRemoveUntil(
+          AppRoutes.setRestaurantLocation,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error al navegar a configuración de ubicación: $e');
     }
   }
 }

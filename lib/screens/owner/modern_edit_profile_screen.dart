@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../models/owner/restaurant_profile.dart';
 import '../../services/restaurant_service.dart';
 import '../../theme.dart';
+import '../../config/app_routes.dart';
 
 class ModernEditProfileScreen extends StatefulWidget {
   const ModernEditProfileScreen({super.key});
@@ -247,6 +248,35 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
       _showErrorSnackBar('Error al cargar el perfil: $e');
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  /// Recarga la dirección desde la API de ubicación para sincronizar con cambios
+  Future<void> _reloadAddressFromLocation() async {
+    try {
+      final response = await RestaurantService.getLocationStatus();
+      if (response.isSuccess && response.data != null) {
+        final data = response.data;
+        final isLocationSet = data?['isLocationSet'] as bool? ?? false;
+        
+        if (isLocationSet) {
+          final locationData = data?['location'] as Map<String, dynamic>?;
+          if (locationData != null) {
+            final address = locationData['address'] as String?;
+            if (address != null && address.isNotEmpty && mounted) {
+              // Solo actualizar si es diferente al valor actual
+              if (_addressController.text.trim() != address.trim()) {
+                setState(() {
+                  _addressController.text = address;
+                });
+                debugPrint('📍 Dirección sincronizada desde ubicación: $address');
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error al recargar dirección desde ubicación: $e');
     }
   }
 
@@ -1092,24 +1122,7 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
                 const SizedBox(height: 20),
                 
                 // Dirección
-                _buildCleanTextField(
-                  controller: _addressController,
-                  label: 'Dirección',
-                  hint: 'Calle, número, colonia, ciudad...',
-                  maxLines: 2,
-                  maxLength: 500,
-                  validator: (value) {
-                    if (value != null && value.trim().isNotEmpty) {
-                      if (value.trim().length < 5) {
-                        return 'La dirección debe tener al menos 5 caracteres';
-                      }
-                      if (value.trim().length > 500) {
-                        return 'La dirección debe tener máximo 500 caracteres';
-                      }
-                    }
-                    return null;
-                  },
-                ),
+                _buildAddressField(),
               ],
             ),
           ),
@@ -1204,6 +1217,127 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
               color: Colors.red,
               fontWeight: FontWeight.w500,
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAddressField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Label y botón para ir a configuración de ubicación
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Dirección',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: onSurfaceColor,
+                ),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () async {
+                final result = await Navigator.pushNamed(context, AppRoutes.setRestaurantLocation);
+                if (result == true && mounted) {
+                  // La ubicación se actualizó, recargar la dirección
+                  await _reloadAddressFromLocation();
+                }
+              },
+              icon: const Icon(Icons.location_on_rounded, size: 18),
+              label: const Text('Configurar en mapa'),
+              style: TextButton.styleFrom(
+                foregroundColor: primaryOrange,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        
+        // Campo de texto de dirección
+        TextFormField(
+          controller: _addressController,
+          maxLines: 2,
+          maxLength: 500,
+          validator: (value) {
+            if (value != null && value.trim().isNotEmpty) {
+              if (value.trim().length < 5) {
+                return 'La dirección debe tener al menos 5 caracteres';
+              }
+              if (value.trim().length > 500) {
+                return 'La dirección debe tener máximo 500 caracteres';
+              }
+            }
+            return null;
+          },
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: onSurfaceColor,
+          ),
+          decoration: InputDecoration(
+            hintText: 'Calle, número, colonia, ciudad...',
+            filled: true,
+            fillColor: surfaceVariantColor,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: outlineColor.withValues(alpha: 0.2),
+                width: 1,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: outlineColor.withValues(alpha: 0.2),
+                width: 1,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: primaryOrange,
+                width: 2,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Colors.red,
+                width: 1,
+              ),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Colors.red,
+                width: 2,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+            hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: outlineColor.withValues(alpha: 0.7),
+            ),
+            counterStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: outlineColor,
+            ),
+            errorStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Colors.red,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'También puedes configurar la ubicación exacta en el mapa',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: outlineColor,
+            fontStyle: FontStyle.italic,
           ),
         ),
       ],

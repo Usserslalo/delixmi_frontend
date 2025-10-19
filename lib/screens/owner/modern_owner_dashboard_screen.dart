@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../config/app_routes.dart';
 import '../../services/auth_service.dart';
+import '../../services/restaurant_service.dart';
 
 class ModernOwnerDashboardScreen extends StatefulWidget {
   const ModernOwnerDashboardScreen({super.key});
@@ -14,6 +15,10 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
     with TickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late AnimationController _animationController;
+
+  // Estado de ubicación
+  bool _isLocationSet = true; // Inicialmente true para evitar bloqueos durante carga
+  bool _isCheckingLocation = true;
 
   // Colores Material 3
   static const Color primaryOrange = Color(0xFFF2843A);
@@ -29,6 +34,8 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
+    // Verificar estado de ubicación al inicializar
+    _checkLocationStatus();
   }
 
   @override
@@ -43,6 +50,64 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
     } else {
       _scaffoldKey.currentState!.openDrawer();
     }
+  }
+
+  /// Verifica el estado de configuración de ubicación del restaurante
+  Future<void> _checkLocationStatus() async {
+    try {
+      final response = await RestaurantService.getLocationStatus();
+      if (mounted) {
+        setState(() {
+          _isLocationSet = response.isSuccess && (response.data?['isLocationSet'] as bool? ?? false);
+          _isCheckingLocation = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLocationSet = false; // En caso de error, asumir que no está configurada
+          _isCheckingLocation = false;
+        });
+      }
+    }
+  }
+
+  /// Navega a una ruta verificando primero si la ubicación está configurada
+  void _navigateWithLocationCheck(String routeName, {Map<String, dynamic>? arguments}) {
+    if (!_isLocationSet) {
+      // Mostrar mensaje y navegar a configuración de ubicación
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.location_off, color: Colors.white),
+              SizedBox(width: 8),
+              Expanded(child: Text('Debes configurar la ubicación de tu restaurante primero')),
+            ],
+          ),
+          backgroundColor: Colors.orange,
+          action: SnackBarAction(
+            label: 'Configurar',
+            textColor: Colors.white,
+            onPressed: () {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.setRestaurantLocation,
+                (route) => false,
+              );
+            },
+          ),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Si la ubicación está configurada, navegar normalmente
+    Navigator.pushNamed(context, routeName, arguments: arguments);
   }
 
   @override
@@ -157,8 +222,9 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
                       subtitle: 'Categorías, productos y modificadores',
                       onTap: () {
                         Navigator.pop(context);
-                        Navigator.pushNamed(context, AppRoutes.ownerMenu);
+                        _navigateWithLocationCheck(AppRoutes.ownerCategories);
                       },
+                      isEnabled: _isLocationSet,
                     ),
                     _buildDrawerItem(
                       icon: Icons.tune_rounded,
@@ -166,16 +232,34 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
                       subtitle: 'Opciones de personalización',
                       onTap: () {
                         Navigator.pop(context);
-                        Navigator.pushNamed(context, AppRoutes.ownerModifierGroups);
+                        _navigateWithLocationCheck(AppRoutes.ownerModifierGroups);
                       },
+                      isEnabled: _isLocationSet,
                     ),
                     _buildDrawerItem(
                       icon: Icons.store_rounded,
                       title: 'Configurar Perfil',
                       subtitle: 'Información del restaurante',
-                      onTap: () {
+                      onTap: () async {
                         Navigator.pop(context);
-                        Navigator.pushNamed(context, AppRoutes.ownerProfileEdit);
+                        final result = await Navigator.pushNamed(context, AppRoutes.ownerProfileEdit);
+                        // Recargar dashboard si hubo cambios en el perfil
+                        if (result == true && mounted) {
+                          // El perfil se actualizó, no necesitamos hacer nada especial aquí
+                        }
+                      },
+                    ),
+                    _buildDrawerItem(
+                      icon: Icons.location_on_rounded,
+                      title: 'Ubicación del Restaurante',
+                      subtitle: 'Configurar dirección y posición',
+                      onTap: () async {
+                        Navigator.pop(context);
+                        final result = await Navigator.pushNamed(context, AppRoutes.setRestaurantLocation);
+                        // Recargar estado de ubicación si se actualizó
+                        if (result == true && mounted) {
+                          _checkLocationStatus();
+                        }
                       },
                     ),
                   ],
@@ -330,13 +414,16 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    bool isEnabled = true,
   }) {
+    final disabledColor = outlineColor.withValues(alpha: 0.5);
+    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap,
+          onTap: isEnabled ? onTap : null,
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
@@ -345,13 +432,15 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: primaryOrange.withValues(alpha: 0.1),
+                    color: isEnabled 
+                        ? primaryOrange.withValues(alpha: 0.1)
+                        : disabledColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     icon,
                     size: 20,
-                    color: primaryOrange,
+                    color: isEnabled ? primaryOrange : disabledColor,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -361,10 +450,10 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: onSurfaceColor,
+                          color: isEnabled ? onSurfaceColor : disabledColor,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -372,7 +461,7 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
                         subtitle,
                         style: TextStyle(
                           fontSize: 12,
-                          color: outlineColor,
+                          color: isEnabled ? outlineColor : disabledColor,
                         ),
                       ),
                     ],
@@ -381,7 +470,7 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
                 Icon(
                   Icons.chevron_right_rounded,
                   size: 20,
-                  color: outlineColor,
+                  color: isEnabled ? outlineColor : disabledColor,
                 ),
               ],
             ),
@@ -468,6 +557,11 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
         SliverToBoxAdapter(
           child: _buildWelcomeSection(context, restaurantId),
         ),
+        // Mostrar alerta de ubicación si no está configurada
+        if (!_isCheckingLocation && !_isLocationSet)
+          SliverToBoxAdapter(
+            child: _buildLocationWarningBanner(context),
+          ),
         SliverToBoxAdapter(
           child: _buildQuickStatsSection(context),
         ),
@@ -481,6 +575,89 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
           child: SizedBox(height: 24),
         ),
       ],
+    );
+  }
+
+  /// Banner de advertencia cuando la ubicación no está configurada
+  Widget _buildLocationWarningBanner(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.orange.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.location_off_rounded,
+              color: Colors.orange,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Ubicación Requerida',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.orange,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Debes configurar la ubicación de tu restaurante para acceder a todas las funciones.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.orange.withValues(alpha: 0.8),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.setRestaurantLocation,
+                (route) => false,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            child: const Text(
+              'Configurar',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -702,7 +879,8 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
             title: 'Gestionar Mi Menú',
             subtitle: 'Administra categorías, productos y modificadores',
             color: Colors.blue,
-            onTap: () => Navigator.pushNamed(context, AppRoutes.ownerMenu),
+            onTap: () => _navigateWithLocationCheck(AppRoutes.ownerCategories),
+            isEnabled: _isLocationSet,
           ),
           const SizedBox(height: 12),
           _buildActionCard(
@@ -711,7 +889,8 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
             title: 'Grupos de Modificadores',
             subtitle: 'Crea opciones de personalización para tus productos',
             color: Colors.purple,
-            onTap: () => Navigator.pushNamed(context, AppRoutes.ownerModifierGroups),
+            onTap: () => _navigateWithLocationCheck(AppRoutes.ownerModifierGroups),
+            isEnabled: _isLocationSet,
           ),
           const SizedBox(height: 12),
           _buildActionCard(
@@ -720,7 +899,25 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
             title: 'Configurar Perfil',
             subtitle: 'Actualiza la información de tu restaurante',
             color: Colors.green,
-            onTap: () => Navigator.pushNamed(context, AppRoutes.ownerProfileEdit),
+            onTap: () async {
+              await Navigator.pushNamed(context, AppRoutes.ownerProfileEdit);
+              // El perfil se actualizó, no necesitamos hacer nada especial aquí
+            },
+          ),
+          const SizedBox(height: 12),
+          _buildActionCard(
+            context: context,
+            icon: Icons.location_on_rounded,
+            title: 'Ubicación del Restaurante',
+            subtitle: 'Configurar dirección y posición del negocio',
+            color: Colors.orange,
+            onTap: () async {
+              final result = await Navigator.pushNamed(context, AppRoutes.setRestaurantLocation);
+              // Recargar estado de ubicación si se actualizó
+              if (result == true && mounted) {
+                _checkLocationStatus();
+              }
+            },
           ),
         ],
       ),
@@ -734,11 +931,14 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
     required String subtitle,
     required Color color,
     required VoidCallback onTap,
+    bool isEnabled = true,
   }) {
+    final disabledColor = outlineColor.withValues(alpha: 0.5);
+    
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: isEnabled ? onTap : null,
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.all(20),
@@ -760,7 +960,7 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
                 child: Icon(
                   icon,
                   size: 24,
-                  color: color,
+                  color: isEnabled ? color : disabledColor,
                 ),
               ),
               const SizedBox(width: 16),
@@ -770,10 +970,10 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: onSurfaceColor,
+                        color: isEnabled ? onSurfaceColor : disabledColor,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -781,7 +981,7 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
                       subtitle,
                       style: TextStyle(
                         fontSize: 12,
-                        color: outlineColor,
+                        color: isEnabled ? outlineColor : disabledColor,
                         height: 1.3,
                       ),
                     ),
@@ -791,7 +991,7 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
               Icon(
                 Icons.chevron_right_rounded,
                 size: 24,
-                color: outlineColor,
+                color: isEnabled ? outlineColor : disabledColor,
               ),
             ],
           ),

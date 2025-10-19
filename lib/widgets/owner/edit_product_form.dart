@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import '../../models/menu/menu_models.dart';
 import '../../models/api_response.dart';
 import '../../services/menu_service.dart';
@@ -30,6 +33,13 @@ class _EditProductFormState extends State<EditProductForm> {
   
   int? _selectedSubcategoryId;
   Set<int> _selectedModifierGroupIds = {};
+  bool _modifierGroupsInitialized = false; // Control para evitar sobreescribir la selección
+  
+  // Variables para manejo de imagen
+  File? _selectedImage;
+  String? _uploadedImageUrl;
+  String? _currentImageUrl; // URL actual del producto
+  bool _isUploadingImage = false;
   
   // Valores originales para comparación
   late String _originalName;
@@ -37,6 +47,7 @@ class _EditProductFormState extends State<EditProductForm> {
   late double _originalPrice;
   late int _originalSubcategoryId;
   late Set<int> _originalModifierGroupIds;
+  late String? _originalImageUrl;
 
   @override
   void initState() {
@@ -54,9 +65,19 @@ class _EditProductFormState extends State<EditProductForm> {
     _selectedSubcategoryId = widget.product.subcategory?.id;
     
     // Pre-seleccionar grupos de modificadores actuales
+    // NOTA: El endpoint GET ahora incluye modifierGroups correctamente
     _selectedModifierGroupIds = widget.product.modifierGroups
         .map((g) => g.id)
         .toSet();
+    _modifierGroupsInitialized = true; // Ya siempre inicializados desde el producto
+    
+    debugPrint('🔍 EditProductForm: Modificadores del producto inicializados:');
+    debugPrint('🔍 Product modifierGroups: ${widget.product.modifierGroups.map((g) => '${g.id}:${g.name}').toList()}');
+    debugPrint('🔍 Selected modifier group IDs: $_selectedModifierGroupIds');
+    debugPrint('🔍 ModifierGroups initialized: $_modifierGroupsInitialized');
+    
+    // Inicializar imagen actual
+    _currentImageUrl = widget.product.imageUrl;
     
     // Guardar valores originales para comparación
     _originalName = widget.product.name;
@@ -64,6 +85,7 @@ class _EditProductFormState extends State<EditProductForm> {
     _originalPrice = widget.product.price;
     _originalSubcategoryId = widget.product.subcategory?.id ?? 0;
     _originalModifierGroupIds = Set<int>.from(_selectedModifierGroupIds);
+    _originalImageUrl = widget.product.imageUrl;
     
     _loadFormData();
   }
@@ -76,11 +98,16 @@ class _EditProductFormState extends State<EditProductForm> {
     super.dispose();
   }
 
-  /// Carga subcategorías y grupos de modificadores en paralelo
+  // NOTA: Ya no necesitamos _loadCompleteProduct() porque el backend
+  // ahora incluye modifierGroups en el endpoint GET /api/restaurant/products
+
+  /// Carga subcategorías y grupos de modificadores
+  /// NOTA: Los modifierGroups del producto ya vienen incluidos desde el endpoint GET actualizado
   Future<void> _loadFormData() async {
     setState(() => _isLoadingData = true);
 
     try {
+      // Cargar datos básicos (ya no necesitamos llamada adicional para modifierGroups)
       final results = await Future.wait([
         MenuService.getSubcategories(pageSize: 100),
         MenuService.getModifierGroups(),
@@ -96,9 +123,29 @@ class _EditProductFormState extends State<EditProductForm> {
       }
 
       if (modifierGroupsResponse.isSuccess && modifierGroupsResponse.data != null) {
+        // Mantener la selección inicializada desde el producto (endpoint GET ya incluye modifierGroups)
+        final currentSelectedIds = Set<int>.from(_selectedModifierGroupIds);
+        
         setState(() {
           _modifierGroups = modifierGroupsResponse.data!;
+          // Asegurar que la selección se mantenga después de cargar los grupos
+          _selectedModifierGroupIds = currentSelectedIds;
         });
+        
+        debugPrint('🔍 EditProductForm: Modificadores cargados del servidor (manteniendo selección):');
+        debugPrint('🔍 Available modifier groups: ${_modifierGroups.map((g) => '${g.id}:${g.name}').toList()}');
+        debugPrint('🔍 Currently selected modifier group IDs: $_selectedModifierGroupIds');
+        
+        // Validar que todos los IDs seleccionados existen en la lista cargada
+        final availableIds = _modifierGroups.map((g) => g.id).toSet();
+        final invalidIds = _selectedModifierGroupIds.difference(availableIds);
+        if (invalidIds.isNotEmpty) {
+          debugPrint('⚠️ EditProductForm: Algunos IDs seleccionados no existen en la lista cargada: $invalidIds');
+          // Remover IDs que no existen
+          setState(() {
+            _selectedModifierGroupIds.removeAll(invalidIds);
+          });
+        }
       }
 
       if (!subcategoriesResponse.isSuccess || !modifierGroupsResponse.isSuccess) {
@@ -134,12 +181,337 @@ class _EditProductFormState extends State<EditProductForm> {
            _descriptionController.text.trim() != _originalDescription ||
            double.tryParse(_priceController.text.trim()) != _originalPrice ||
            _selectedSubcategoryId != _originalSubcategoryId ||
-           !_setEquals(_selectedModifierGroupIds, _originalModifierGroupIds);
+           !_setEquals(_selectedModifierGroupIds, _originalModifierGroupIds) ||
+           _getCurrentImageUrl() != _originalImageUrl;
+  }
+  
+  /// Obtiene la URL actual de la imagen (ya sea la nueva subida o la existente)
+  String? _getCurrentImageUrl() {
+    if (_uploadedImageUrl != null) {
+      return _uploadedImageUrl;
+    }
+    return _currentImageUrl;
   }
 
   bool _setEquals(Set<int> a, Set<int> b) {
     if (a.length != b.length) return false;
     return a.difference(b).isEmpty;
+  }
+
+  /// Selecciona imagen del producto
+  Future<void> _selectImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      
+      // Mostrar opciones de selección
+      final ImageSource? source = await showModalBottomSheet<ImageSource>(
+        context: context,
+        builder: (context) => Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Tomar foto'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Elegir de galería'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (source != null) {
+        final XFile? image = await picker.pickImage(
+          source: source,
+          maxWidth: 1024,
+          maxHeight: 1024,
+          imageQuality: 85,
+        );
+
+        if (image != null) {
+          setState(() {
+            _selectedImage = File(image.path);
+            // No resetear _uploadedImageUrl aquí para mantener la imagen actual
+          });
+          
+          // Subir imagen automáticamente
+          await _uploadImage();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al seleccionar imagen: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Sube la imagen seleccionada al servidor
+  Future<void> _uploadImage() async {
+    if (_selectedImage == null) return;
+
+    setState(() => _isUploadingImage = true);
+
+    try {
+      final response = await MenuService.uploadProductImage(_selectedImage!);
+      
+      if (response.isSuccess && response.data != null) {
+        setState(() {
+          _uploadedImageUrl = response.data!.imageUrl;
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Imagen subida exitosamente'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al subir imagen: ${response.message}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        // Reset image selection on upload failure
+        setState(() {
+          _selectedImage = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al subir imagen: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      setState(() {
+        _selectedImage = null;
+      });
+    } finally {
+      setState(() => _isUploadingImage = false);
+    }
+  }
+
+  /// Remueve la imagen seleccionada o actual
+  void _removeImage() {
+    setState(() {
+      _selectedImage = null;
+      _uploadedImageUrl = null;
+      _currentImageUrl = null;
+    });
+  }
+
+  /// Construye el widget de imagen
+  Widget _buildImageWidget() {
+    // Si hay imagen seleccionada (nueva)
+    if (_selectedImage != null) {
+      return Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.file(
+              _selectedImage!,
+              width: double.infinity,
+              height: double.infinity,
+              fit: BoxFit.cover,
+            ),
+          ),
+          // Overlay para mostrar estado de subida
+          if (_isUploadingImage)
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(
+                      color: Colors.white,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Subiendo...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          // Indicador de éxito
+          if (_uploadedImageUrl != null && !_isUploadingImage)
+            Positioned(
+              top: 8,
+              left: 8,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ),
+            ),
+          // Botón para eliminar
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                onPressed: _isUploadingImage ? null : _removeImage,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    
+    // Si hay imagen actual (del producto existente)
+    if (_currentImageUrl != null && _currentImageUrl!.isNotEmpty) {
+      return Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.network(
+              _currentImageUrl!,
+              width: double.infinity,
+              height: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Colors.grey[200],
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.broken_image,
+                        size: 40,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Error al cargar imagen',
+                        style: TextStyle(
+                          color: Colors.grey[500],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          // Botón para eliminar imagen actual
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                onPressed: _removeImage,
+              ),
+            ),
+          ),
+          // Indicador de imagen actual
+          Positioned(
+            top: 8,
+            left: 8,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.blue[700],
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text(
+                'Actual',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    
+    // Estado sin imagen
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.add_photo_alternate,
+            size: 40,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Toca para seleccionar imagen',
+            style: TextStyle(
+              color: Colors.grey[500],
+              fontSize: 14,
+            ),
+          ),
+          Text(
+            'JPG, PNG (máx. 5MB)',
+            style: TextStyle(
+              color: Colors.grey[400],
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Actualiza el producto
@@ -152,6 +524,27 @@ class _EditProductFormState extends State<EditProductForm> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor selecciona una subcategoría'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Validar que si hay imagen seleccionada, esté subida
+    if (_selectedImage != null && _uploadedImageUrl == null && !_isUploadingImage) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Espera a que termine de subirse la imagen'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (_isUploadingImage) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Espera a que termine de subirse la imagen'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -186,6 +579,7 @@ class _EditProductFormState extends State<EditProductForm> {
       }
 
       // Construir body solo con campos que cambiaron
+      final currentImageUrl = _getCurrentImageUrl();
       final response = await MenuService.updateProduct(
         productId: widget.product.id,
         name: _nameController.text.trim() != _originalName 
@@ -201,6 +595,7 @@ class _EditProductFormState extends State<EditProductForm> {
         modifierGroupIds: !_setEquals(_selectedModifierGroupIds, _originalModifierGroupIds)
             ? _selectedModifierGroupIds.toList()
             : null,
+        imageUrl: currentImageUrl != _originalImageUrl ? currentImageUrl : null,
       );
 
       if (response.isSuccess && response.data != null) {
@@ -255,7 +650,7 @@ class _EditProductFormState extends State<EditProductForm> {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20, // Padding adicional para evitar overflow
         left: 16,
         right: 16,
         top: 16,
@@ -265,6 +660,7 @@ class _EditProductFormState extends State<EditProductForm> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -371,7 +767,10 @@ class _EditProductFormState extends State<EditProductForm> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(subcategory.name),
+                              Text(
+                                subcategory.name,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                               if (subcategory.category != null)
                                 Text(
                                   subcategory.category!.name,
@@ -379,6 +778,7 @@ class _EditProductFormState extends State<EditProductForm> {
                                     fontSize: 11,
                                     color: Colors.grey[600],
                                   ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                             ],
                           ),
@@ -466,6 +866,46 @@ class _EditProductFormState extends State<EditProductForm> {
                         }
                         return null;
                       },
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Sección de Imagen del Producto
+                    const Text(
+                      'Imagen del Producto',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Cambia la imagen actual de tu producto (opcional)',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // Widget de selección de imagen
+                    InkWell(
+                      onTap: _selectedImage == null && !_isUploadingImage ? _selectImage : null,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        height: 120,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: _uploadedImageUrl != null || _currentImageUrl != null
+                                ? Colors.green[300]! 
+                                : Colors.grey[300]!,
+                            width: 2,
+                            style: BorderStyle.solid,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: _buildImageWidget(),
+                      ),
                     ),
                     const SizedBox(height: 24),
 

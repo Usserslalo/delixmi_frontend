@@ -3,7 +3,12 @@ import '../../models/menu/menu_models.dart';
 import '../../services/menu_service.dart';
 
 class AddSubcategoryForm extends StatefulWidget {
-  const AddSubcategoryForm({super.key});
+  final int? preselectedCategoryId;
+  
+  const AddSubcategoryForm({
+    super.key,
+    this.preselectedCategoryId,
+  });
 
   @override
   State<AddSubcategoryForm> createState() => _AddSubcategoryFormState();
@@ -21,6 +26,7 @@ class _AddSubcategoryFormState extends State<AddSubcategoryForm> {
   @override
   void initState() {
     super.initState();
+    _selectedCategoryId = widget.preselectedCategoryId;
     _loadCategories();
   }
 
@@ -40,9 +46,14 @@ class _AddSubcategoryFormState extends State<AddSubcategoryForm> {
       if (response.isSuccess && response.data != null) {
         setState(() {
           _categories = response.data!;
-          // Pre-seleccionar la primera categoría si existe
-          if (_categories.isNotEmpty) {
+          // Pre-seleccionar categoría si no hay una preseleccionada o si la preseleccionada no es válida
+          if (_selectedCategoryId == null && _categories.isNotEmpty) {
             _selectedCategoryId = _categories.first.id;
+          }
+          // Validar que la categoría preseleccionada existe en la lista
+          else if (_selectedCategoryId != null && 
+                   !_categories.any((c) => c.id == _selectedCategoryId)) {
+            _selectedCategoryId = _categories.isNotEmpty ? _categories.first.id : null;
           }
         });
       } else {

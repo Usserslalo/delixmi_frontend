@@ -299,11 +299,13 @@ class MenuProduct {
 class SubcategoryInfo {
   final int id;
   final String name;
+  final int displayOrder;
   final CategoryInfo? category;
 
   SubcategoryInfo({
     required this.id,
     required this.name,
+    required this.displayOrder,
     this.category,
   });
 
@@ -311,6 +313,7 @@ class SubcategoryInfo {
     return SubcategoryInfo(
       id: json['id'],
       name: json['name'],
+      displayOrder: json['displayOrder'] ?? 0,
       category: json['category'] != null 
           ? CategoryInfo.fromJson(json['category']) 
           : null,
@@ -321,6 +324,7 @@ class SubcategoryInfo {
     return {
       'id': id,
       'name': name,
+      'displayOrder': displayOrder,
       'category': category?.toJson(),
     };
   }

@@ -36,6 +36,10 @@ class AppRoutes {
   static const String ownerProfileEdit = '/owner_profile_edit';
   static const String ownerMenu = '/owner_menu';
   static const String ownerModifierGroups = '/owner_modifier_groups';
+  static const String ownerCategories = '/owner_categories';
+  static const String ownerSubcategories = '/owner_subcategories';
+  static const String ownerProducts = '/owner_products';
+  static const String setRestaurantLocation = '/set_restaurant_location';
 
   // ===== RUTAS DE REPARTIDOR =====
   static const String driverDashboard = '/driver_dashboard';

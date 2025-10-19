@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../config/app_routes.dart';
 import '../../services/auth_service.dart';
+import '../../services/restaurant_service.dart';
 import '../../models/auth/user.dart' as auth_user;
 import '../../utils/auth_error_handler.dart';
 
@@ -60,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final primaryRole = user.roles.first.roleName;
       
       // Redirigir según el rol
-      _redirectByRole(primaryRole, user);
+      await _redirectByRole(primaryRole, user);
       
     } catch (e) {
       if (mounted) {
@@ -79,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
   
   /// Redirige al usuario a la pantalla correcta según su rol
-  void _redirectByRole(String roleName, auth_user.User user) {
+  Future<void> _redirectByRole(String roleName, auth_user.User user) async {
     // Logging para debugging
     // debugPrint('🔑 Redirigiendo usuario con rol: $roleName');
     
@@ -99,14 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
       
       // ===== ROLES DE RESTAURANTE =====
       case 'owner':
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          AppRoutes.ownerDashboard,
-          (route) => false,
-          arguments: {
-            'restaurantId': user.roles.first.restaurantId,
-          },
-        );
+        await _handleOwnerLogin(context, user);
         break;
         
       case 'branch_manager':
@@ -163,6 +157,58 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  /// Maneja el login específico del Owner verificando la ubicación del restaurante
+  Future<void> _handleOwnerLogin(BuildContext context, auth_user.User user) async {
+    try {
+      // Verificar si la ubicación del restaurante está configurada
+      final locationStatusResponse = await RestaurantService.getLocationStatus();
+      
+      if (!locationStatusResponse.isSuccess) {
+        // Error al verificar el estado de ubicación - navegar al dashboard por defecto
+        // (el usuario podrá configurar la ubicación desde allí si es necesario)
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.ownerDashboard,
+          (route) => false,
+          arguments: {
+            'restaurantId': user.roles.first.restaurantId,
+          },
+        );
+        return;
+      }
+
+      final isLocationSet = locationStatusResponse.data?['isLocationSet'] as bool? ?? false;
+      
+      if (!isLocationSet) {
+        // La ubicación NO está configurada - forzar configuración
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.setRestaurantLocation,
+          (route) => false,
+        );
+      } else {
+        // La ubicación SÍ está configurada - navegar al dashboard normalmente
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.ownerDashboard,
+          (route) => false,
+          arguments: {
+            'restaurantId': user.roles.first.restaurantId,
+          },
+        );
+      }
+    } catch (e) {
+      // Error inesperado - navegar al dashboard por defecto
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.ownerDashboard,
+        (route) => false,
+        arguments: {
+          'restaurantId': user.roles.first.restaurantId,
+        },
+      );
+    }
+  }
 
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) {

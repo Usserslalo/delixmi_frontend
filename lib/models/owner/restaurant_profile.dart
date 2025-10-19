@@ -221,4 +221,52 @@ class UploadImageResponse {
       mimetype: json['mimetype'],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'logoUrl': logoUrl,
+      'coverPhotoUrl': coverPhotoUrl,
+      'filename': filename,
+      'originalName': originalName,
+      'size': size,
+      'mimetype': mimetype,
+    };
+  }
+}
+
+/// Respuesta de subida de imagen de producto
+class ProductImageUploadResponse {
+  final String imageUrl;
+  final String filename;
+  final String originalName;
+  final int size;
+  final String mimetype;
+
+  ProductImageUploadResponse({
+    required this.imageUrl,
+    required this.filename,
+    required this.originalName,
+    required this.size,
+    required this.mimetype,
+  });
+
+  factory ProductImageUploadResponse.fromJson(Map<String, dynamic> json) {
+    return ProductImageUploadResponse(
+      imageUrl: json['imageUrl'],
+      filename: json['filename'],
+      originalName: json['originalName'],
+      size: json['size'],
+      mimetype: json['mimetype'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'imageUrl': imageUrl,
+      'filename': filename,
+      'originalName': originalName,
+      'size': size,
+      'mimetype': mimetype,
+    };
+  }
 }

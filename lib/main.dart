@@ -14,6 +14,10 @@ import 'screens/owner/modern_owner_dashboard_screen.dart';
 import 'screens/owner/modern_edit_profile_screen.dart' as owner_screens;
 import 'screens/owner/menu_management_screen.dart';
 import 'screens/owner/modifier_groups_management_screen.dart';
+import 'screens/owner/categories_list_screen.dart';
+import 'screens/owner/subcategories_list_screen.dart';
+import 'screens/owner/products_list_screen.dart';
+import 'screens/owner/set_restaurant_location_screen.dart';
 import 'screens/driver/driver_dashboard_screen.dart';
 import 'screens/customer/home_screen.dart';
 import 'screens/customer/restaurant_detail_screen.dart';
@@ -372,6 +376,10 @@ class _DelixmiAppState extends State<DelixmiApp> {
         AppRoutes.ownerProfileEdit: (context) => const owner_screens.ModernEditProfileScreen(),
         AppRoutes.ownerMenu: (context) => const MenuManagementScreen(),
         AppRoutes.ownerModifierGroups: (context) => const ModifierGroupsManagementScreen(),
+        AppRoutes.ownerCategories: (context) => const CategoriesListScreen(),
+        AppRoutes.ownerSubcategories: (context) => const SubcategoriesListScreen(),
+        AppRoutes.ownerProducts: (context) => const ProductsListScreen(),
+        AppRoutes.setRestaurantLocation: (context) => const SetRestaurantLocationScreen(),
         
         // ===== RUTAS DE REPARTIDOR =====
         AppRoutes.driverDashboard: (context) => const DriverDashboardScreen(),
