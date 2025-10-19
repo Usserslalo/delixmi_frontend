@@ -429,4 +429,47 @@ class RestaurantService {
       );
     }
   }
+
+  /// Obtiene la información de la sucursal principal del restaurante del owner autenticado
+  static Future<ApiResponse<Map<String, dynamic>>> getPrimaryBranch() async {
+    try {
+      debugPrint('🏢 RestaurantService: Obteniendo sucursal principal...');
+      
+      final headers = await TokenManager.getAuthHeaders();
+      
+      final response = await ApiService.makeRequest<Map<String, dynamic>>(
+        'GET',
+        '/restaurant/primary-branch',
+        headers,
+        null,
+        null,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final branchData = response.data!['branch'];
+        debugPrint('✅ Sucursal principal obtenida: ${branchData['name']} (ID: ${branchData['id']})');
+        
+        return ApiResponse<Map<String, dynamic>>(
+          status: 'success',
+          message: response.message,
+          data: {
+            'branch': branchData,
+          },
+        );
+      } else {
+        debugPrint('❌ Error al obtener sucursal principal: ${response.message}');
+        return ApiResponse<Map<String, dynamic>>(
+          status: response.status,
+          message: response.message,
+          code: response.code,
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ RestaurantService.getPrimaryBranch: Error inesperado: $e');
+      return ApiResponse<Map<String, dynamic>>(
+        status: 'error',
+        message: 'Error al obtener la sucursal principal: ${e.toString()}',
+      );
+    }
+  }
 }

@@ -511,16 +511,42 @@ class _SubcategoriesListScreenState extends State<SubcategoriesListScreen> {
         }
       } else {
         if (mounted) {
+          // Manejo específico de errores según códigos del backend
           String errorMessage = response.message;
+          Color errorColor = Colors.red;
+          IconData errorIcon = Icons.error;
           
-          if (response.code == 'SUBCATEGORY_HAS_PRODUCTS') {
-            errorMessage = 'No se puede eliminar la subcategoría porque contiene productos.\n\nElimina primero todos los productos de esta subcategoría.';
+          switch (response.code) {
+            case 'SUBCATEGORY_HAS_PRODUCTS':
+              errorMessage = 'No se puede eliminar la subcategoría porque contiene productos.\n\nMueva o elimine los productos primero antes de eliminar la subcategoría.';
+              errorColor = Colors.orange;
+              errorIcon = Icons.warning;
+              break;
+            case 'SUBCATEGORY_NOT_FOUND':
+              errorMessage = 'La subcategoría que intentas eliminar no fue encontrada.';
+              errorColor = Colors.red;
+              errorIcon = Icons.search_off;
+              break;
+            case 'FORBIDDEN':
+              errorMessage = 'No tienes permisos para eliminar esta subcategoría.';
+              errorColor = Colors.red;
+              errorIcon = Icons.block;
+              break;
+            default:
+              // Usar el mensaje por defecto del servidor
+              break;
           }
           
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(errorMessage),
-              backgroundColor: Colors.orange,
+              content: Row(
+                children: [
+                  Icon(errorIcon, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(errorMessage)),
+                ],
+              ),
+              backgroundColor: errorColor,
               duration: const Duration(seconds: 6),
               behavior: SnackBarBehavior.floating,
             ),

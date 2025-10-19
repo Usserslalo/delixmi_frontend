@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../models/api_response.dart';
 import 'token_interceptor.dart';
 import 'navigation_service.dart';
+import 'token_manager.dart';
 import '../config/app_routes.dart';
 import '../core/constants/api_constants.dart';
 
@@ -63,6 +64,8 @@ class ApiService {
         
         // Manejo específico para LOCATION_REQUIRED
         if (code == 'LOCATION_REQUIRED') {
+          // Actualizar el estado global de ubicación
+          TokenManager.saveLocationStatus(false);
           // Navegar automáticamente a la pantalla de configuración de ubicación
           _navigateToLocationSetup();
         }

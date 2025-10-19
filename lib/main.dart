@@ -18,6 +18,10 @@ import 'screens/owner/categories_list_screen.dart';
 import 'screens/owner/subcategories_list_screen.dart';
 import 'screens/owner/products_list_screen.dart';
 import 'screens/owner/set_restaurant_location_screen.dart';
+import 'screens/owner/branch_list_screen_for_schedules.dart';
+import 'screens/owner/weekly_schedule_screen.dart';
+import 'screens/owner/edit_single_day_schedule_screen.dart';
+import 'screens/owner/edit_weekly_schedule_screen.dart';
 import 'screens/driver/driver_dashboard_screen.dart';
 import 'screens/customer/home_screen.dart';
 import 'screens/customer/restaurant_detail_screen.dart';
@@ -380,6 +384,10 @@ class _DelixmiAppState extends State<DelixmiApp> {
         AppRoutes.ownerSubcategories: (context) => const SubcategoriesListScreen(),
         AppRoutes.ownerProducts: (context) => const ProductsListScreen(),
         AppRoutes.setRestaurantLocation: (context) => const SetRestaurantLocationScreen(),
+        AppRoutes.ownerBranchesListForSchedules: (context) => const BranchListScreenForSchedules(),
+        AppRoutes.ownerWeeklySchedule: (context) => const WeeklyScheduleScreen(),
+        AppRoutes.ownerEditSingleDaySchedule: (context) => const EditSingleDayScheduleScreen(),
+        AppRoutes.ownerEditWeeklySchedule: (context) => const EditWeeklyScheduleScreen(),
         
         // ===== RUTAS DE REPARTIDOR =====
         AppRoutes.driverDashboard: (context) => const DriverDashboardScreen(),

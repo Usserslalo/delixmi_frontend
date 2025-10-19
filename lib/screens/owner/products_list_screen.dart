@@ -584,16 +584,42 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
         }
       } else {
         if (mounted) {
+          // Manejo específico de errores según códigos del backend
           String errorMessage = response.message;
+          Color errorColor = Colors.red;
+          IconData errorIcon = Icons.error;
           
-          if (response.code == 'PRODUCT_IN_USE') {
-            errorMessage = 'No se puede eliminar el producto porque está en pedidos activos.\n\nConsidera desactivarlo en lugar de eliminarlo.';
+          switch (response.code) {
+            case 'PRODUCT_IN_USE':
+              errorMessage = 'No se puede eliminar el producto porque está asociado a pedidos activos.\n\nConsidera marcarlo como no disponible en lugar de eliminarlo.';
+              errorColor = Colors.orange;
+              errorIcon = Icons.warning;
+              break;
+            case 'PRODUCT_NOT_FOUND':
+              errorMessage = 'El producto que intentas eliminar no fue encontrado.';
+              errorColor = Colors.red;
+              errorIcon = Icons.search_off;
+              break;
+            case 'FORBIDDEN':
+              errorMessage = 'No tienes permisos para eliminar este producto.';
+              errorColor = Colors.red;
+              errorIcon = Icons.block;
+              break;
+            default:
+              // Usar el mensaje por defecto del servidor
+              break;
           }
           
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(errorMessage),
-              backgroundColor: Colors.orange,
+              content: Row(
+                children: [
+                  Icon(errorIcon, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(errorMessage)),
+                ],
+              ),
+              backgroundColor: errorColor,
               duration: const Duration(seconds: 6),
               behavior: SnackBarBehavior.floating,
             ),

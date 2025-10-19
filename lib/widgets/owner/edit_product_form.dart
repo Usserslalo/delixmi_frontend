@@ -612,19 +612,64 @@ class _EditProductFormState extends State<EditProductForm> {
         }
       } else {
         if (mounted) {
+          // Manejo específico de errores según códigos del backend
           String errorMessage = response.message;
+          Color errorColor = Colors.red;
+          IconData errorIcon = Icons.error;
           
-          // Manejo específico de errores
-          if (response.code == 'INVALID_MODIFIER_GROUPS') {
-            errorMessage = 'Algunos grupos de modificadores no pertenecen a tu restaurante.\n\nVerifica los grupos seleccionados.';
-          } else if (response.code == 'NO_FIELDS_TO_UPDATE') {
-            errorMessage = 'No se proporcionaron cambios para actualizar.';
+          switch (response.code) {
+            case 'PRODUCT_NOT_FOUND':
+              errorMessage = 'El producto que intentas editar no fue encontrado.';
+              errorColor = Colors.red;
+              errorIcon = Icons.search_off;
+              break;
+            case 'FORBIDDEN':
+              errorMessage = 'No tienes permisos para editar este producto.';
+              errorColor = Colors.red;
+              errorIcon = Icons.block;
+              break;
+            case 'SUBCATEGORY_NOT_FOUND':
+              errorMessage = 'La subcategoría seleccionada no fue encontrada. Por favor, selecciona otra.';
+              errorColor = Colors.orange;
+              errorIcon = Icons.category_outlined;
+              break;
+            case 'INVALID_SUBCATEGORY':
+              errorMessage = 'La subcategoría debe pertenecer al mismo restaurante del producto.';
+              errorColor = Colors.orange;
+              errorIcon = Icons.warning;
+              break;
+            case 'INVALID_MODIFIER_GROUPS':
+              errorMessage = 'Algunos grupos de modificadores no pertenecen a tu restaurante. Verifica los grupos seleccionados.';
+              errorColor = Colors.orange;
+              errorIcon = Icons.tune;
+              break;
+            case 'NO_FIELDS_TO_UPDATE':
+              errorMessage = 'No hay cambios para actualizar.';
+              errorColor = Colors.blue;
+              errorIcon = Icons.info;
+              break;
+            case 'VALIDATION_ERROR':
+              if (response.errors != null && response.errors!.isNotEmpty) {
+                // Mostrar el primer error de validación específico
+                final firstError = response.errors!.first;
+                errorMessage = firstError['message'] ?? response.message;
+              }
+              break;
+            default:
+              // Usar el mensaje por defecto del servidor
+              break;
           }
           
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(errorMessage),
-              backgroundColor: Colors.orange,
+              content: Row(
+                children: [
+                  Icon(errorIcon, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(errorMessage)),
+                ],
+              ),
+              backgroundColor: errorColor,
               duration: const Duration(seconds: 5),
             ),
           );

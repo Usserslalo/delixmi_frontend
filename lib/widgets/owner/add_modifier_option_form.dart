@@ -77,10 +77,55 @@ class _AddModifierOptionFormState extends State<AddModifierOptionForm> {
         }
       } else {
         if (mounted) {
+          // Manejo específico de errores según códigos del backend
+          String errorMessage = response.message;
+          Color errorColor = Colors.red;
+          IconData errorIcon = Icons.error;
+          
+          switch (response.code) {
+            case 'MODIFIER_GROUP_NOT_FOUND':
+              errorMessage = 'El grupo de modificadores seleccionado no fue encontrado.';
+              errorColor = Colors.red;
+              errorIcon = Icons.search_off;
+              break;
+            case 'INSUFFICIENT_PERMISSIONS':
+              errorMessage = 'No tienes permisos para crear opciones de modificadores.';
+              errorColor = Colors.red;
+              errorIcon = Icons.block;
+              break;
+            case 'NO_RESTAURANT_ASSIGNED':
+              errorMessage = 'No se encontró un restaurante asignado para este usuario.';
+              errorColor = Colors.orange;
+              errorIcon = Icons.restaurant;
+              break;
+            case 'USER_NOT_FOUND':
+              errorMessage = 'Usuario no encontrado. Por favor, inicia sesión nuevamente.';
+              errorColor = Colors.red;
+              errorIcon = Icons.person_off;
+              break;
+            case 'VALIDATION_ERROR':
+              if (response.errors != null && response.errors!.isNotEmpty) {
+                // Mostrar el primer error de validación específico
+                final firstError = response.errors!.first;
+                errorMessage = firstError['message'] ?? response.message;
+              }
+              break;
+            default:
+              // Usar el mensaje por defecto del servidor
+              break;
+          }
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error: ${response.message}'),
-              backgroundColor: Colors.red,
+              content: Row(
+                children: [
+                  Icon(errorIcon, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(errorMessage)),
+                ],
+              ),
+              backgroundColor: errorColor,
+              duration: const Duration(seconds: 5),
             ),
           );
         }

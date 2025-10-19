@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../config/app_routes.dart';
 import '../../services/auth_service.dart';
 import '../../services/restaurant_service.dart';
+import '../../services/token_manager.dart';
 
 class ModernOwnerDashboardScreen extends StatefulWidget {
   const ModernOwnerDashboardScreen({super.key});
@@ -34,7 +35,29 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    // Verificar estado de ubicación al inicializar
+    // Cargar estado inicial desde TokenManager y luego verificar
+    _loadInitialLocationState();
+  }
+
+  /// Carga el estado inicial de ubicación desde TokenManager
+  Future<void> _loadInitialLocationState() async {
+    try {
+      final isLocationSet = await TokenManager.getLocationStatus();
+      if (mounted) {
+        setState(() {
+          _isLocationSet = isLocationSet;
+          _isCheckingLocation = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLocationSet = false;
+          _isCheckingLocation = false;
+        });
+      }
+    }
+    // Después de cargar el estado inicial, verificar con el backend
     _checkLocationStatus();
   }
 
@@ -55,10 +78,23 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
   /// Verifica el estado de configuración de ubicación del restaurante
   Future<void> _checkLocationStatus() async {
     try {
-      final response = await RestaurantService.getLocationStatus();
+      // Primero intentar obtener el estado desde TokenManager
+      bool locationFromStorage = await TokenManager.getLocationStatus();
+      
+      // Si está configurada según el storage, verificar también con el backend
+      if (locationFromStorage) {
+        final response = await RestaurantService.getLocationStatus();
+        if (response.isSuccess) {
+          final isLocationSetFromBackend = response.data?['isLocationSet'] as bool? ?? false;
+          // Sincronizar el estado local con el backend
+          await TokenManager.saveLocationStatus(isLocationSetFromBackend);
+          locationFromStorage = isLocationSetFromBackend;
+        }
+      }
+      
       if (mounted) {
         setState(() {
-          _isLocationSet = response.isSuccess && (response.data?['isLocationSet'] as bool? ?? false);
+          _isLocationSet = locationFromStorage;
           _isCheckingLocation = false;
         });
       }
@@ -68,6 +104,8 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
           _isLocationSet = false; // En caso de error, asumir que no está configurada
           _isCheckingLocation = false;
         });
+        // Actualizar el storage también en caso de error
+        await TokenManager.saveLocationStatus(false);
       }
     }
   }
@@ -311,7 +349,11 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
                       icon: Icons.schedule_rounded,
                       title: 'Horarios',
                       subtitle: 'Configurar disponibilidad',
-                      onTap: () => _showComingSoon(context),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _navigateWithLocationCheck(AppRoutes.ownerWeeklySchedule);
+                      },
+                      isEnabled: _isLocationSet,
                     ),
                     _buildDrawerItem(
                       icon: Icons.delivery_dining_rounded,
@@ -903,6 +945,16 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
               await Navigator.pushNamed(context, AppRoutes.ownerProfileEdit);
               // El perfil se actualizó, no necesitamos hacer nada especial aquí
             },
+          ),
+          const SizedBox(height: 12),
+          _buildActionCard(
+            context: context,
+            icon: Icons.schedule_rounded,
+            title: 'Gestionar Horarios',
+            subtitle: 'Configurar disponibilidad de sucursales',
+            color: Colors.teal,
+            onTap: () => _navigateWithLocationCheck(AppRoutes.ownerWeeklySchedule),
+            isEnabled: _isLocationSet,
           ),
           const SizedBox(height: 12),
           _buildActionCard(

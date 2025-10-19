@@ -6,6 +6,8 @@ class TokenManager {
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
   static const String _userKey = 'user_data';
+  static const String _primaryBranchIdKey = 'primary_branch_id';
+  static const String _isLocationSetKey = 'is_location_set';
 
   /// Guarda los tokens JWT de forma segura
   static Future<void> saveTokens({
@@ -148,6 +150,73 @@ class TokenManager {
              refreshToken != null && refreshToken.isNotEmpty;
     } catch (e) {
       return false;
+    }
+  }
+
+  /// Guarda el ID de la sucursal principal
+  static Future<void> savePrimaryBranchId(int branchId) async {
+    try {
+      await _storage.write(key: _primaryBranchIdKey, value: branchId.toString());
+    } catch (e) {
+      throw Exception('Error al guardar el ID de sucursal principal: ${e.toString()}');
+    }
+  }
+
+  /// Obtiene el ID de la sucursal principal
+  static Future<int?> getPrimaryBranchId() async {
+    try {
+      final branchIdString = await _storage.read(key: _primaryBranchIdKey);
+      return branchIdString != null ? int.tryParse(branchIdString) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Guarda el estado de ubicación configurada
+  static Future<void> saveLocationStatus(bool isLocationSet) async {
+    try {
+      await _storage.write(key: _isLocationSetKey, value: isLocationSet.toString());
+    } catch (e) {
+      throw Exception('Error al guardar el estado de ubicación: ${e.toString()}');
+    }
+  }
+
+  /// Obtiene el estado de ubicación configurada
+  static Future<bool> getLocationStatus() async {
+    try {
+      final locationString = await _storage.read(key: _isLocationSetKey);
+      return locationString == 'true';
+    } catch (e) {
+      return false; // Por defecto, asumir que no está configurada
+    }
+  }
+
+  /// Elimina el ID de la sucursal principal
+  static Future<void> deletePrimaryBranchId() async {
+    try {
+      await _storage.delete(key: _primaryBranchIdKey);
+    } catch (e) {
+      // Ignorar errores al eliminar
+    }
+  }
+
+  /// Elimina el estado de ubicación
+  static Future<void> deleteLocationStatus() async {
+    try {
+      await _storage.delete(key: _isLocationSetKey);
+    } catch (e) {
+      // Ignorar errores al eliminar
+    }
+  }
+
+  /// Limpia todos los datos de autenticación incluyendo branchId y location
+  static Future<void> clearAllOwnerData() async {
+    try {
+      await _storage.delete(key: _primaryBranchIdKey);
+      await _storage.delete(key: _isLocationSetKey);
+      await clearAll();
+    } catch (e) {
+      // Ignorar errores al limpiar
     }
   }
 }

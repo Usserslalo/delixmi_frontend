@@ -308,10 +308,50 @@ class _AddProductFormState extends State<AddProductForm> {
         }
       } else {
         if (mounted) {
+          // Manejo específico de errores según códigos del backend
+          String errorMessage = response.message;
+          Color errorColor = Colors.red;
+          IconData errorIcon = Icons.error;
+          
+          switch (response.code) {
+            case 'SUBCATEGORY_NOT_FOUND':
+              errorMessage = 'La subcategoría seleccionada no fue encontrada. Por favor, selecciona otra.';
+              errorColor = Colors.orange;
+              errorIcon = Icons.category_outlined;
+              break;
+            case 'FORBIDDEN':
+              errorMessage = 'No tienes permisos para añadir productos a esta subcategoría.';
+              errorColor = Colors.red;
+              errorIcon = Icons.block;
+              break;
+            case 'INVALID_MODIFIER_GROUPS':
+              errorMessage = 'Algunos grupos de modificadores seleccionados no son válidos.';
+              errorColor = Colors.orange;
+              errorIcon = Icons.tune;
+              break;
+            case 'VALIDATION_ERROR':
+              if (response.errors != null && response.errors!.isNotEmpty) {
+                // Mostrar el primer error de validación específico
+                final firstError = response.errors!.first;
+                errorMessage = firstError['message'] ?? response.message;
+              }
+              break;
+            default:
+              // Usar el mensaje por defecto del servidor
+              break;
+          }
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error: ${response.message}'),
-              backgroundColor: Colors.red,
+              content: Row(
+                children: [
+                  Icon(errorIcon, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(errorMessage)),
+                ],
+              ),
+              backgroundColor: errorColor,
+              duration: const Duration(seconds: 5),
             ),
           );
         }

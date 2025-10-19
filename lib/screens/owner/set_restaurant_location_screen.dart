@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../services/geocoding_service.dart';
 import '../../services/restaurant_service.dart';
+import '../../services/token_manager.dart';
 import '../../config/app_routes.dart';
 
 class SetRestaurantLocationScreen extends StatefulWidget {
@@ -680,6 +681,9 @@ class _SetRestaurantLocationScreenState extends State<SetRestaurantLocationScree
           
           if (statusResponse.isSuccess && 
               statusResponse.data?['isLocationSet'] == true) {
+            
+            // Actualizar el estado global de ubicación
+            await TokenManager.saveLocationStatus(true);
             
             // Mostrar mensaje de éxito
             ScaffoldMessenger.of(context).showSnackBar(

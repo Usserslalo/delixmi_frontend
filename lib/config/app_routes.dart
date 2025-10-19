@@ -40,6 +40,10 @@ class AppRoutes {
   static const String ownerSubcategories = '/owner_subcategories';
   static const String ownerProducts = '/owner_products';
   static const String setRestaurantLocation = '/set_restaurant_location';
+  static const String ownerBranchesListForSchedules = '/owner_branches_list_schedules';
+  static const String ownerWeeklySchedule = '/owner_weekly_schedule';
+  static const String ownerEditSingleDaySchedule = '/owner_edit_single_day_schedule';
+  static const String ownerEditWeeklySchedule = '/owner_edit_weekly_schedule';
 
   // ===== RUTAS DE REPARTIDOR =====
   static const String driverDashboard = '/driver_dashboard';

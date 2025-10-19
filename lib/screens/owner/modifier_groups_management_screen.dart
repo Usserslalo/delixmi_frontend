@@ -217,55 +217,80 @@ class _ModifierGroupsManagementScreenState extends State<ModifierGroupsManagemen
         }
       } else {
         if (mounted) {
+          // Manejo específico de errores según códigos del backend
           String errorMessage = response.message;
           Color backgroundColor = Colors.red;
           Duration duration = const Duration(seconds: 3);
+          IconData errorIcon = Icons.error;
           
-          // Manejo específico de códigos 409
-          if (response.code == 'GROUP_HAS_OPTIONS') {
-            final optionsCount = response.details?['optionsCount'] ?? 0;
-            final options = (response.details?['options'] as List<dynamic>?)
-                ?.map((o) => o['name'] as String)
-                .toList() ?? [];
-            
-            errorMessage = 'No se puede eliminar el grupo porque tiene $optionsCount opcion${optionsCount != 1 ? 'es' : ''}';
-            if (options.isNotEmpty) {
-              errorMessage += ':\n\n';
-              errorMessage += options.take(3).join(', ');
-              if (options.length > 3) {
-                errorMessage += ' y ${options.length - 3} más';
+          switch (response.code) {
+            case 'MODIFIER_GROUP_NOT_FOUND':
+              errorMessage = 'El grupo de modificadores que intentas eliminar no fue encontrado.';
+              backgroundColor = Colors.red;
+              errorIcon = Icons.search_off;
+              break;
+            case 'FORBIDDEN':
+              errorMessage = 'No tienes permisos para eliminar este grupo de modificadores.';
+              backgroundColor = Colors.red;
+              errorIcon = Icons.block;
+              break;
+            case 'GROUP_HAS_OPTIONS':
+              final optionsCount = response.details?['optionsCount'] ?? 0;
+              final options = (response.details?['options'] as List<dynamic>?)
+                  ?.map((o) => o['name'] as String)
+                  .toList() ?? [];
+              
+              errorMessage = 'No se puede eliminar el grupo porque tiene $optionsCount opcion${optionsCount != 1 ? 'es' : ''}';
+              if (options.isNotEmpty) {
+                errorMessage += ':\n\n';
+                errorMessage += options.take(3).join(', ');
+                if (options.length > 3) {
+                  errorMessage += ' y ${options.length - 3} más';
+                }
               }
-            }
-            errorMessage += '\n\nElimina primero todas las opciones del grupo.';
-            
-            backgroundColor = Colors.orange;
-            duration = const Duration(seconds: 6);
-            
-          } else if (response.code == 'GROUP_ASSOCIATED_TO_PRODUCTS') {
-            final productsCount = response.details?['productsCount'] ?? 0;
-            final products = (response.details?['products'] as List<dynamic>?)
-                ?.map((p) => p['name'] as String)
-                .toList() ?? [];
-            
-            errorMessage = 'No se puede eliminar el grupo porque está asociado a $productsCount producto${productsCount != 1 ? 's' : ''}';
-            if (products.isNotEmpty) {
-              errorMessage += ':\n\n';
-              errorMessage += products.take(3).join(', ');
-              if (products.length > 3) {
-                errorMessage += ' y ${products.length - 3} más';
+              errorMessage += '\n\nElimina primero todas las opciones del grupo.';
+              
+              backgroundColor = Colors.orange;
+              duration = const Duration(seconds: 6);
+              errorIcon = Icons.warning;
+              break;
+            case 'GROUP_ASSOCIATED_TO_PRODUCTS':
+              final productsCount = response.details?['productsCount'] ?? 0;
+              final products = (response.details?['products'] as List<dynamic>?)
+                  ?.map((p) => p['name'] as String)
+                  .toList() ?? [];
+              
+              errorMessage = 'No se puede eliminar el grupo porque está asociado a $productsCount producto${productsCount != 1 ? 's' : ''}';
+              if (products.isNotEmpty) {
+                errorMessage += ':\n\n';
+                errorMessage += products.take(3).join(', ');
+                if (products.length > 3) {
+                  errorMessage += ' y ${products.length - 3} más';
+                }
               }
-            }
-            errorMessage += '\n\nDesasocia primero los productos o edítalos para usar otro grupo.';
-            
-            backgroundColor = Colors.orange;
-            duration = const Duration(seconds: 6);
+              errorMessage += '\n\nDesasocia primero los productos o edítalos para usar otro grupo.';
+              
+              backgroundColor = Colors.orange;
+              duration = const Duration(seconds: 6);
+              errorIcon = Icons.warning;
+              break;
+            default:
+              // Usar el mensaje por defecto del servidor
+              break;
           }
           
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(errorMessage),
+              content: Row(
+                children: [
+                  Icon(errorIcon, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(errorMessage)),
+                ],
+              ),
               backgroundColor: backgroundColor,
               duration: duration,
+              behavior: SnackBarBehavior.floating,
             ),
           );
         }
@@ -633,10 +658,50 @@ class _ModifierGroupsManagementScreenState extends State<ModifierGroupsManagemen
         }
       } else {
         if (mounted) {
+          // Manejo específico de errores según códigos del backend
+          String errorMessage = response.message;
+          Color errorColor = Colors.red;
+          IconData errorIcon = Icons.error;
+          
+          switch (response.code) {
+            case 'MODIFIER_OPTION_NOT_FOUND':
+              errorMessage = 'La opción que intentas eliminar no fue encontrada.';
+              errorColor = Colors.red;
+              errorIcon = Icons.search_off;
+              break;
+            case 'OPTION_IN_USE_IN_CARTS':
+              final cartItemsCount = response.details?['cartItemsCount'] ?? 0;
+              errorMessage = 'No se puede eliminar la opción porque está siendo usada en $cartItemsCount carrito${cartItemsCount != 1 ? 's' : ''} de compra activos.\n\nEspera a que se complete el pedido o contacta al soporte técnico.';
+              errorColor = Colors.orange;
+              errorIcon = Icons.shopping_cart;
+              break;
+            case 'FORBIDDEN':
+              errorMessage = 'No tienes permisos para eliminar esta opción de modificador.';
+              errorColor = Colors.red;
+              errorIcon = Icons.block;
+              break;
+            case 'INSUFFICIENT_PERMISSIONS':
+              errorMessage = 'No tienes permisos para eliminar opciones de modificadores.';
+              errorColor = Colors.red;
+              errorIcon = Icons.block;
+              break;
+            default:
+              // Usar el mensaje por defecto del servidor
+              break;
+          }
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error: ${response.message}'),
-              backgroundColor: Colors.red,
+              content: Row(
+                children: [
+                  Icon(errorIcon, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(errorMessage)),
+                ],
+              ),
+              backgroundColor: errorColor,
+              duration: const Duration(seconds: 5),
+              behavior: SnackBarBehavior.floating,
             ),
           );
         }

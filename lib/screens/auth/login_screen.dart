@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../config/app_routes.dart';
 import '../../services/auth_service.dart';
 import '../../services/restaurant_service.dart';
+import '../../services/token_manager.dart';
 import '../../models/auth/user.dart' as auth_user;
 import '../../utils/auth_error_handler.dart';
 
@@ -160,12 +161,31 @@ class _LoginScreenState extends State<LoginScreen> {
   /// Maneja el login específico del Owner verificando la ubicación del restaurante
   Future<void> _handleOwnerLogin(BuildContext context, auth_user.User user) async {
     try {
-      // Verificar si la ubicación del restaurante está configurada
+      // 1. Obtener la sucursal principal después del login
+      final primaryBranchResponse = await RestaurantService.getPrimaryBranch();
+      if (primaryBranchResponse.isSuccess && primaryBranchResponse.data != null) {
+        final branchData = primaryBranchResponse.data!['branch'] as Map<String, dynamic>;
+        final branchId = branchData['id'] as int;
+        
+        // Guardar el branchId principal en TokenManager
+        await TokenManager.savePrimaryBranchId(branchId);
+      }
+
+      // 2. Verificar si la ubicación del restaurante está configurada
       final locationStatusResponse = await RestaurantService.getLocationStatus();
+      
+      bool isLocationSet = false;
+      if (locationStatusResponse.isSuccess) {
+        isLocationSet = locationStatusResponse.data?['isLocationSet'] as bool? ?? false;
+        
+        // Guardar el estado de ubicación en TokenManager
+        await TokenManager.saveLocationStatus(isLocationSet);
+      }
       
       if (!locationStatusResponse.isSuccess) {
         // Error al verificar el estado de ubicación - navegar al dashboard por defecto
         // (el usuario podrá configurar la ubicación desde allí si es necesario)
+        await TokenManager.saveLocationStatus(false);
         Navigator.pushNamedAndRemoveUntil(
           context,
           AppRoutes.ownerDashboard,
@@ -176,8 +196,6 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         return;
       }
-
-      final isLocationSet = locationStatusResponse.data?['isLocationSet'] as bool? ?? false;
       
       if (!isLocationSet) {
         // La ubicación NO está configurada - forzar configuración
@@ -198,7 +216,8 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
-      // Error inesperado - navegar al dashboard por defecto
+      // Error inesperado - guardar estado por defecto y navegar al dashboard
+      await TokenManager.saveLocationStatus(false);
       Navigator.pushNamedAndRemoveUntil(
         context,
         AppRoutes.ownerDashboard,
