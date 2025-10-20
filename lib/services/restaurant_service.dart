@@ -472,4 +472,74 @@ class RestaurantService {
       );
     }
   }
+
+  /// Actualiza los detalles operativos de la sucursal principal del restaurante
+  static Future<ApiResponse<Map<String, dynamic>>> updatePrimaryBranchDetails({
+    String? name,
+    String? phone,
+    bool? usesPlatformDrivers,
+    double? deliveryFee,
+    int? estimatedDeliveryMin,
+    int? estimatedDeliveryMax,
+    double? deliveryRadius,
+    String? status,
+  }) async {
+    try {
+      debugPrint('🏢 RestaurantService: Actualizando detalles de sucursal principal...');
+      
+      // Construir body solo con campos que se van a actualizar
+      final Map<String, dynamic> body = {};
+      if (name != null) body['name'] = name;
+      if (phone != null) body['phone'] = phone;
+      if (usesPlatformDrivers != null) body['usesPlatformDrivers'] = usesPlatformDrivers;
+      if (deliveryFee != null) body['deliveryFee'] = deliveryFee;
+      if (estimatedDeliveryMin != null) body['estimatedDeliveryMin'] = estimatedDeliveryMin;
+      if (estimatedDeliveryMax != null) body['estimatedDeliveryMax'] = estimatedDeliveryMax;
+      if (deliveryRadius != null) body['deliveryRadius'] = deliveryRadius;
+      if (status != null) body['status'] = status;
+
+      if (body.isEmpty) {
+        return ApiResponse<Map<String, dynamic>>(
+          status: 'error',
+          message: 'No se proporcionaron campos para actualizar',
+        );
+      }
+
+      debugPrint('📤 Campos a actualizar en sucursal principal: ${body.keys.toList()}');
+      
+      final headers = await TokenManager.getAuthHeaders();
+      
+      final response = await ApiService.makeRequest<Map<String, dynamic>>(
+        'PATCH',
+        '/restaurant/primary-branch',
+        headers,
+        body,
+        null,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        debugPrint('✅ Detalles de sucursal principal actualizados exitosamente');
+        
+        return ApiResponse<Map<String, dynamic>>(
+          status: 'success',
+          message: response.message,
+          data: response.data!,
+        );
+      } else {
+        debugPrint('❌ Error al actualizar sucursal principal: ${response.message}');
+        return ApiResponse<Map<String, dynamic>>(
+          status: response.status,
+          message: response.message,
+          code: response.code,
+          errors: response.errors,
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ RestaurantService.updatePrimaryBranchDetails: Error inesperado: $e');
+      return ApiResponse<Map<String, dynamic>>(
+        status: 'error',
+        message: 'Error al actualizar los detalles de la sucursal principal: ${e.toString()}',
+      );
+    }
+  }
 }

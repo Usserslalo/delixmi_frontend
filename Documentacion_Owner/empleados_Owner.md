@@ -299,25 +299,23 @@ Permite al Owner obtener la lista de empleados de su restaurante con filtros opc
 const employeeQuerySchema = z.object({
   page: z
     .string()
-    .regex(/^\d+$/, 'La página debe ser un número')
-    .transform(Number)
     .optional()
-    .default(1)
+    .refine(val => !val || /^\d+$/.test(val), { message: 'La página debe ser un número' })
+    .transform(val => val ? parseInt(val, 10) : 1)
     .refine(val => val > 0, 'La página debe ser mayor que 0'),
     
   pageSize: z
     .string()
-    .regex(/^\d+$/, 'El tamaño de página debe ser un número')
-    .transform(Number)
     .optional()
-    .default(15)
+    .refine(val => !val || /^\d+$/.test(val), { message: 'El tamaño de página debe ser un número' })
+    .transform(val => val ? parseInt(val, 10) : 15)
     .refine(val => val > 0 && val <= 100, 'El tamaño de página debe estar entre 1 y 100'),
     
   roleId: z
     .string()
-    .regex(/^\d+$/, 'El ID del rol debe ser un número')
-    .transform(Number)
-    .optional(),
+    .optional()
+    .refine(val => !val || /^\d+$/.test(val), { message: 'El ID del rol debe ser un número' })
+    .transform(val => val ? parseInt(val, 10) : undefined),
     
   status: z
     .enum(['active', 'inactive', 'pending', 'suspended'], {
@@ -349,7 +347,7 @@ const employeeQuerySchema = z.object({
 1. **Filtro Base**: `{ restaurantId: restaurantId }`
 2. **Filtro por Rol**: Añade `roleId` si está presente en los filtros
 3. **Filtro por Estado**: Añade `user: { status: status }` si está presente
-4. **Filtro de Búsqueda**: Añade `OR` clause para buscar en `name`, `lastname`, y `email` con `contains` y `mode: 'insensitive'`
+4. **Filtro de Búsqueda**: Añade `OR` clause para buscar en `name`, `lastname`, y `email` con `contains` (case-sensitive para compatibilidad con MySQL)
 
 #### Consultas Paralelas:
 1. **Lista de Empleados**: `prisma.userRoleAssignment.findMany()` con:
@@ -370,6 +368,15 @@ const employeeQuerySchema = z.object({
 GET /api/restaurant/employees?page=1&pageSize=10&roleId=5&status=active&search=maria
 ```
 
+### Estructura de la Respuesta
+
+**Importante**: Cada empleado en la respuesta incluye:
+- **`assignmentId`**: ID de la `UserRoleAssignment` (CRÍTICO para actualizaciones)
+- **`id`**: ID del usuario empleado
+- **Resto de campos**: Información del usuario, rol y restaurante
+
+El campo `assignmentId` es esencial para realizar actualizaciones mediante `PATCH /api/restaurant/employees/:assignmentId`.
+
 ### Ejemplo de Respuesta Exitosa (200 OK)
 
 ```json
@@ -380,6 +387,7 @@ GET /api/restaurant/employees?page=1&pageSize=10&roleId=5&status=active&search=m
     "data": {
         "employees": [
             {
+                "assignmentId": 2,
                 "id": 2,
                 "name": "Ana",
                 "lastname": "García",
@@ -402,6 +410,7 @@ GET /api/restaurant/employees?page=1&pageSize=10&roleId=5&status=active&search=m
                 }
             },
             {
+                "assignmentId": 3,
                 "id": 3,
                 "name": "Carlos",
                 "lastname": "Rodriguez",
@@ -424,6 +433,7 @@ GET /api/restaurant/employees?page=1&pageSize=10&roleId=5&status=active&search=m
                 }
             },
             {
+                "assignmentId": 7,
                 "id": 7,
                 "name": "Empleado",
                 "lastname": "Prueba",
@@ -521,7 +531,7 @@ GET /api/restaurant/employees?page=1&pageSize=10&roleId=5&status=active&search=m
 
 - **Paginación Flexible**: Control de página y tamaño, máximo 100 items por página
 - **Filtrado Avanzado**: Por rol, estado y búsqueda de texto en múltiples campos
-- **Búsqueda Insensible**: Búsqueda por nombre, apellido y email sin distinción de mayúsculas
+- **Búsqueda Case-Sensitive**: Búsqueda por nombre, apellido y email (compatible con MySQL)
 - **Ordenamiento**: Lista ordenada por nombre y apellido
 - **Metadatos Completos**: Información detallada de paginación y navegación
 - **Optimización**: Consultas paralelas para mejor rendimiento
@@ -768,3 +778,106 @@ const updateEmployeeSchema = z.object({
 - **Atomicidad**: Cada actualización es independiente, fallando solo la operación específica
 - **Logging Completo**: Registra todas las operaciones para auditoría
 - **Respuesta Completa**: Incluye datos actualizados del empleado, rol y restaurante
+
+---
+
+## 🛠️ Notas Técnicas y Solución de Problemas
+
+### Error Crítico Solucionado - Búsqueda de Empleados (GET /employees)
+
+**Problema**: El endpoint `GET /api/restaurant/employees` fallaba con error 500 cuando se utilizaban filtros de búsqueda (`search` parameter).
+
+**Error Prisma Original**:
+```
+Unknown argument `mode`. Did you mean `lte`? Available options are marked with ?.
+```
+
+**Causa**: El código utilizaba `mode: 'insensitive'` en las consultas Prisma, que es específico de PostgreSQL y no soportado en MySQL.
+
+**Solución Implementada**: 
+1. **Eliminación de `mode: 'insensitive'`** en todas las cláusulas de búsqueda en `src/repositories/employee.repository.js`
+2. **Búsqueda case-sensitive**: Ahora se usa solo `contains` sin el parámetro `mode`
+3. **Compatibilidad MySQL**: Asegura que las consultas funcionen correctamente en la base de datos MySQL del proyecto
+
+**Código Corregido**:
+```javascript
+// ❌ ANTES (causaba error en MySQL):
+{
+  user: {
+    name: {
+      contains: search,
+      mode: 'insensitive'  // No soportado en MySQL
+    }
+  }
+}
+
+// ✅ DESPUÉS (funciona en MySQL):
+{
+  user: {
+    name: {
+      contains: search  // Case-sensitive pero funcional
+    }
+  }
+}
+```
+
+**Impacto**: 
+- ✅ **Búsqueda de empleados ahora funciona correctamente**
+- ✅ **Filtros por nombre, apellido y email operativos**
+- ⚠️ **Búsqueda es case-sensitive** (se puede mejorar en futuras versiones)
+
+**Nota**: Para implementar búsqueda case-insensitive en MySQL, se requeriría usar consultas SQL raw o modificar la configuración de la base de datos, lo cual está fuera del alcance de esta corrección inmediata.
+
+### 🚨 Error Crítico Solucionado - Falta assignmentId en GET /employees
+
+**Problema**: El endpoint `GET /api/restaurant/employees` no incluía el campo `assignmentId` necesario para que el frontend pudiera actualizar empleados usando `PATCH /api/restaurant/employees/:assignmentId`.
+
+**Error Frontend**:
+```
+Error: No se puede actualizar empleado - assignmentId es null
+```
+
+**Causa**: El repositorio `EmployeeRepository.getEmployeesByRestaurant()` mapeaba los resultados pero no incluía el `assignment.id` (ID de `UserRoleAssignment`).
+
+**Solución Implementada**: 
+1. **Añadido campo `assignmentId`** en el mapeo de la respuesta del método `getEmployeesByRestaurant()`
+2. **Documentación actualizada** para reflejar la nueva estructura de respuesta
+3. **Explicación clara** sobre la diferencia entre `assignmentId` (para PATCH) e `id` (ID del usuario)
+
+**Código Corregido**:
+```javascript
+// ❌ ANTES (faltaba assignmentId):
+const employees = assignments.map(assignment => ({
+  id: assignment.user.id, // Solo ID del usuario
+  name: assignment.user.name,
+  // ... resto de campos
+}));
+
+// ✅ DESPUÉS (incluye assignmentId crítico):
+const employees = assignments.map(assignment => ({
+  assignmentId: assignment.id, // ID de la UserRoleAssignment (CRÍTICO)
+  id: assignment.user.id, // ID del usuario
+  name: assignment.user.name,
+  // ... resto de campos
+}));
+```
+
+**Estructura de Respuesta Corregida**:
+```json
+{
+  "employees": [
+    {
+      "assignmentId": 2, // ← CRÍTICO para PATCH /employees/:assignmentId
+      "id": 2,           // ← ID del usuario
+      "name": "Ana",
+      // ... resto de campos
+    }
+  ]
+}
+```
+
+**Impacto**: 
+- ✅ **Frontend puede ahora actualizar empleados correctamente**
+- ✅ **PATCH /api/restaurant/employees/:assignmentId funciona como esperado**
+- ✅ **Documentación actualizada con la estructura correcta**
+- ✅ **Solución del problema reportado por el equipo de Flutter**

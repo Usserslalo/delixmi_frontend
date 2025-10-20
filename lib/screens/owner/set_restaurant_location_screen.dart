@@ -721,7 +721,30 @@ class _SetRestaurantLocationScreenState extends State<SetRestaurantLocationScree
             _showErrorSnackBar('Error al verificar la ubicación guardada');
           }
         } else {
-          _showErrorSnackBar(response.message);
+          // Handle specific error codes based on the documentation
+          String errorMessage = response.message;
+          
+          switch (response.code) {
+            case 'VALIDATION_ERROR':
+              errorMessage = 'Error en los datos de ubicación. Verifica las coordenadas.';
+              break;
+            case 'INSUFFICIENT_PERMISSIONS':
+              errorMessage = 'No tienes permisos para configurar la ubicación.';
+              break;
+            case 'RESTAURANT_LOCATION_REQUIRED':
+              errorMessage = 'Debes configurar la ubicación del restaurante primero.';
+              break;
+            case 'NOT_FOUND':
+              errorMessage = 'Usuario no encontrado.';
+              break;
+            case 'INTERNAL_ERROR':
+              errorMessage = 'Error interno del servidor.';
+              break;
+            default:
+              errorMessage = response.message;
+          }
+          
+          _showErrorSnackBar(errorMessage);
         }
       }
     } catch (e) {

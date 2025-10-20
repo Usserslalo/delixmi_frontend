@@ -288,6 +288,16 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
                       },
                     ),
                     _buildDrawerItem(
+                      icon: Icons.people_rounded,
+                      title: 'Gestionar Empleados',
+                      subtitle: 'Administrar equipo de trabajo',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _navigateWithLocationCheck(AppRoutes.ownerEmployeeList);
+                      },
+                      isEnabled: _isLocationSet,
+                    ),
+                    _buildDrawerItem(
                       icon: Icons.location_on_rounded,
                       title: 'Ubicación del Restaurante',
                       subtitle: 'Configurar dirección y posición',
@@ -945,6 +955,16 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
               await Navigator.pushNamed(context, AppRoutes.ownerProfileEdit);
               // El perfil se actualizó, no necesitamos hacer nada especial aquí
             },
+          ),
+          const SizedBox(height: 12),
+          _buildActionCard(
+            context: context,
+            icon: Icons.people_rounded,
+            title: 'Gestionar Empleados',
+            subtitle: 'Administrar equipo de trabajo del restaurante',
+            color: Colors.indigo,
+            onTap: () => _navigateWithLocationCheck(AppRoutes.ownerEmployeeList),
+            isEnabled: _isLocationSet,
           ),
           const SizedBox(height: 12),
           _buildActionCard(
