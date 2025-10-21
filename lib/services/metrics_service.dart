@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/api_response.dart';
 import '../models/owner/metrics_models.dart';
+import '../models/owner/dashboard_summary_models.dart';
 import 'api_service.dart';
 import 'token_manager.dart';
 
@@ -391,6 +392,80 @@ class MetricsService {
     } catch (e) {
       debugPrint('❌ Error en getEarningsSummary: $e');
       return ApiResponse<EarningsResponse>(
+        status: 'error',
+        message: 'Error interno: ${e.toString()}',
+        code: 'INTERNAL_ERROR',
+      );
+    }
+  }
+
+  /// Obtiene el resumen completo del dashboard (endpoint "cerebro")
+  static Future<ApiResponse<DashboardSummary>> getDashboardSummary() async {
+    try {
+      debugPrint('🚀 MetricsService: Obteniendo resumen del dashboard...');
+      
+      final headers = await TokenManager.getAuthHeaders();
+      
+      final response = await ApiService.makeRequest<Map<String, dynamic>>(
+        'GET',
+        '/restaurant/metrics/dashboard-summary',
+        headers,
+        null,
+        null,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        try {
+          final dashboardData = DashboardSummary.fromJson(response.data!);
+          
+          debugPrint('✅ Dashboard summary obtenido exitosamente');
+          debugPrint('💰 Saldo: \$${dashboardData.data.financials.walletBalance}');
+          debugPrint('📦 Pedidos pendientes: ${dashboardData.data.operations.pendingOrdersCount}');
+          
+          return ApiResponse<DashboardSummary>(
+            status: 'success',
+            message: response.message,
+            data: dashboardData,
+          );
+        } catch (e) {
+          debugPrint('❌ Error parsing dashboard data: $e');
+          return ApiResponse<DashboardSummary>(
+            status: 'error',
+            message: 'Error al procesar los datos del dashboard: ${e.toString()}',
+            code: 'PARSE_ERROR',
+          );
+        }
+      } else {
+        debugPrint('❌ Error al obtener resumen del dashboard: ${response.message}');
+        
+        // Manejar códigos de error específicos del backend
+        String errorMessage = response.message;
+        if (response.code != null) {
+          switch (response.code) {
+            case 'RESTAURANT_NOT_FOUND':
+              errorMessage = 'Restaurante no encontrado para este propietario';
+              break;
+            case 'INSUFFICIENT_PERMISSIONS':
+              errorMessage = 'Permisos insuficientes para acceder al dashboard';
+              break;
+            case 'LOCATION_REQUIRED':
+              errorMessage = 'Debe configurar la ubicación del restaurante primero';
+              break;
+            default:
+              errorMessage = response.message;
+              break;
+          }
+        }
+        
+        return ApiResponse<DashboardSummary>(
+          status: response.status,
+          message: errorMessage,
+          code: response.code,
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Error en getDashboardSummary: $e');
+      return ApiResponse<DashboardSummary>(
         status: 'error',
         message: 'Error interno: ${e.toString()}',
         code: 'INTERNAL_ERROR',
