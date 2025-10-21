@@ -654,6 +654,20 @@ class _SetRestaurantLocationScreenState extends State<SetRestaurantLocationScree
   Future<void> _saveLocation() async {
     if (_isSaving) return;
 
+    // Validar coordenadas según el backend Zod schema
+    final lat = _centerLocation.latitude;
+    final lng = _centerLocation.longitude;
+    
+    if (lat < -90 || lat > 90) {
+      _showErrorSnackBar('La latitud debe estar entre -90 y 90 grados');
+      return;
+    }
+    
+    if (lng < -180 || lng > 180) {
+      _showErrorSnackBar('La longitud debe estar entre -180 y 180 grados');
+      return;
+    }
+
     setState(() {
       _isSaving = true;
     });
@@ -663,6 +677,20 @@ class _SetRestaurantLocationScreenState extends State<SetRestaurantLocationScree
       String? address = _addressController.text.trim().isNotEmpty 
           ? _addressController.text.trim() 
           : _geocodeResult?.formattedAddress;
+
+      // Validar dirección según backend (5-255 caracteres)
+      if (address != null && address.isNotEmpty) {
+        if (address.length < 5) {
+          setState(() => _isSaving = false);
+          _showErrorSnackBar('La dirección debe tener al menos 5 caracteres');
+          return;
+        }
+        if (address.length > 255) {
+          setState(() => _isSaving = false);
+          _showErrorSnackBar('La dirección no puede exceder 255 caracteres');
+          return;
+        }
+      }
 
       debugPrint('💾 Guardando ubicación del restaurante...');
       debugPrint('📍 Lat: ${_centerLocation.latitude}, Lng: ${_centerLocation.longitude}');
@@ -726,19 +754,14 @@ class _SetRestaurantLocationScreenState extends State<SetRestaurantLocationScree
           
           switch (response.code) {
             case 'VALIDATION_ERROR':
-              errorMessage = 'Error en los datos de ubicación. Verifica las coordenadas.';
+              // Usar el mensaje detallado del backend que incluye los errores específicos
+              errorMessage = response.message;
               break;
             case 'INSUFFICIENT_PERMISSIONS':
-              errorMessage = 'No tienes permisos para configurar la ubicación.';
-              break;
-            case 'RESTAURANT_LOCATION_REQUIRED':
-              errorMessage = 'Debes configurar la ubicación del restaurante primero.';
+              errorMessage = 'Acceso denegado. Se requiere rol de owner';
               break;
             case 'NOT_FOUND':
-              errorMessage = 'Usuario no encontrado.';
-              break;
-            case 'INTERNAL_ERROR':
-              errorMessage = 'Error interno del servidor.';
+              errorMessage = 'Usuario no encontrado';
               break;
             default:
               errorMessage = response.message;

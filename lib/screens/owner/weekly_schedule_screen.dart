@@ -85,8 +85,31 @@ class _WeeklyScheduleScreenState extends State<WeeklyScheduleScreen> {
           _isLoading = false;
         });
       } else {
+        // Manejo específico de errores según códigos del backend (documentación horarios_Owner.md)
+        String errorMessage = response.message;
+        
+        if (response.code != null) {
+          switch (response.code) {
+            case 'BRANCH_NOT_FOUND':
+              errorMessage = 'Sucursal no encontrada. Verifica la configuración.';
+              break;
+            case 'BRANCH_ACCESS_DENIED':
+              errorMessage = 'No tienes permisos para acceder a esta sucursal.';
+              break;
+            case 'INSUFFICIENT_PERMISSIONS':
+              errorMessage = 'Permisos insuficientes. Contacta al administrador.';
+              break;
+            case 'USER_NOT_FOUND':
+              errorMessage = 'Usuario no encontrado. Inicia sesión nuevamente.';
+              break;
+            default:
+              // Usar el mensaje por defecto del servidor
+              break;
+          }
+        }
+        
         setState(() {
-          _errorMessage = response.message;
+          _errorMessage = errorMessage;
           _isLoading = false;
         });
       }

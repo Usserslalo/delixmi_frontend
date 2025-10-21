@@ -340,15 +340,13 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
                   [
                     _buildDrawerItem(
                       icon: Icons.receipt_rounded,
-                      title: 'Pedidos Activos',
-                      subtitle: 'Órdenes en progreso',
-                      onTap: () => _showComingSoon(context),
-                    ),
-                    _buildDrawerItem(
-                      icon: Icons.history_rounded,
-                      title: 'Historial',
-                      subtitle: 'Pedidos completados',
-                      onTap: () => _showComingSoon(context),
+                      title: 'Todos los Pedidos',
+                      subtitle: 'Gestionar órdenes del restaurante',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _navigateWithLocationCheck(AppRoutes.ownerOrdersList);
+                      },
+                      isEnabled: _isLocationSet,
                     ),
                   ],
                 ),
@@ -925,6 +923,26 @@ class _ModernOwnerDashboardScreenState extends State<ModernOwnerDashboardScreen>
             ),
           ),
           const SizedBox(height: 16),
+          _buildActionCard(
+            context: context,
+            icon: Icons.receipt_long_rounded,
+            title: 'Ver Pedidos',
+            subtitle: 'Gestionar órdenes del restaurante',
+            color: Colors.red,
+            onTap: () => _navigateWithLocationCheck(AppRoutes.ownerOrdersList),
+            isEnabled: _isLocationSet,
+          ),
+          const SizedBox(height: 12),
+          _buildActionCard(
+            context: context,
+            icon: Icons.analytics_rounded,
+            title: 'Métricas Financieras',
+            subtitle: 'Ver ganancias, saldo y transacciones',
+            color: Colors.green,
+            onTap: () => _navigateWithLocationCheck(AppRoutes.ownerMetrics),
+            isEnabled: _isLocationSet,
+          ),
+          const SizedBox(height: 12),
           _buildActionCard(
             context: context,
             icon: Icons.restaurant_menu_rounded,

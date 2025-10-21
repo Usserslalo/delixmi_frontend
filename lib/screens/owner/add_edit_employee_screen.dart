@@ -198,7 +198,14 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
       case 'VALIDATION_ERROR':
         if (response.details is List) {
           final details = response.details as List;
-          errorMessage = details.map((detail) => detail['message']).join('\n');
+          errorMessage = details.map((detail) {
+            if (detail is Map<String, dynamic>) {
+              final field = detail['field'] ?? '';
+              final message = detail['message'] ?? '';
+              return field.isNotEmpty ? '$field: $message' : message;
+            }
+            return detail.toString();
+          }).join('\n');
         }
         errorColor = Colors.orange;
         errorIcon = Icons.warning;
@@ -390,7 +397,8 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                         if (value == null || value.trim().isEmpty) {
                           return 'El email es requerido';
                         }
-                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value.trim())) {
+                        // Usar validación más estricta similar al backend
+                        if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(value.trim())) {
                           return 'El email debe tener un formato válido';
                         }
                         return null;

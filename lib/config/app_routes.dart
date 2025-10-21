@@ -46,6 +46,9 @@ class AppRoutes {
   static const String ownerEditWeeklySchedule = '/owner_edit_weekly_schedule';
   static const String ownerEmployeeList = '/owner_employee_list';
   static const String ownerAddEditEmployee = '/owner_add_edit_employee';
+  static const String ownerOrdersList = '/owner_orders_list';
+  static const String ownerMetrics = '/owner_metrics';
+  static const String ownerTransactions = '/owner_transactions';
 
   // ===== RUTAS DE REPARTIDOR =====
   static const String driverDashboard = '/driver_dashboard';

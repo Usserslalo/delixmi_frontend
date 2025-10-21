@@ -1108,11 +1108,12 @@ class _ModernEditProfileScreenState extends State<ModernEditProfileScreen>
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value != null && value.trim().isNotEmpty) {
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim())) {
-                        return 'Ingresa un email válido';
+                      // Usar validación más estricta similar al backend Zod
+                      if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(value.trim())) {
+                        return 'El email debe tener un formato válido';
                       }
                       if (value.trim().length > 150) {
-                        return 'El email debe tener máximo 150 caracteres';
+                        return 'El email no puede exceder 150 caracteres';
                       }
                     }
                     return null;

@@ -37,9 +37,35 @@ class RestaurantService {
         );
       } else {
         debugPrint('❌ Error al obtener perfil: ${response.message}');
+        
+        // Manejar códigos de error específicos del backend
+        String errorMessage = response.message;
+        if (response.code != null) {
+          switch (response.code) {
+            case 'MISSING_TOKEN':
+              errorMessage = 'Token de acceso requerido';
+              break;
+            case 'INVALID_TOKEN':
+              errorMessage = 'Token inválido';
+              break;
+            case 'INSUFFICIENT_PERMISSIONS':
+              errorMessage = 'Permisos insuficientes';
+              break;
+            case 'NO_RESTAURANT_ASSIGNED':
+              errorMessage = 'No se encontró un restaurante asignado para este owner';
+              break;
+            case 'RESTAURANT_NOT_FOUND':
+              errorMessage = 'Restaurante no encontrado';
+              break;
+            default:
+              errorMessage = response.message;
+              break;
+          }
+        }
+        
         return ApiResponse<RestaurantProfile>(
           status: response.status,
-          message: response.message,
+          message: errorMessage,
           code: response.code,
         );
       }
@@ -107,9 +133,49 @@ class RestaurantService {
         );
       } else {
         debugPrint('❌ Error al actualizar perfil: ${response.message}');
+        
+        // Manejar códigos de error específicos del backend
+        String errorMessage = response.message;
+        if (response.code != null) {
+          switch (response.code) {
+            case 'VALIDATION_ERROR':
+              // El backend envía detalles específicos en response.errors
+              if (response.errors != null && response.errors!.isNotEmpty) {
+                final errorDetails = response.errors!.map((error) {
+                  if (error is Map<String, dynamic>) {
+                    final field = error['field'] ?? '';
+                    final message = error['message'] ?? '';
+                    return field.isNotEmpty ? '$field: $message' : message;
+                  }
+                  return error.toString();
+                }).join('\n');
+                errorMessage = errorDetails.isNotEmpty ? errorDetails : response.message;
+              }
+              break;
+            case 'NO_FIELDS_TO_UPDATE':
+              errorMessage = 'No se proporcionaron campos para actualizar';
+              break;
+            case 'MISSING_TOKEN':
+              errorMessage = 'Token de acceso requerido';
+              break;
+            case 'INVALID_TOKEN':
+              errorMessage = 'Token inválido';
+              break;
+            case 'INSUFFICIENT_PERMISSIONS':
+              errorMessage = 'Permisos insuficientes';
+              break;
+            case 'RESTAURANT_NOT_FOUND':
+              errorMessage = 'Restaurante no encontrado';
+              break;
+            default:
+              errorMessage = response.message;
+              break;
+          }
+        }
+        
         return ApiResponse<RestaurantProfile>(
           status: response.status,
-          message: response.message,
+          message: errorMessage,
           code: response.code,
           errors: response.errors,
         );
@@ -194,9 +260,41 @@ class RestaurantService {
       }
       
       final errorData = jsonDecode(response.body);
+      String errorMessage = errorData['message'] ?? 'Error al subir logo';
+      
+      // Manejar códigos de error específicos del backend
+      if (errorData['code'] != null) {
+        switch (errorData['code']) {
+          case 'NO_FILE_PROVIDED':
+            errorMessage = 'No se proporcionó ningún archivo';
+            break;
+          case 'FILE_TOO_LARGE':
+            errorMessage = 'El archivo es demasiado grande. El tamaño máximo permitido es 5MB';
+            break;
+          case 'INVALID_FILE_TYPE':
+            errorMessage = 'Solo se permiten archivos JPG, JPEG y PNG';
+            break;
+          case 'TOO_MANY_FILES':
+            errorMessage = 'Solo se permite subir un archivo a la vez';
+            break;
+          case 'UNAUTHORIZED':
+            errorMessage = 'Sesión expirada. Por favor, inicia sesión nuevamente';
+            break;
+          case 'FORBIDDEN':
+            errorMessage = 'No tienes permisos para subir imágenes';
+            break;
+          case 'NO_RESTAURANT_ASSIGNED':
+            errorMessage = 'No se encontró un restaurante asignado para este owner';
+            break;
+          default:
+            errorMessage = errorData['message'] ?? 'Error al subir logo';
+            break;
+        }
+      }
+      
       return ApiResponse<UploadImageResponse>(
         status: 'error',
-        message: errorData['message'] ?? 'Error al subir logo',
+        message: errorMessage,
         code: errorData['code'],
       );
     } catch (e) {
@@ -279,9 +377,41 @@ class RestaurantService {
       }
       
       final errorData = jsonDecode(response.body);
+      String errorMessage = errorData['message'] ?? 'Error al subir portada';
+      
+      // Manejar códigos de error específicos del backend
+      if (errorData['code'] != null) {
+        switch (errorData['code']) {
+          case 'NO_FILE_PROVIDED':
+            errorMessage = 'No se proporcionó ningún archivo';
+            break;
+          case 'FILE_TOO_LARGE':
+            errorMessage = 'El archivo es demasiado grande. El tamaño máximo permitido es 5MB';
+            break;
+          case 'INVALID_FILE_TYPE':
+            errorMessage = 'Solo se permiten archivos JPG, JPEG y PNG';
+            break;
+          case 'TOO_MANY_FILES':
+            errorMessage = 'Solo se permite subir un archivo a la vez';
+            break;
+          case 'UNAUTHORIZED':
+            errorMessage = 'Sesión expirada. Por favor, inicia sesión nuevamente';
+            break;
+          case 'FORBIDDEN':
+            errorMessage = 'No tienes permisos para subir imágenes';
+            break;
+          case 'NO_RESTAURANT_ASSIGNED':
+            errorMessage = 'No se encontró un restaurante asignado para este owner';
+            break;
+          default:
+            errorMessage = errorData['message'] ?? 'Error al subir portada';
+            break;
+        }
+      }
+      
       return ApiResponse<UploadImageResponse>(
         status: 'error',
-        message: errorData['message'] ?? 'Error al subir portada',
+        message: errorMessage,
         code: errorData['code'],
       );
     } catch (e) {
@@ -318,9 +448,26 @@ class RestaurantService {
         );
       } else {
         debugPrint('❌ Error al obtener estado de ubicación: ${response.message}');
+        
+        // Manejar códigos de error específicos del backend
+        String errorMessage = response.message;
+        if (response.code != null) {
+          switch (response.code) {
+            case 'INSUFFICIENT_PERMISSIONS':
+              errorMessage = 'Acceso denegado. Se requiere rol de owner';
+              break;
+            case 'NOT_FOUND':
+              errorMessage = 'Usuario no encontrado';
+              break;
+            default:
+              errorMessage = response.message;
+              break;
+          }
+        }
+        
         return ApiResponse<Map<String, dynamic>>(
           status: response.status,
-          message: response.message,
+          message: errorMessage,
           code: response.code,
         );
       }
@@ -373,9 +520,40 @@ class RestaurantService {
         );
       } else {
         debugPrint('❌ Error al actualizar ubicación: ${response.message}');
+        
+        // Manejar códigos de error específicos del backend
+        String errorMessage = response.message;
+        if (response.code != null) {
+          switch (response.code) {
+            case 'VALIDATION_ERROR':
+              // El backend envía detalles específicos en response.errors
+              if (response.errors != null && response.errors!.isNotEmpty) {
+                final errorDetails = response.errors!.map((error) {
+                  if (error is Map<String, dynamic>) {
+                    final field = error['field'] ?? '';
+                    final message = error['message'] ?? '';
+                    return field.isNotEmpty ? '$field: $message' : message;
+                  }
+                  return error.toString();
+                }).join('\n');
+                errorMessage = errorDetails.isNotEmpty ? errorDetails : response.message;
+              }
+              break;
+            case 'INSUFFICIENT_PERMISSIONS':
+              errorMessage = 'Acceso denegado. Se requiere rol de owner';
+              break;
+            case 'NOT_FOUND':
+              errorMessage = 'Usuario no encontrado';
+              break;
+            default:
+              errorMessage = response.message;
+              break;
+          }
+        }
+        
         return ApiResponse<Map<String, dynamic>>(
           status: response.status,
-          message: response.message,
+          message: errorMessage,
           code: response.code,
           errors: response.errors,
         );
@@ -458,9 +636,32 @@ class RestaurantService {
         );
       } else {
         debugPrint('❌ Error al obtener sucursal principal: ${response.message}');
+        
+        // Manejar códigos de error específicos del backend
+        String errorMessage = response.message;
+        if (response.code != null) {
+          switch (response.code) {
+            case 'PRIMARY_BRANCH_NOT_FOUND':
+              errorMessage = 'Sucursal principal no encontrada';
+              break;
+            case 'INSUFFICIENT_PERMISSIONS':
+              errorMessage = 'Acceso denegado. Se requiere rol de owner';
+              break;
+            case 'NO_RESTAURANT_ASSIGNED':
+              errorMessage = 'No se encontró un restaurante asignado para este owner';
+              break;
+            case 'NOT_FOUND':
+              errorMessage = 'Usuario no encontrado';
+              break;
+            default:
+              errorMessage = response.message;
+              break;
+          }
+        }
+        
         return ApiResponse<Map<String, dynamic>>(
           status: response.status,
-          message: response.message,
+          message: errorMessage,
           code: response.code,
         );
       }
@@ -527,9 +728,55 @@ class RestaurantService {
         );
       } else {
         debugPrint('❌ Error al actualizar sucursal principal: ${response.message}');
+        
+        // Manejar códigos de error específicos del backend
+        String errorMessage = response.message;
+        if (response.code != null) {
+          switch (response.code) {
+            case 'VALIDATION_ERROR':
+              // El backend envía detalles específicos en response.errors
+              if (response.errors != null && response.errors!.isNotEmpty) {
+                final errorDetails = response.errors!.map((error) {
+                  if (error is Map<String, dynamic>) {
+                    final field = error['field'] ?? '';
+                    final message = error['message'] ?? '';
+                    return field.isNotEmpty ? '$field: $message' : message;
+                  }
+                  return error.toString();
+                }).join('\n');
+                errorMessage = errorDetails.isNotEmpty ? errorDetails : response.message;
+              }
+              break;
+            case 'INVALID_DELIVERY_TIMES':
+              errorMessage = 'El tiempo mínimo de entrega debe ser menor que el tiempo máximo';
+              break;
+            case 'NO_FIELDS_TO_UPDATE':
+              errorMessage = 'No se proporcionó ningún campo válido para actualizar';
+              break;
+            case 'INSUFFICIENT_PERMISSIONS':
+              errorMessage = 'Acceso denegado. Se requiere rol de owner';
+              break;
+            case 'NO_RESTAURANT_ASSIGNED':
+              errorMessage = 'No se encontró un restaurante asignado para este owner';
+              break;
+            case 'PRIMARY_BRANCH_NOT_FOUND':
+              errorMessage = 'Sucursal principal no encontrada';
+              break;
+            case 'NOT_FOUND':
+              errorMessage = 'Usuario no encontrado';
+              break;
+            case 'INTERNAL_ERROR':
+              errorMessage = 'Error interno del servidor';
+              break;
+            default:
+              errorMessage = response.message;
+              break;
+          }
+        }
+        
         return ApiResponse<Map<String, dynamic>>(
           status: response.status,
-          message: response.message,
+          message: errorMessage,
           code: response.code,
           errors: response.errors,
         );

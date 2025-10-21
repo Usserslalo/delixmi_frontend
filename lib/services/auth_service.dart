@@ -184,6 +184,9 @@ class AuthService {
         case 'VALIDATION_ERROR':
           errorMessage = response.message; // Usar el mensaje detallado de validación
           break;
+        case 'TOO_MANY_REQUESTS':
+          errorMessage = 'Demasiados intentos de login. Intenta nuevamente en unos minutos.';
+          break;
       }
       
       throw Exception(errorMessage);

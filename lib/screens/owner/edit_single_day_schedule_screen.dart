@@ -572,6 +572,21 @@ class _EditSingleDayScheduleScreenState extends State<EditSingleDayScheduleScree
             case 'INSUFFICIENT_PERMISSIONS':
               errorMessage = 'Permisos insuficientes. Contacta al administrador.';
               break;
+            case 'USER_NOT_FOUND':
+              errorMessage = 'Usuario no encontrado. Inicia sesión nuevamente.';
+              errorColor = Colors.red;
+              errorIcon = Icons.person_off;
+              break;
+            case 'BRANCH_ACCESS_DENIED':
+              errorMessage = 'No tienes permisos para acceder a esta sucursal.';
+              errorColor = Colors.red;
+              errorIcon = Icons.block;
+              break;
+            case 'DUPLICATE_SCHEDULE':
+              errorMessage = 'Ya existe un horario para este día.';
+              errorColor = Colors.orange;
+              errorIcon = Icons.warning;
+              break;
           }
         }
         
