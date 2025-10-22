@@ -286,6 +286,9 @@ class RestaurantService {
           case 'NO_RESTAURANT_ASSIGNED':
             errorMessage = 'No se encontró un restaurante asignado para este owner';
             break;
+          case 'FILE_INTEGRITY_ERROR':
+            errorMessage = 'Error al procesar el archivo. El archivo no pudo ser guardado correctamente en el servidor. Por favor, intenta subir el archivo nuevamente.';
+            break;
           default:
             errorMessage = errorData['message'] ?? 'Error al subir logo';
             break;
@@ -402,6 +405,9 @@ class RestaurantService {
             break;
           case 'NO_RESTAURANT_ASSIGNED':
             errorMessage = 'No se encontró un restaurante asignado para este owner';
+            break;
+          case 'FILE_INTEGRITY_ERROR':
+            errorMessage = 'Error al procesar el archivo. El archivo no pudo ser guardado correctamente en el servidor. Por favor, intenta subir el archivo nuevamente.';
             break;
           default:
             errorMessage = errorData['message'] ?? 'Error al subir portada';

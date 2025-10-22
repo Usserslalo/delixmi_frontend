@@ -224,6 +224,11 @@ class _AddProductFormState extends State<AddProductForm> {
               errorColor = Colors.red;
               errorIcon = Icons.block;
               break;
+            case 'FILE_INTEGRITY_ERROR':
+              errorMessage = 'Error al procesar el archivo. El archivo no pudo ser guardado correctamente en el servidor. Por favor, intenta subir el archivo nuevamente.';
+              errorColor = Colors.orange;
+              errorIcon = Icons.warning;
+              break;
             default:
               // Usar el mensaje por defecto del servidor
               break;

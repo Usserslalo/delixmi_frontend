@@ -281,10 +281,59 @@ class _EditProductFormState extends State<EditProductForm> {
         }
       } else {
         if (mounted) {
+          // Manejo específico de errores según códigos del backend
+          String errorMessage = response.message;
+          Color errorColor = Colors.red;
+          IconData errorIcon = Icons.error;
+          
+          switch (response.code) {
+            case 'NO_FILE_PROVIDED':
+              errorMessage = 'No se seleccionó ningún archivo';
+              break;
+            case 'FILE_TOO_LARGE':
+              errorMessage = 'El archivo es demasiado grande. El tamaño máximo permitido es 5MB';
+              errorColor = Colors.orange;
+              errorIcon = Icons.info;
+              break;
+            case 'INVALID_FILE_TYPE':
+              errorMessage = 'Solo se permiten archivos JPG, JPEG y PNG';
+              errorColor = Colors.orange;
+              errorIcon = Icons.info;
+              break;
+            case 'TOO_MANY_FILES':
+              errorMessage = 'Solo se permite subir un archivo a la vez';
+              break;
+            case 'UNAUTHORIZED':
+              errorMessage = 'Sesión expirada. Por favor, inicia sesión nuevamente';
+              errorColor = Colors.red;
+              errorIcon = Icons.lock;
+              break;
+            case 'FORBIDDEN':
+              errorMessage = 'No tienes permisos para subir imágenes';
+              errorColor = Colors.red;
+              errorIcon = Icons.block;
+              break;
+            case 'FILE_INTEGRITY_ERROR':
+              errorMessage = 'Error al procesar el archivo. El archivo no pudo ser guardado correctamente en el servidor. Por favor, intenta subir el archivo nuevamente.';
+              errorColor = Colors.orange;
+              errorIcon = Icons.warning;
+              break;
+            default:
+              // Usar el mensaje por defecto del servidor
+              break;
+          }
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error al subir imagen: ${response.message}'),
-              backgroundColor: Colors.red,
+              content: Row(
+                children: [
+                  Icon(errorIcon, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(errorMessage)),
+                ],
+              ),
+              backgroundColor: errorColor,
+              duration: const Duration(seconds: 4),
             ),
           );
         }

@@ -866,9 +866,41 @@ class MenuService {
         // Manejo de errores HTTP
         try {
           final errorData = jsonDecode(response.body) as Map<String, dynamic>;
+          
+          // Manejar códigos de error específicos del backend
+          String errorMessage = errorData['message'] ?? 'Error ${response.statusCode}';
+          if (errorData['code'] != null) {
+            switch (errorData['code']) {
+              case 'NO_FILE_PROVIDED':
+                errorMessage = 'No se proporcionó ningún archivo';
+                break;
+              case 'FILE_TOO_LARGE':
+                errorMessage = 'El archivo es demasiado grande. El tamaño máximo permitido es 5MB';
+                break;
+              case 'INVALID_FILE_TYPE':
+                errorMessage = 'Solo se permiten archivos JPG, JPEG y PNG';
+                break;
+              case 'TOO_MANY_FILES':
+                errorMessage = 'Solo se permite subir un archivo a la vez';
+                break;
+              case 'UNAUTHORIZED':
+                errorMessage = 'Sesión expirada. Por favor, inicia sesión nuevamente';
+                break;
+              case 'FORBIDDEN':
+                errorMessage = 'No tienes permisos para subir imágenes';
+                break;
+              case 'FILE_INTEGRITY_ERROR':
+                errorMessage = 'Error al procesar el archivo. El archivo no pudo ser guardado correctamente en el servidor. Por favor, intenta subir el archivo nuevamente.';
+                break;
+              default:
+                errorMessage = errorData['message'] ?? 'Error al subir imagen';
+                break;
+            }
+          }
+          
           return ApiResponse<ProductImageUploadResponse>(
             status: 'error',
-            message: errorData['message'] ?? 'Error ${response.statusCode}',
+            message: errorMessage,
             code: errorData['code'],
           );
         } catch (e) {
